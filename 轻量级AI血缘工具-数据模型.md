@@ -122,7 +122,9 @@ erDiagram
 | created_by / updated_by | TEXT | REFERENCES user(username) | 操作留痕 |
 | created_at / updated_at | TEXT | NOT NULL | |
 
-**唯一约束（自然键）**：`UNIQUE(from_dataset, from_field, to_dataset, to_field)` —— 同一上下游对只允许一条边（不变量#3）。SQLite/Postgres 默认 `NULLS DISTINCT`：表级边（字段为 NULL）不受影响，同组合重复插入仍被拦截。
+**唯一约束（自然键）**：同一上下游对只允许一条边（不变量#3）。注意：SQLite 的 UNIQUE 对含 NULL 的组合按 `NULLS DISTINCT` 语义处理（任意 NULL 互不相等），表级边（from_field/to_field 均为 NULL）无法被 `UNIQUE(from_dataset, from_field, to_dataset, to_field)` 拦截。M1 实现改用两个部分唯一索引保证该不变量（见 `src/lineagelite/db.py` 的 DDL）：
+- 字段级边：`CREATE UNIQUE INDEX uq_edge_field ON edge(from_dataset, from_field, to_dataset, to_field) WHERE from_field IS NOT NULL AND to_field IS NOT NULL;`
+- 表级边：`CREATE UNIQUE INDEX uq_edge_table ON edge(from_dataset, to_dataset) WHERE from_field IS NULL AND to_field IS NULL;`
 
 **复合外键**：`(from_dataset, from_field) REFERENCES field(dataset_id, name)`、`(to_dataset, to_field) REFERENCES field(dataset_id, name)`。NULL 成员默认放行（MATCH SIMPLE），与「表级边」语义一致。
 
@@ -287,6 +289,8 @@ CREATE VIRTUAL TABLE field_fts USING fts5(
 
 | 表 | 索引 | 用途 |
 |---|---|---|
+| edge | `uq_edge_field` 部分唯一索引：`(from_dataset, from_field, to_dataset, to_field) WHERE from_field IS NOT NULL AND to_field IS NOT NULL` | 字段级边唯一（不变量#3） |
+| edge | `uq_edge_table` 部分唯一索引：`(from_dataset, to_dataset) WHERE from_field IS NULL AND to_field IS NULL` | 表级边唯一（NULLS DISTINCT 语义下普通 UNIQUE 拦不住含 NULL 的重复，见 §2.5 说明） |
 | edge | `(to_dataset, to_field)`、`(from_dataset, from_field)` | 递归 CTE 上下游遍历的主路径 |
 | edge | `(from_dataset)`、`(to_dataset)` | 表级投影与节点子图 |
 | field | `(source_file_id)` | 「该源文件养活了哪些字段」反查 |

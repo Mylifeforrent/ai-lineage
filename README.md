@@ -12,6 +12,19 @@
 | [轻量级AI血缘工具-业务模型.md](./轻量级AI血缘工具-业务模型.md) | 业务层模型：定位与价值主张、干系人与角色、核心领域概念、业务流程、业务规则与不变量 |
 | [轻量级AI血缘工具-数据模型.md](./轻量级AI血缘工具-数据模型.md) | 数据层模型：ER 图、9 张表定义、派生视图、JSON 结构、标识命名规则、索引与版本重建规则 |
 
+## 后端（M1 已实现）
+
+数据底座：JWT 认证 + RBAC（admin/editor/viewer）、源文件托管（sha256 去重）、CSV/XLSX/JSON 三格式导入（含 XLSX 合并单元格/多级表头定位解析与实文件核查）、版本批次 + change_log + 按批次回滚。
+
+```bash
+uv sync                        # 安装依赖
+cp .env.example .env           # 配置（SECRET_KEY / ADMIN_PASSWORD 等）
+uv run uvicorn lineagelite.main:app --reload   # 启动，首次自动建库并创建初始管理员
+uv run pytest                  # 运行验收测试
+```
+
+API 一览（需 Bearer Token）：`POST /auth/login`、`POST/GET /users`（admin）、`POST/GET /files`、`GET /files/{id}/download`、`POST /import`（editor+，multipart：format + source_file_ids + 清单文件）、`GET /import/batches`、`POST /import/batches/{id}/rollback`（admin）、`GET /datasets`、`GET /lineage/snapshot`。
+
 ## 引用仓库说明
 
 `OpenMetadata/` 与 `datahub/` 为调研所用的两个开源项目源码副本，仅本地参考，**不纳入本仓库版本管理**（见 `.gitignore`）。
