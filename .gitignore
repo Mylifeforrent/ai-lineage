@@ -1,0 +1,17 @@
+# 调研引用的开源仓库（仅本地参考，不纳入本仓库）
+OpenMetadata/
+datahub/
+
+# 系统文件
+.DS_Store
+
+# 环境与密钥
+.env
+
+# Python
+__pycache__/
+.venv/
+
+# Node
+node_modules/
+dist/
