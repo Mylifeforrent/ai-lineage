@@ -45,3 +45,16 @@ def test_editor_can_upload_but_not_manage_users(client):
 def test_unauthenticated_rejected(client):
     assert client.get("/datasets").status_code == 401
     assert client.get("/users").status_code == 401
+
+
+def test_cors_only_allows_configured_origin(client):
+    preflight = {"Access-Control-Request-Method": "GET"}
+    allowed = client.options(
+        "/datasets", headers={"Origin": "http://localhost:5173", **preflight})
+    assert allowed.headers["access-control-allow-origin"] == "http://localhost:5173"
+    # Bearer 认证不需要 credentials，关闭后不会回显凭证
+    assert "access-control-allow-credentials" not in allowed.headers
+
+    evil = client.options(
+        "/datasets", headers={"Origin": "https://evil.example", **preflight})
+    assert "access-control-allow-origin" not in evil.headers

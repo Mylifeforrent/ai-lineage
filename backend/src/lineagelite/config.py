@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     admin_username: str = "admin"
     admin_password: str = "admin123"
     max_upload_mb: int = 50  # 单个源文件上传大小上限（MB）
+    # 允许跨域的前端来源（逗号分隔）；默认仅本机 Vite 开发服务器
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
 
 def get_settings() -> Settings:

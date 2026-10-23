@@ -23,6 +23,34 @@ def _src_type_of(filename: str) -> str:
     return suffix
 
 
+def store_upload(filename: str, data: bytes, username: str) -> dict:
+    """托管一份源文件并登记：同 sha256 复用已有记录（去重）。
+
+    上传路由与 ``seed_demo`` 共用此服务路径；调用方负责空文件/大小上限校验。
+    """
+    src_type = _src_type_of(filename)
+    sha = hashlib.sha256(data).hexdigest()
+    # 文件名保留原始扩展名：openpyxl 等解析器按扩展名识别格式
+    rel_path = f"files/{sha[:2]}/{sha}.{src_type}"
+    abs_path = files_dir() / sha[:2] / f"{sha}.{src_type}"
+    with get_db() as conn:
+        existing = conn.execute("SELECT * FROM source_file WHERE sha256=?",
+                                (sha,)).fetchone()
+        if existing is not None:
+            return {**dict(existing), "deduped": True}
+        abs_path.parent.mkdir(parents=True, exist_ok=True)
+        abs_path.write_bytes(data)
+        cur = conn.execute(
+            "INSERT INTO source_file(original_name, storage_path, sha256,"
+            " size_bytes, src_type, uploaded_by, created_at)"
+            " VALUES (?,?,?,?,?,?,?)",
+            (filename, rel_path, sha, len(data), src_type,
+             username, datetime.now(UTC).isoformat(timespec="seconds")))
+        row = conn.execute("SELECT * FROM source_file WHERE id=?",
+                           (cur.lastrowid,)).fetchone()
+        return {**dict(row), "deduped": False}
+
+
 @router.post("", status_code=201)
 async def upload(files: list[UploadFile] | None = None,
                  user: dict = Depends(require_role("editor"))):
@@ -33,34 +61,14 @@ async def upload(files: list[UploadFile] | None = None,
     max_bytes = max_upload_mb * 1024 * 1024
     out = []
     for f in files:
-        src_type = _src_type_of(f.filename or "")
+        _src_type_of(f.filename or "")
         data = await f.read()
         if not data:
             raise HTTPException(400, f"文件「{f.filename}」为空")
         if len(data) > max_bytes:
             raise HTTPException(
                 413, f"文件「{f.filename}」超过单文件大小上限 {max_upload_mb}MB")
-        sha = hashlib.sha256(data).hexdigest()
-        # 文件名保留原始扩展名：openpyxl 等解析器按扩展名识别格式
-        rel_path = f"files/{sha[:2]}/{sha}.{src_type}"
-        abs_path = files_dir() / sha[:2] / f"{sha}.{src_type}"
-        with get_db() as conn:
-            existing = conn.execute("SELECT * FROM source_file WHERE sha256=?",
-                                    (sha,)).fetchone()
-            if existing is None:
-                abs_path.parent.mkdir(parents=True, exist_ok=True)
-                abs_path.write_bytes(data)
-                cur = conn.execute(
-                    "INSERT INTO source_file(original_name, storage_path, sha256,"
-                    " size_bytes, src_type, uploaded_by, created_at)"
-                    " VALUES (?,?,?,?,?,?,?)",
-                    (f.filename, rel_path, sha, len(data), src_type,
-                     user["username"], datetime.now(UTC).isoformat(timespec="seconds")))
-                row = conn.execute("SELECT * FROM source_file WHERE id=?",
-                                   (cur.lastrowid,)).fetchone()
-                out.append({**dict(row), "deduped": False})
-            else:
-                out.append({**dict(existing), "deduped": True})
+        out.append(store_upload(f.filename or "", data, user["username"]))
     return out
 
 

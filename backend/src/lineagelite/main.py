@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .db import get_db, init_db
-from .routes import auth, datasets, files, imports
+from .routes import auth, datasets, files, imports, lineage, preview
 from .security import hash_password
 
 
@@ -33,16 +33,21 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 def create_app() -> FastAPI:
     app = FastAPI(title="LineageLite", version="0.1.0",
-                  description="轻量级 AI 数据血缘工具（M1：数据底座）",
+                  description="轻量级 AI 数据血缘工具（M2：图查询与回源预览）",
                   lifespan=lifespan)
-    # TODO(M2): 前端接入时收紧 allow_origins（当前 * 通配仅为 M1 后端联调临时配置）
+    # M2：前端已接入，跨域来源由 CORS_ORIGINS 显式配置；认证走 Bearer
+    # 而非 Cookie，无需 allow_credentials（避免通配来源下的凭证回显）。
+    origins = [origin.strip() for origin in get_settings().cors_origins.split(",")
+               if origin.strip()]
     app.add_middleware(
-        CORSMiddleware, allow_origins=["*"], allow_credentials=True,
+        CORSMiddleware, allow_origins=origins, allow_credentials=False,
         allow_methods=["*"], allow_headers=["*"])
     app.include_router(auth.router)
     app.include_router(files.router)
     app.include_router(imports.router)
     app.include_router(datasets.router)
+    app.include_router(lineage.router)
+    app.include_router(preview.router)
     return app
 
 

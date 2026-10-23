@@ -17,7 +17,14 @@ def list_datasets(user: dict = Depends(require_role("viewer"))):
             "SELECT d.id, d.name, COUNT(f.id) AS field_count"
             " FROM dataset d LEFT JOIN field f ON f.dataset_id = d.id"
             " GROUP BY d.id ORDER BY d.id").fetchall()
-    return [dict(r) for r in rows]
+        # 侧栏搜索需要「数据集 / 字段」两类匹配目标（设计方案 §5.1）
+        field_rows = conn.execute(
+            "SELECT dataset_id, name FROM field ORDER BY dataset_id, name").fetchall()
+    field_names: dict[str, list[str]] = {}
+    for field in field_rows:
+        field_names.setdefault(field["dataset_id"], []).append(field["name"])
+    return [{**dict(row), "field_names": field_names.get(row["id"], [])}
+            for row in rows]
 
 
 @router.get("/datasets/{dataset_id}")

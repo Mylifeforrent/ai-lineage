@@ -20,16 +20,22 @@
 ```
 ai-lineage/
 ├── docs/          # 设计文档（01_design）与低保真原型（02_prototype），索引见 docs/README.md
-├── backend/       # 后端项目：M1 数据底座（FastAPI + SQLite + uv）
+├── backend/       # 后端项目：M1 数据底座 + M2 图查询/回源预览（FastAPI + SQLite + uv）
 │   ├── src/lineagelite/
 │   ├── tests/
 │   ├── pyproject.toml
 │   └── uv.lock
+├── frontend/      # 前端项目：M2 血缘画布与回源预览（React + TS + Vite + Tailwind + @xyflow/react）
+│   ├── src/
+│   │   ├── components/
+│   │   └── lib/
+│   ├── package.json
+│   └── vite.config.ts
 ├── .env.example   # 环境配置模板（复制为仓库根 .env 使用，.env 不入库）
 └── README.md
 ```
 
-M2 的前端（React + Vite + reactflow）将放入 `frontend/`，与 `backend/` 平级。
+M2 前端与 `backend/` 平级，开发服务器通过 Vite proxy 将 `/auth`、`/datasets`、`/lineage`、`/fields` 转发到 `http://127.0.0.1:8000`。
 
 ## 后端（M1 已实现）
 
@@ -43,7 +49,22 @@ uv run uvicorn lineagelite.main:app --reload   # 启动，首次自动建库并�
 uv run pytest                  # 运行验收测试
 ```
 
-API 一览（需 Bearer Token）：`POST /auth/login`、`POST/GET /users`（admin）、`POST/GET /files`、`GET /files/{id}/download`、`POST /import`（editor+，multipart：format + source_file_ids + 清单文件）、`GET /import/batches`、`POST /import/batches/{id}/rollback`（admin）、`GET /datasets`、`GET /lineage/snapshot`。
+API 一览（需 Bearer Token）：`POST /auth/login`、`POST/GET /users`（admin）、`POST/GET /files`、`GET /files/{id}/download`、`POST /import`（editor+，multipart：format + source_file_ids + 清单文件）、`GET /import/batches`、`POST /import/batches/{id}/rollback`（admin）、`GET /datasets`、`GET /lineage/subgraph?dataset=&field=&hops=&direction=`、`GET /fields/{dataset_id}/{field_name}/preview`。
+
+需要演示数据时，可在后端目录执行 `uv run python -m lineagelite.seed_demo`，生成 5 个数据集、4 跳血缘链及 csv/xlsx/json 三类回源样例。
+
+## 前端（M2）
+
+字段级血缘画布：数据集筛选、dagre 左右分层布局、字段级/表级连线、节点字段折叠、跳数切换、字段详情与 CSV/XLSX/JSON 回源预览。登录使用 JWT，Bearer Token 存于 `localStorage`，任意已认证请求返回 401 时会回到登录页。
+
+```bash
+cd frontend
+npm install
+npm run dev        # http://localhost:5173，API 由 Vite proxy 转至 :8000
+npm run build      # tsc -b && vite build
+```
+
+前端只使用 `fetch` 访问 API；画布依赖 `@xyflow/react`，分层布局依赖 `@dagrejs/dagre`。
 
 ## 引用仓库说明
 
@@ -52,5 +73,5 @@ API 一览（需 Bearer Token）：`POST /auth/login`、`POST/GET /users`（admi
 ## 技术栈
 
 - 后端：Python + FastAPI + uv，SQLite 起步（预留 Postgres 升级路径）
-- 前端：React + TypeScript + Vite + Tailwind + shadcn/ui + @xyflow/react
+- 前端：React + TypeScript + Vite + Tailwind + @xyflow/react + @dagrejs/dagre（组件源码内置，无额外 UI 组件库）
 - AI：OpenAI 兼容 Chat API + function calling（密钥经 `.env` 配置，不入库）
