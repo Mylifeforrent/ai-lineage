@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LineageLite · 低保真原型</title>
+<style>
+  body { margin: 0; background: #f4f5f7; }
+  /* 宿主工具类的最小独立实现（仅本原型页面所需，正式设计系统见 docs/01_design） */
+  .nav { display: flex; flex-wrap: wrap; gap: 8px; }
+  .nav-pills .nav-link {
+    appearance: none; font: 13px -apple-system, "Segoe UI", system-ui, sans-serif;
+    border: 1px solid #c9cdd4; background: #fff; color: #1b1f24;
+    border-radius: 999px; padding: 5px 14px; cursor: pointer;
+  }
+  .nav-pills .nav-link.active { background: #1e40af; border-color: #1e40af; color: #fff; }
+  .nav-pills .nav-link:focus-visible { outline: 2px solid #1e40af; outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .form-check-input { accent-color: #1e40af; }
+</style>
+</head>
+<body>
+<div id="llp">
+  <style>
+    #llp {
+      --llp-bg: light-dark(#f4f5f7, #1c1e22);
+      --llp-surface: light-dark(#ffffff, #26292e);
+      --llp-surface-2: light-dark(#f7f8fa, #2d3036);
+      --llp-border: light-dark(#c9cdd4, #3a3e45);
+      --llp-border-2: light-dark(#e8eaee, #33373d);
+      --llp-text: light-dark(#1b1f24, #e8eaee);
+      --llp-text-2: light-dark(#6b7280, #9aa1ac);
+      --llp-accent: light-dark(#1e40af, #7c9ff0);
+      --llp-accent-fg: light-dark(#ffffff, #10131a);
+      --llp-accent-soft: light-dark(#e8eefb, #26314d);
+      --llp-danger: light-dark(#dc2626, #f87171);
+      --llp-warn: light-dark(#b45309, #f59e0b);
+      font-family: -apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+      color: var(--llp-text);
+      line-height: 1.45;
+    }
+    #llp * { box-sizing: border-box; }
+    #llp .llp-pagehead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin: 2px 0 12px; }
+    #llp .llp-pagehead h1 { margin: 0; font-size: 17px; font-weight: 500; }
+    #llp .llp-pagehead .llp-note { font-size: 12px; color: var(--llp-text-2); }
+    #llp .llp-tabs { margin-bottom: 14px; }
+
+    #llp .llp-window { background: var(--llp-surface); border: 1px solid var(--llp-border); border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.10); }
+    #llp .llp-chrome { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--llp-surface-2); border-bottom: 1px solid var(--llp-border-2); }
+    #llp .llp-chrome .llp-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--llp-border); }
+    #llp .llp-chrome .llp-addr { flex: 1; max-width: 320px; margin: 0 auto; font-size: 12px; color: var(--llp-text-2); border: 1px solid var(--llp-border-2); border-radius: 6px; padding: 2px 10px; text-align: center; }
+    #llp .llp-chrome .llp-userchip { font-size: 12px; color: var(--llp-text-2); }
+
+    #llp .llp-topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid var(--llp-border-2); }
+    #llp .llp-logo { font-weight: 600; font-size: 13px; padding: 4px 10px; border: 1px dashed var(--llp-border); border-radius: 6px; }
+    #llp .llp-search { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 180px; max-width: 300px; border: 1px solid var(--llp-border); border-radius: 6px; padding: 4px 8px; font-size: 12px; color: var(--llp-text-2); }
+    #llp .llp-search input { all: unset; font: inherit; color: var(--llp-text); flex: 1; }
+
+    #llp .llp-btn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border: 1px solid var(--llp-border); border-radius: 6px; background: var(--llp-surface); color: var(--llp-text); font-size: 12px; cursor: default; }
+    #llp .llp-btn-primary { background: var(--llp-accent); border-color: transparent; color: var(--llp-accent-fg); }
+    #llp .llp-btn-ghost { border-color: transparent; background: transparent; color: var(--llp-text-2); }
+    #llp .llp-btn-danger { color: var(--llp-danger); }
+    #llp .llp-btn-xs { padding: 2px 7px; font-size: 11px; border-radius: 5px; }
+
+    #llp .llp-badge { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 999px; font-size: 11px; border: 1px solid var(--llp-border-2); color: var(--llp-text-2); background: var(--llp-surface-2); }
+    #llp .llp-badge-ok { border-color: transparent; background: var(--llp-accent-soft); color: var(--llp-accent); }
+    #llp .llp-badge-warn { border-color: transparent; color: var(--llp-warn); background: var(--llp-surface-2); }
+
+    #llp .llp-callout { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; border-radius: 999px; background: var(--llp-accent); color: var(--llp-accent-fg); font-size: 11px; font-weight: 600; }
+
+    #llp .llp-body { display: flex; flex-wrap: wrap; }
+    #llp .llp-side { width: 188px; border-right: 1px solid var(--llp-border-2); padding: 10px; flex-shrink: 0; }
+    #llp .llp-detail { width: 258px; border-left: 1px solid var(--llp-border-2); padding: 10px; flex-shrink: 0; }
+    #llp .llp-canvaswrap { flex: 1; min-width: 320px; padding: 6px; }
+    @media (max-width: 940px) { #llp .llp-side, #llp .llp-detail { width: 100%; border: none; border-bottom: 1px solid var(--llp-border-2); } }
+
+    #llp .llp-side h3, #llp .llp-detail h3 { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: var(--llp-text-2); text-transform: none; }
+    #llp .llp-dsitem { display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; border-radius: 6px; font-size: 12px; margin-bottom: 2px; border: 1px solid transparent; }
+    #llp .llp-dsitem.is-active { border-color: var(--llp-border); background: var(--llp-surface-2); }
+    #llp .llp-dsitem .llp-count { color: var(--llp-text-2); font-size: 11px; }
+    #llp .llp-side .llp-sec { margin-top: 12px; }
+    #llp .llp-side select { font: inherit; font-size: 12px; color: var(--llp-text-2); background: var(--llp-surface); border: 1px solid var(--llp-border); border-radius: 6px; padding: 3px 6px; }
+
+    #llp .llp-detail .llp-dl { margin: 0; font-size: 12px; }
+    #llp .llp-detail .llp-dl > div { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--llp-border-2); }
+    #llp .llp-detail .llp-dl dt { width: 62px; flex-shrink: 0; color: var(--llp-text-2); }
+    #llp .llp-detail .llp-dl dd { margin: 0; flex: 1; word-break: break-all; }
+    #llp .llp-detail code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11.5px; background: var(--llp-surface-2); padding: 0 4px; border-radius: 4px; }
+    #llp .llp-detail .llp-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+    #llp .llp-note-item { font-size: 12px; border: 1px solid var(--llp-border-2); border-radius: 6px; padding: 5px 8px; margin-bottom: 5px; }
+    #llp .llp-note-item .llp-meta { color: var(--llp-text-2); font-size: 11px; }
+    #llp .llp-annot-input { display: flex; gap: 6px; margin-top: 6px; }
+    #llp .llp-annot-input input { flex: 1; min-width: 80px; font: inherit; font-size: 12px; border: 1px solid var(--llp-border); border-radius: 6px; padding: 4px 8px; background: var(--llp-surface); color: var(--llp-text); }
+
+    #llp .llp-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 10px; font-size: 12px; color: var(--llp-text-2); }
+    #llp .llp-legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+    #llp .llp-stage { padding: 30px 16px; display: flex; justify-content: center; align-items: flex-start; }
+    #llp .llp-card { width: 100%; max-width: 380px; background: var(--llp-surface); border: 1px solid var(--llp-border); border-radius: 10px; padding: 26px 26px 20px; }
+    #llp .llp-logo-big { width: 74px; height: 34px; border: 1px dashed var(--llp-border); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--llp-text-2); margin: 0 auto 12px; }
+    #llp .llp-card h2 { text-align: center; font-size: 18px; font-weight: 600; margin: 0 0 2px; }
+    #llp .llp-card .llp-subtitle { text-align: center; font-size: 12px; color: var(--llp-text-2); margin-bottom: 18px; }
+    #llp .llp-field { margin-bottom: 10px; }
+    #llp .llp-field label { display: block; font-size: 11px; color: var(--llp-text-2); margin-bottom: 3px; }
+    #llp .llp-field input, #llp .llp-field select { width: 100%; font: inherit; font-size: 13px; padding: 7px 9px; border: 1px solid var(--llp-border); border-radius: 6px; background: var(--llp-surface); color: var(--llp-text); }
+    #llp .llp-block { display: block; width: 100%; justify-content: center; padding: 8px; margin-top: 6px; }
+
+    #llp .llp-modal { width: 100%; max-width: 780px; margin: 0 auto; background: var(--llp-surface); border: 1px solid var(--llp-border); border-radius: 10px; overflow: hidden; }
+    #llp .llp-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--llp-border-2); font-size: 13px; font-weight: 600; }
+    #llp .llp-modal-body { padding: 14px; }
+    #llp .llp-modal-foot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--llp-border-2); font-size: 12px; color: var(--llp-text-2); }
+
+    #llp .llp-locrows { border: 1px solid var(--llp-border-2); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 12px; }
+    #llp .llp-locrows > div { display: flex; gap: 10px; padding: 3px 0; }
+    #llp .llp-locrows b { font-weight: 500; color: var(--llp-text-2); width: 88px; flex-shrink: 0; }
+
+    #llp .llp-sheet { border: 1px solid var(--llp-border-2); border-radius: 8px; overflow: hidden; font-size: 12px; }
+    #llp .llp-sheet table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    #llp .llp-sheet th, #llp .llp-sheet td { border: 1px solid var(--llp-border-2); padding: 4px 8px; text-align: left; overflow: hidden; }
+    #llp .llp-sheet thead th { background: var(--llp-surface-2); font-weight: 500; }
+    #llp .llp-sheet .llp-merged { text-align: center; background: var(--llp-surface-2); }
+    #llp .llp-sheet .llp-hl { background: var(--llp-accent-soft); }
+    #llp .llp-bar { display: inline-block; height: 8px; width: 80%; background: var(--llp-border-2); border-radius: 4px; vertical-align: middle; }
+    #llp .llp-anchor-chip { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; font-size: 11px; color: var(--llp-text-2); }
+
+    #llp .llp-stepper { display: flex; flex-wrap: wrap; gap: 6px 0; align-items: center; padding: 12px 14px; font-size: 12px; color: var(--llp-text-2); border-bottom: 1px solid var(--llp-border-2); }
+    #llp .llp-step { display: inline-flex; align-items: center; gap: 6px; }
+    #llp .llp-step .llp-dot2 { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; border: 1px solid var(--llp-border); }
+    #llp .llp-step.is-done .llp-dot2 { color: var(--llp-accent); border-color: var(--llp-accent); }
+    #llp .llp-step.is-now { color: var(--llp-text); font-weight: 600; }
+    #llp .llp-step.is-now .llp-dot2 { background: var(--llp-accent); border-color: var(--llp-accent); color: var(--llp-accent-fg); }
+    #llp .llp-arrow { margin: 0 10px; color: var(--llp-border); }
+
+    #llp .llp-chiprow { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px 0; font-size: 12px; }
+    #llp .llp-statrow { display: flex; flex-wrap: wrap; gap: 10px; padding: 12px 14px; }
+    #llp .llp-stat { flex: 1; min-width: 110px; border: 1px solid var(--llp-border-2); border-radius: 8px; padding: 8px 12px; }
+    #llp .llp-stat .llp-n { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+    #llp .llp-stat .llp-l { font-size: 11px; color: var(--llp-text-2); }
+    #llp .llp-stat.is-bad { border-color: var(--llp-danger); }
+    #llp .llp-stat.is-bad .llp-n { color: var(--llp-danger); }
+
+    #llp .llp-tablewrap { padding: 0 14px 12px; }
+    #llp table.llp-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+    #llp table.llp-tbl th, #llp table.llp-tbl td { border: 1px solid var(--llp-border-2); padding: 5px 8px; text-align: left; vertical-align: top; }
+    #llp table.llp-tbl th { background: var(--llp-surface-2); font-weight: 500; color: var(--llp-text-2); }
+    #llp table.llp-tbl td.llp-muted { color: var(--llp-text-2); }
+    #llp .llp-tblwrap-sm { overflow-x: auto; }
+
+    #llp .llp-drawer-wrap { display: flex; flex-wrap: wrap; min-height: 420px; }
+    #llp .llp-canvas-dim { flex: 1; min-width: 200px; background: var(--llp-surface-2); position: relative; padding: 14px; }
+    #llp .llp-canvas-dim .llp-dimnote { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 12px; color: var(--llp-text-2); border: 1px dashed var(--llp-border); border-radius: 8px; padding: 8px 14px; background: var(--llp-surface); }
+    #llp .llp-drawer { width: 380px; max-width: 100%; flex-shrink: 0; border-left: 1px solid var(--llp-border-2); display: flex; flex-direction: column; }
+    @media (max-width: 760px) { #llp .llp-drawer { width: 100%; border-left: none; border-top: 1px solid var(--llp-border-2); } }
+    #llp .llp-drawer-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--llp-border-2); font-size: 13px; font-weight: 600; }
+    #llp .llp-msgs { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+    #llp .llp-msg { font-size: 12px; border: 1px solid var(--llp-border-2); border-radius: 8px; padding: 8px 10px; }
+    #llp .llp-msg .llp-who { font-size: 11px; font-weight: 600; color: var(--llp-text-2); margin-bottom: 4px; }
+    #llp .llp-tools { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 5px; }
+    #llp .llp-tool { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11px; border: 1px solid var(--llp-border-2); border-radius: 5px; padding: 1px 6px; color: var(--llp-text-2); background: var(--llp-surface-2); }
+    #llp .llp-suggest { border: 1px dashed var(--llp-accent); border-radius: 8px; padding: 8px 10px; font-size: 12px; background: var(--llp-accent-soft); }
+    #llp .llp-suggest .llp-sg-actions { display: flex; gap: 6px; margin-top: 7px; }
+    #llp .llp-msg-input { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--llp-border-2); }
+    #llp .llp-msg-input input { flex: 1; font: inherit; font-size: 12px; border: 1px solid var(--llp-border); border-radius: 6px; padding: 6px 9px; background: var(--llp-surface); color: var(--llp-text); }
+
+    #llp .llp-admin { padding: 14px; display: flex; flex-wrap: wrap; gap: 14px; }
+    #llp .llp-admin-sec { flex: 1; min-width: 300px; }
+    #llp .llp-admin-sec h3 { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
+    #llp .llp-tagform { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; font-size: 12px; }
+    #llp .llp-tagform input { font: inherit; font-size: 12px; border: 1px solid var(--llp-border); border-radius: 6px; padding: 4px 8px; background: var(--llp-surface); color: var(--llp-text); }
+    #llp .llp-diffbox { margin-top: 10px; border: 1px solid var(--llp-border-2); border-radius: 8px; padding: 8px 10px; font-size: 12px; }
+    #llp .llp-diffbox .llp-add { color: var(--llp-accent); }
+    #llp .llp-diffbox .llp-del { color: var(--llp-danger); }
+
+    #llp .llp-canvas { width: 100%; height: auto; display: block; }
+    #llp .llp-canvas text { font-family: -apple-system, "Segoe UI", system-ui, sans-serif; }
+  </style>
+
+  <div class="llp-pagehead">
+    <h1>LineageLite · 低保真原型</h1>
+    <span class="llp-note">基于业务模型 / 数据模型文档 · 全部为示例数据 · 蓝色编号标注 = 交互说明</span>
+  </div>
+
+  <div class="nav nav-pills llp-tabs" role="tablist" aria-label="原型界面">
+    <button class="nav-link active" id="llp-t-canvas" role="tab" aria-controls="llp-p-canvas" aria-selected="true" type="button">血缘画布</button>
+    <button class="nav-link" id="llp-t-preview" role="tab" aria-controls="llp-p-preview" aria-selected="false" type="button">源文件预览</button>
+    <button class="nav-link" id="llp-t-import" role="tab" aria-controls="llp-p-import" aria-selected="false" type="button">导入向导</button>
+    <button class="nav-link" id="llp-t-ai" role="tab" aria-controls="llp-p-ai" aria-selected="false" type="button">AI 对话</button>
+    <button class="nav-link" id="llp-t-admin" role="tab" aria-controls="llp-p-admin" aria-selected="false" type="button">版本与用户</button>
+    <button class="nav-link" id="llp-t-login" role="tab" aria-controls="llp-p-login" aria-selected="false" type="button">登录</button>
+  </div>
+
+  <!-- ============ 血缘画布 ============ -->
+  <div id="llp-p-canvas" role="tabpanel" aria-labelledby="llp-t-canvas">
+    <div class="llp-window">
+      <div class="llp-chrome">
+        <span class="llp-dot"></span><span class="llp-dot"></span><span class="llp-dot"></span>
+        <span class="llp-addr">lineagelite.local/lineage</span>
+        <span class="llp-userchip">张三 · editor</span>
+      </div>
+      <div class="llp-topbar">
+        <span class="llp-logo">LineageLite</span>
+        <span class="llp-search"><i data-lucide="search" aria-hidden="true" width="13"></i><input value="搜索数据集 / 字段…" aria-label="搜索数据集或字段" readonly><span class="llp-callout">1</span></span>
+        <button class="llp-btn llp-btn-primary" type="button"><i data-lucide="upload" aria-hidden="true" width="13"></i>导入数据</button>
+        <button class="llp-btn" type="button"><i data-lucide="history" aria-hidden="true" width="13"></i>版本 v3</button>
+        <button class="llp-btn" type="button"><i data-lucide="sparkles" aria-hidden="true" width="13"></i>AI 助手</button>
+        <span class="llp-badge">版本 v3 · 标签 v2.1-r1</span>
+      </div>
+      <div class="llp-body">
+        <aside class="llp-side">
+          <h3>数据集（4）</h3>
+          <div class="llp-dsitem is-active">dwd_order · 订单宽表 <span class="llp-count">8 字段</span></div>
+          <div class="llp-dsitem">ods_raw · 订单明细 <span class="llp-count">17 字段</span></div>
+          <div class="llp-dsitem">ods_user · 用户表 <span class="llp-count">6 字段</span></div>
+          <div class="llp-dsitem">dws_summary · 日汇总 <span class="llp-count">4 字段</span></div>
+          <div class="llp-sec">
+            <h3>过滤</h3>
+            <select aria-label="置信度过滤"><option>置信度 ≥ 0.8</option></select>
+            <div style="margin-top:6px"><label class="form-check" style="display:flex;align-items:center;gap:6px;font-size:12px"><input class="form-check-input" type="checkbox" checked><span>隐藏 AI 建议边</span></label></div>
+            <div><label class="form-check" style="display:flex;align-items:center;gap:6px;font-size:12px"><input class="form-check-input" type="checkbox"><span>仅显示确认血缘</span></label></div>
+          </div>
+        </aside>
+        <div class="llp-canvaswrap">
+          <svg class="llp-canvas" viewBox="0 0 1180 620" role="img" aria-label="血缘关系画布线框图：左侧两个上游数据集节点连到中间 dwd_order 节点，右侧一个折叠节点，含字段级连线与 AI 建议边">
+            <!-- 图例 -->
+            <g>
+              <rect x="880" y="16" width="272" height="62" rx="6" fill="var(--llp-surface)" stroke="var(--llp-border-2)"/>
+              <line x1="894" y1="31" x2="920" y2="31" stroke="var(--llp-text-2)" stroke-width="1.5"/>
+              <text x="928" y="35" font-size="11" fill="var(--llp-text-2)">实线 = 字段级血缘</text>
+              <line x1="894" y1="47" x2="920" y2="47" stroke="var(--llp-text-2)" stroke-width="1.5" stroke-dasharray="4 3"/>
+              <text x="928" y="51" font-size="11" fill="var(--llp-text-2)">虚线 = 表级血缘</text>
+              <line x1="894" y1="63" x2="920" y2="63" stroke="var(--llp-accent)" stroke-width="1.5" stroke-dasharray="4 3"/>
+              <text x="928" y="67" font-size="11" fill="var(--llp-accent)">蓝色虚线 = AI 建议（待确认）</text>
+            </g>
+
+            <!-- 连线（画在节点下方） -->
+            <g fill="none">
+              <line x1="245" y1="138" x2="475" y2="168" stroke="var(--llp-text-2)" stroke-width="1.5"/>
+              <line x1="245" y1="158" x2="475" y2="188" stroke="var(--llp-accent)" stroke-width="1.5" stroke-dasharray="5 4"/>
+              <line x1="245" y1="178" x2="475" y2="208" stroke="var(--llp-text-2)" stroke-width="1.5"/>
+              <path d="M 245 438 C 330 438, 380 228, 475 228" stroke="var(--llp-text-2)" stroke-width="1.5"/>
+              <line x1="710" y1="196" x2="950" y2="175" stroke="var(--llp-text-2)" stroke-width="1.5" stroke-dasharray="4 3"/>
+            </g>
+
+            <!-- 连线标注 -->
+            <g>
+              <rect x="300" y="146" width="60" height="13" fill="var(--llp-surface)"/>
+              <text x="330" y="156" font-size="11" text-anchor="middle" fill="var(--llp-text-2)">trim/cast</text>
+              <circle cx="290" cy="152" r="9" fill="var(--llp-accent)"/>
+              <text x="290" y="156" font-size="11" text-anchor="middle" fill="var(--llp-accent-fg)" font-weight="600">3</text>
+
+              <rect x="308" y="166" width="104" height="13" fill="var(--llp-surface)"/>
+              <text x="360" y="176" font-size="11" text-anchor="middle" fill="var(--llp-accent)">AI 建议 · 置信 0.6</text>
+              <circle cx="290" cy="173" r="9" fill="var(--llp-accent)"/>
+              <text x="290" y="177" font-size="11" text-anchor="middle" fill="var(--llp-accent-fg)" font-weight="600">5</text>
+
+              <rect x="300" y="186" width="80" height="13" fill="var(--llp-surface)"/>
+              <text x="340" y="196" font-size="11" text-anchor="middle" fill="var(--llp-text-2)">round(amt,2)</text>
+
+              <rect x="296" y="336" width="86" height="13" fill="var(--llp-surface)"/>
+              <text x="339" y="346" font-size="11" text-anchor="middle" fill="var(--llp-text-2)">join by user_id</text>
+
+              <rect x="790" y="180" width="80" height="13" fill="var(--llp-surface)"/>
+              <text x="830" y="190" font-size="11" text-anchor="middle" fill="var(--llp-text-2)">表级（虚线）</text>
+              <circle cx="774" cy="186" r="9" fill="var(--llp-accent)"/>
+              <text x="774" y="190" font-size="11" text-anchor="middle" fill="var(--llp-accent-fg)" font-weight="600">4</text>
+            </g>
+
+            <!-- 节点: ods_raw -->
+            <g>
+              <rect x="20" y="100" width="225" height="158" rx="8" fill="var(--llp-surface)" stroke="var(--llp-border)"/>
+              <rect x="21" y="101" width="223" height="27" rx="7" fill="var(--llp-surface-2)"/>
+              <rect x="29" y="106" width="16" height="16" rx="3" fill="var(--llp-surface)" stroke="var(--llp-border-2)"/>
+              <text x="37" y="118" font-size="11" text-anchor="middle" fill="var(--llp-text-2)">−</text>
+              <text x="54" y="118" font-size="12" font-weight="600" fill="var(--llp-text)">ods_raw · 订单明细.csv</text>
+              <text x="44" y="142" font-size="12" fill="var(--llp-text)">order_id</text>
+              <text x="44" y="162" font-size="12" fill="var(--llp-text)">order_time</text>
+              <text x="44" y="182" font-size="12" fill="var(--llp-text)">amount</text>
+              <text x="44" y="202" font-size="12" fill="var(--llp-text)">user_id</text>
+              <text x="44" y="222" font-size="12" fill="var(--llp-text)">remark</text>
+              <g stroke="var(--llp-border-2)"><line x1="22" y1="148" x2="243" y2="148"/><line x1="22" y1="168" x2="243" y2="168"/><line x1="22" y1="188" x2="243" y2="188"/><line x1="22" y1="208" x2="243" y2="208"/><line x1="22" y1="228" x2="243" y2="228"/></g>
+              <text x="36" y="246" font-size="11" fill="var(--llp-text-2)">▸ 其余 12 个字段已折叠</text>
+              <g fill="var(--llp-surface)" stroke="var(--llp-text-2)">
+                <circle cx="245" cy="138" r="3.5"/><circle cx="245" cy="158" r="3.5"/><circle cx="245" cy="178" r="3.5"/><circle cx="245" cy="198" r="3.5"/><circle cx="245" cy="218" r="3.5"/>
+              </g>
+            </g>
+
+            <!-- 节点: ods_user -->
+            <g>
+              <rect x="20" y="380" width="225" height="110" rx="8" fill="var(--llp-surface)" stroke="var(--llp-border)"/>
+              <rect x="21" y="381" width="223" height="27" rx="7" fill="var(--llp-surface-2)"/>
+              <rect x="29" y="386" width="16" height="16" rx="3" fill="var(--llp-surface)" stroke="var(--llp-border-2)"/>
+              <text x="37" y="398" font-size="11" text-anchor="middle" fill="var(--llp-text-2)">−</text>
+              <text x="54" y="398" font-size="12" font-weight="600" fill="var(--llp-text)">ods_user · 用户表.csv</text>
+              <text x="44" y="422" font-size="12" fill="var(--llp-text)">user_id</text>
+              <text x="44" y="442" font-size="12" fill="var(--llp-text)">user_name</text>
+              <text x="44" y="462" font-size="12" fill="var(--llp-text)">phone_masked</text>
+              <g stroke="var(--llp-border-2)"><line x1="22" y1="428" x2="243" y2="428"/><line x1="22" y1="448" x2="243" y2="448"/><line x1="22" y1="468" x2="243" y2="468"/></g>
+              <text x="36" y="484" font-size="11" fill="var(--llp-text-2)">▸ 其余 3 个字段已折叠</text>
+              <circle cx="245" cy="438" r="3.5" fill="var(--llp-surface)" stroke="var(--llp-text-2)"/>
+            </g>
+
+            <!-- 节点: dwd_order（焦点） -->
+            <g>
+              <rect x="475" y="130" width="235" height="132" rx="8" fill="var(--llp-surface)" stroke="var(--llp-accent)" stroke-width="1.5"/>
+              <rect x="476" y="131" width="233" height="27" rx="7" fill="var(--llp-surface-2)"/>
+              <rect x="484" y="136" width="16" height="16" rx="3" fill="var(--llp-surface)" stroke="var(--llp-border-2)"/>
+              <text x="492" y="148" font-size="11" text-anchor="middle" fill="var(--llp-text-2)">−</text>
+              <text x="509" y="148" font-size="12" font-weight="600" fill="var(--llp-text)">dwd_order · 订单宽表</text>
+              <rect x="660" y="137" width="42" height="15" rx="7" fill="var(--llp-accent-soft)"/>
+              <text x="681" y="148" font-size="10.5" text-anchor="middle" fill="var(--llp-accent)">已固定</text>
+              <text x="499" y="172" font-size="12" font-weight="600" fill="var(--llp-accent)">order_no ●</text>
+              <text x="499" y="192" font-size="12" fill="var(--llp-text)">order_date</text>
+              <text x="499" y="212" font-size="12" fill="var(--llp-text)">amount_clean</text>
+              <text x="499" y="232" font-size="12" fill="var(--llp-text)">user_name</text>
+              <g stroke="var(--llp-border-2)"><line x1="477" y1="178" x2="708" y2="178"/><line x1="477" y1="198" x2="708" y2="198"/><line x1="477" y1="218" x2="708" y2="218"/><line x1="477" y1="238" x2="708" y2="238"/></g>
+              <text x="491" y="256" font-size="11" fill="var(--llp-text-2)">▸ 展开全部 8 个字段</text>
+              <g fill="var(--llp-surface)" stroke="var(--llp-text-2)">
+                <circle cx="475" cy="168" r="3.5"/><circle cx="475" cy="188" r="3.5"/><circle cx="475" cy="208" r="3.5"/><circle cx="475" cy="228" r="3.5"/>
+                <circle cx="710" cy="168" r="3.5"/><circle cx="710" cy="188" r="3.5"/><circle cx="710" cy="208" r="3.5"/><circle cx="710" cy="228" r="3.5"/>
+              </g>
+            </g>
+
+            <!-- 节点: dws_summary（折叠态） -->
+            <g>
+              <rect x="950" y="150" width="200" height="58" rx="8" fill="var(--llp-surface)" stroke="var(--llp-border)"/>
+              <rect x="951" y="151" width="198" height="27" rx="7" fill="var(--llp-surface-2)"/>
+              <rect x="959" y="156" width="16" height="16" rx="3" fill="var(--llp-surface)" stroke="var(--llp-border-2)"/>
+              <text x="967" y="168" font-size="11" text-anchor="middle" fill="var(--llp-text-2)">▸</text>
+              <text x="984" y="168" font-size="12" font-weight="600" fill="var(--llp-text)">dws_summary · 日汇总</text>
+              <text x="966" y="196" font-size="11" fill="var(--llp-text-2)">▸ 展开 4 个字段</text>
+              <circle cx="950" cy="175" r="3.5" fill="var(--llp-surface)" stroke="var(--llp-text-2)"/>
+              <circle cx="933" cy="144" r="9" fill="var(--llp-accent)"/>
+              <text x="933" y="148" font-size="11" text-anchor="middle" fill="var(--llp-accent-fg)" font-weight="600">2</text>
+            </g>
+          </svg>
+        </div>
+        <aside class="llp-detail">
+          <h3>字段详情</h3>
+          <div style="font-size:13px;font-weight:600;margin-bottom:2px">order_no <span class="llp-badge llp-badge-ok">选中</span></div>
+          <div style="font-size:11px;color:var(--llp-text-2);margin-bottom:6px">dwd_order</div>
+          <dl class="llp-dl">
+            <div><dt>类型</dt><dd>STRING</dd></div>
+            <div><dt>描述</dt><dd>订单号（导入原始值）</dd></div>
+            <div><dt>血缘来源</dt><dd><span class="llp-badge">imported</span> 置信度 1.0</dd></div>
+            <div><dt>源文件</dt><dd>订单明细.xlsx <span class="llp-badge llp-badge-ok">实文件核查 ✓</span></dd></div>
+            <div><dt>定位</dt><dd>sheet「订单」· 表头路径 [商品信息 → 订单号] → 列 C · 行 3:15000</dd></div>
+          </dl>
+          <div class="llp-actions">
+            <button class="llp-btn llp-btn-primary" type="button"><i data-lucide="file-search" aria-hidden="true" width="13"></i>回源预览</button>
+            <span class="llp-callout">6</span>
+            <button class="llp-btn" type="button">编辑定位器</button>
+          </div>
+          <h3 style="margin-top:12px">标注（2）</h3>
+          <div class="llp-note-item"><span>2026-10 起为去重后订单号，老口径见 v2 标签</span><div class="llp-meta">李四 · 2026-10-23</div></div>
+          <div class="llp-note-item"><span>与 ods_raw.order_id 是 trim+cast 关系</span><div class="llp-meta">张三 · 2026-10-20</div></div>
+          <div class="llp-annot-input"><input aria-label="添加标注" placeholder="添加标注（追加式，不覆盖原值）"><button class="llp-btn llp-btn-xs" type="button">提交</button></div>
+          <h3 style="margin-top:12px">变更历史</h3>
+          <div class="llp-note-item" style="border-style:dashed"><span>v3 · 修正定位器（表头路径）</span><div class="llp-meta">张三 · 2026-10-23</div></div>
+          <div class="llp-note-item" style="border-style:dashed"><span>v1 · 随批次导入创建</span><div class="llp-meta">张三 · 2026-10-01</div></div>
+        </aside>
+      </div>
+    </div>
+    <div class="llp-legend">
+      <span><span class="llp-callout">1</span>搜索感兴趣的数据集 / 字段，画布切换子图</span>
+      <span><span class="llp-callout">2</span>节点/字段折叠与展开</span>
+      <span><span class="llp-callout">3</span>字段级连线（hover 显示转换说明）</span>
+      <span><span class="llp-callout">4</span>表级血缘为虚线，由字段级边自动推导</span>
+      <span><span class="llp-callout">5</span>AI 建议边：低置信，需 editor 确认后转正</span>
+      <span><span class="llp-callout">6</span>定位卡 + 系统内回源预览</span>
+    </div>
+  </div>
+
+  <!-- ============ 源文件预览 ============ -->
+  <div id="llp-p-preview" role="tabpanel" aria-labelledby="llp-t-preview" hidden>
+    <div class="viz-dotted-background llp-stage">
+      <div class="llp-modal">
+        <div class="llp-modal-head">
+          <span>回源预览 · <span style="font-family:ui-monospace,Menlo,monospace">dwd_order.order_no</span></span>
+          <button class="llp-btn llp-btn-ghost llp-btn-xs" type="button" aria-label="关闭"><i data-lucide="x" aria-hidden="true" width="14"></i></button>
+        </div>
+        <div class="llp-modal-body">
+          <div class="llp-locrows">
+            <div><b>源文件</b><span>订单明细.xlsx（sha256 已去重 · 托管文件）</span></div>
+            <div><b>定位器</b><span>sheet「订单」 · 多级表头 [商品信息 → 订单号] · 列 C · 数据行 3:15000</span></div>
+            <div><b>锚点归一</b><span>父表头「商品信息」为合并单元格 → 锚点 B1 · 范围 B1:F1</span></div>
+            <div><b>实文件核查</b><span class="llp-badge llp-badge-ok">通过</span><span style="color:var(--llp-text-2)">v3 导入时校验 · 2026-10-23 · 张三</span></div>
+          </div>
+          <div class="llp-sheet" role="img" aria-label="Excel 表格线框：第一行 B1:F1 合并单元格「商品信息」，第二行为多级表头，C 列（订单号）高亮">
+            <table>
+              <colgroup><col style="width:8%"><col style="width:15%"><col style="width:15%"><col style="width:14%"><col style="width:15%"><col style="width:14%"><col style="width:19%"></colgroup>
+              <thead>
+                <tr><th class="llp-muted" aria-label="A1 空"></th><th class="llp-merged" colspan="5" style="font-weight:600">商品信息 <span class="llp-badge" style="margin-left:6px">合并 B1:F1</span></th><th>运费信息</th></tr>
+                <tr><th class="llp-muted" aria-label="A2 空"></th><th>B 商品ID</th><th class="llp-hl">C 订单号 ◀</th><th>D 数量</th><th>E 单价</th><th>F 金额</th><th>G 运费</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>2</td><td><span class="llp-bar"></span></td><td class="llp-hl"><span class="llp-bar"></span></td><td><span class="llp-bar"></span></td><td><span class="llp-bar"></span></td><td><span class="llp-bar"></span></td><td><span class="llp-bar"></span></td></tr>
+                <tr><td>3</td><td><span class="llp-bar"></span></td><td class="llp-hl"><span class="llp-bar"></span></td><td><span class="llp-bar"></span></td><td><span class="llp-bar"></span></td><td><span class="llp-bar"></span></td><td><span class="llp-bar"></span></td></tr>
+                <tr><td>…</td><td><span class="llp-bar" style="width:40%"></span></td><td class="llp-hl"><span class="llp-bar" style="width:40%"></span></td><td><span class="llp-bar" style="width:40%"></span></td><td><span class="llp-bar" style="width:40%"></span></td><td><span class="llp-bar" style="width:40%"></span></td><td><span class="llp-bar" style="width:40%"></span></td></tr>
+                <tr><td>15000</td><td><span class="llp-bar"></span></td><td class="llp-hl"><span class="llp-bar"></span></td><td><span class="llp-bar"></span></td><td><span class="llp-bar"></span></td><td><span class="llp-bar"></span></td><td><span class="llp-bar"></span></td></tr>
+              </tbody>
+            </table>
+            <div style="padding:6px 10px;font-size:11px;color:var(--llp-text-2);border-top:1px solid var(--llp-border-2)">高亮 = C 列（订单号）· 数据行 3:15000 · 灰色条为数据占位</div>
+          </div>
+        </div>
+        <div class="llp-modal-foot">
+          <button class="llp-btn" type="button"><i data-lucide="copy" aria-hidden="true" width="13"></i>复制定位</button>
+          <button class="llp-btn" type="button"><i data-lucide="download" aria-hidden="true" width="13"></i>下载源文件（权限受控）</button>
+          <span style="margin-left:auto">存储路径不对外暴露 · 经 <code style="font-family:ui-monospace,Menlo,monospace">GET /files/{id}/preview</code> 访问</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 导入向导 ============ -->
+  <div id="llp-p-import" role="tabpanel" aria-labelledby="llp-t-import" hidden>
+    <div class="llp-window">
+      <div class="llp-chrome">
+        <span class="llp-dot"></span><span class="llp-dot"></span><span class="llp-dot"></span>
+        <span class="llp-addr">lineagelite.local/import</span>
+        <span class="llp-userchip">张三 · editor</span>
+      </div>
+      <div class="llp-stepper">
+        <span class="llp-step is-done"><span class="llp-dot2">✓</span>① 上传源文件</span><span class="llp-arrow">→</span>
+        <span class="llp-step is-done"><span class="llp-dot2">✓</span>② 上传清单</span><span class="llp-arrow">→</span>
+        <span class="llp-step is-now"><span class="llp-dot2">3</span>③ 校验报告</span>
+        <span class="llp-badge" style="margin-left:auto">将入库为版本 v3</span>
+      </div>
+      <div class="llp-chiprow">
+        <span class="llp-badge">订单明细.xlsx · 12.4MB</span>
+        <span class="llp-badge">用户表.csv · 2.1MB</span>
+        <span class="llp-badge llp-badge-ok">1 个文件 sha256 去重命中（复用已有记录）</span>
+        <span class="llp-badge">datasets.csv · 86 行</span>
+        <span class="llp-badge">lineage.csv · 34 行</span>
+      </div>
+      <div class="llp-statrow">
+        <div class="llp-stat"><div class="llp-n">120</div><div class="llp-l">清单总行数</div></div>
+        <div class="llp-stat"><div class="llp-n">100</div><div class="llp-l">成功（含实文件核查通过）</div></div>
+        <div class="llp-stat"><div class="llp-n">8</div><div class="llp-l">合并（同上下游重复，后到覆盖）</div></div>
+        <div class="llp-stat is-bad"><div class="llp-n">12</div><div class="llp-l">拒绝（见下表）</div></div>
+      </div>
+      <div class="llp-tablewrap llp-tblwrap-sm">
+        <table class="llp-tbl">
+          <thead><tr><th style="width:9%">清单行号</th><th style="width:22%">对象</th><th style="width:24%">校验阶段</th><th>拒绝原因（示例）</th></tr></thead>
+          <tbody>
+            <tr><td>15</td><td style="font-family:ui-monospace,Menlo,monospace">ods_raw.order_id</td><td>实文件核查</td><td>表头路径 [商品信息, 订单号] 未在 sheet「订单」第 1–2 行匹配到</td></tr>
+            <tr><td>42</td><td style="font-family:ui-monospace,Menlo,monospace">ds_x.f1</td><td>源文件引用</td><td><code style="font-family:ui-monospace,Menlo,monospace">src_file</code> 无法在本批上传文件集中唯一定位</td></tr>
+            <tr><td>58</td><td style="font-family:ui-monospace,Menlo,monospace">ods_q.* → dwd_order.*</td><td>引用校验</td><td>上游数据集 ods_q 不存在于本批及当前版本</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="llp-tablewrap" style="padding-top:0">
+        <div style="font-size:12px;color:var(--llp-text-2);padding:2px 2px 10px">拒绝行不阻塞成功行；全部变更（含合并）逐条写入 change_log，可按批次回滚。</div>
+        <button class="llp-btn" type="button"><i data-lucide="download" aria-hidden="true" width="13"></i>下载完整报告（JSON）</button>
+        <button class="llp-btn" type="button">返回修改清单</button>
+        <button class="llp-btn llp-btn-primary" type="button">确认入库为版本 v3</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ AI 对话 ============ -->
+  <div id="llp-p-ai" role="tabpanel" aria-labelledby="llp-t-ai" hidden>
+    <div class="llp-window">
+      <div class="llp-chrome">
+        <span class="llp-dot"></span><span class="llp-dot"></span><span class="llp-dot"></span>
+        <span class="llp-addr">lineagelite.local/lineage</span>
+        <span class="llp-userchip">张三 · editor</span>
+      </div>
+      <div class="llp-drawer-wrap">
+        <div class="llp-canvas-dim">
+          <div class="llp-dimnote">画布已按 AI 回答高亮：dwd_order.order_no 的 1 跳上下游</div>
+        </div>
+        <div class="llp-drawer">
+          <div class="llp-drawer-head"><i data-lucide="sparkles" aria-hidden="true" width="15"></i>AI 助手<span class="llp-badge" style="margin-left:auto">v3</span></div>
+          <div class="llp-msgs">
+            <div class="llp-msg">
+              <div class="llp-who">张三</div>
+              订单表里的 order_no 是从哪来的？
+            </div>
+            <div class="llp-msg">
+              <div class="llp-who">AI</div>
+              <div class="llp-tools">
+                <span class="llp-tool">search_fields("order_no") ✓</span>
+                <span class="llp-tool">trace_upstream(dwd_order.order_no, hops=3) ✓</span>
+              </div>
+              <div><code style="font-family:ui-monospace,Menlo,monospace">order_no</code> 由 <code style="font-family:ui-monospace,Menlo,monospace">ods_raw.order_id</code> 经 trim/cast 得到（1 跳 · 置信 1.0 · 来源 imported）；再上游为源文件「订单明细.xlsx」sheet「订单」C 列 · 行 3:15000。</div>
+              <div style="margin-top:6px"><span class="llp-badge llp-badge-ok">画布已更新：高亮 1 跳上下游子图</span></div>
+            </div>
+            <div class="llp-msg" style="border-style:dashed">
+              <div class="llp-who">AI · suggest_lineage</div>
+              <div class="llp-suggest">
+                <div>可能缺失的血缘：<code style="font-family:ui-monospace,Menlo,monospace">ods_raw.order_time → dwd_order.order_date</code>（同名+语义相似 · 置信 0.6）</div>
+                <div class="llp-sg-actions">
+                  <button class="llp-btn llp-btn-xs llp-btn-primary" type="button">确认转为正式血缘</button>
+                  <button class="llp-btn llp-btn-xs" type="button">拒绝</button>
+                </div>
+                <div style="margin-top:5px;font-size:11px;color:var(--llp-text-2)">确认后边来源改写为 manual · 需 editor 以上角色 · 全程写入 change_log</div>
+              </div>
+            </div>
+          </div>
+          <div class="llp-msg-input">
+            <input aria-label="向 AI 助手提问" placeholder="问点什么…（工具调用仅只读，写操作需确认）">
+            <button class="llp-btn llp-btn-primary" type="button"><i data-lucide="send" aria-hidden="true" width="13"></i>发送</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 版本与用户 ============ -->
+  <div id="llp-p-admin" role="tabpanel" aria-labelledby="llp-t-admin" hidden>
+    <div class="llp-window">
+      <div class="llp-chrome">
+        <span class="llp-dot"></span><span class="llp-dot"></span><span class="llp-dot"></span>
+        <span class="llp-addr">lineagelite.local/admin</span>
+        <span class="llp-userchip">张三 · admin</span>
+      </div>
+      <div class="llp-admin">
+        <div class="llp-admin-sec">
+          <h3>版本管理</h3>
+          <div class="llp-tblwrap-sm">
+            <table class="llp-tbl">
+              <thead><tr><th>版本</th><th>导入时间 · 操作者</th><th>业务标签</th><th>操作</th></tr></thead>
+              <tbody>
+                <tr><td><b>v3</b>（当前）</td><td class="llp-muted">2026-10-23 · 张三</td><td class="llp-muted">—</td><td><button class="llp-btn llp-btn-xs" type="button">diff</button> <button class="llp-btn llp-btn-xs llp-btn-danger" type="button">回滚</button></td></tr>
+                <tr><td>v2</td><td class="llp-muted">2026-10-15 · 李四</td><td><span class="llp-badge llp-badge-ok">v2.1-r1 · Q3 口径修正</span></td><td><button class="llp-btn llp-btn-xs" type="button">diff</button> <button class="llp-btn llp-btn-xs llp-btn-danger" type="button">回滚</button></td></tr>
+                <tr><td>v1</td><td class="llp-muted">2026-10-01 · 张三</td><td class="llp-muted">—</td><td><button class="llp-btn llp-btn-xs" type="button">diff</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="llp-tagform">
+            <span>打标签：</span>
+            <input style="width:110px" value="v3.0-r1" aria-label="标签名">
+            <input style="width:180px" placeholder="标签说明（如发布口径）" aria-label="标签说明">
+            <button class="llp-btn" type="button">打标签（editor+）</button>
+          </div>
+          <div class="llp-diffbox">
+            diff 示例 · v2 → v3：<span class="llp-add">+2 字段</span> · <span class="llp-del">−1 边</span> · 3 处定位器修正 · <span class="llp-badge">标注不受回滚影响</span>
+            <div class="llp-muted" style="color:var(--llp-text-2);font-size:11px;margin-top:4px">回滚到标签 = 反做该标签锚点之后的全部 change_log（含人工编辑）</div>
+          </div>
+        </div>
+        <div class="llp-admin-sec">
+          <h3>用户管理（admin）</h3>
+          <div class="llp-tblwrap-sm">
+            <table class="llp-tbl">
+              <thead><tr><th>用户</th><th>角色</th><th>创建时间</th></tr></thead>
+              <tbody>
+                <tr><td>张三</td><td><select aria-label="角色"><option selected>admin</option><option>editor</option><option>viewer</option></select></td><td class="llp-muted">2026-09-28</td></tr>
+                <tr><td>李四</td><td><select aria-label="角色"><option>admin</option><option selected>editor</option><option>viewer</option></select></td><td class="llp-muted">2026-09-30</td></tr>
+                <tr><td>王五</td><td><select aria-label="角色"><option>admin</option><option>editor</option><option selected>viewer</option></select></td><td class="llp-muted">2026-10-10</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="llp-tagform"><button class="llp-btn" type="button"><i data-lucide="user-plus" aria-hidden="true" width="13"></i>新增用户</button></div>
+          <div class="llp-diffbox" style="font-size:11px">
+            <table class="llp-tbl" style="font-size:11px">
+              <thead><tr><th>权限</th><th>viewer</th><th>editor</th><th>admin</th></tr></thead>
+              <tbody>
+                <tr><td>浏览 / 回源预览 / AI 只读</td><td>✓</td><td>✓</td><td>✓</td></tr>
+                <tr><td>导入 / 编辑 / 标注 / 打标签</td><td class="llp-muted">—</td><td>✓</td><td>✓</td></tr>
+                <tr><td>回滚 / 删除 / 用户管理</td><td class="llp-muted">—</td><td class="llp-muted">—</td><td>✓</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 登录 ============ -->
+  <div id="llp-p-login" role="tabpanel" aria-labelledby="llp-t-login" hidden>
+    <div class="viz-dotted-background llp-stage">
+      <div class="llp-card">
+        <div class="llp-logo-big">LOGO</div>
+        <h2>LineageLite</h2>
+        <div class="llp-subtitle">字段级数据血缘核查与协作工具</div>
+        <div class="llp-field">
+          <label for="llp-un">用户名</label>
+          <input id="llp-un" value="zhangsan" autocomplete="username">
+        </div>
+        <div class="llp-field">
+          <label for="llp-pw">密码</label>
+          <input id="llp-pw" type="password" value="••••••••" autocomplete="current-password">
+        </div>
+        <button class="llp-btn llp-btn-primary llp-block" type="button">登录</button>
+        <div style="font-size:11px;color:var(--llp-text-2);margin-top:14px;text-align:center">登录后按角色（viewer 只读 / editor 可写 / admin 管理）控制可见操作<br>账号由 admin 在「用户管理」中创建 · 密码仅存加盐哈希</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script>
+  // 标签页切换（对应可视化宿主 runtime 的行为，独立打开时由此实现）
+  document.querySelectorAll('.nav-pills [role="tab"]').forEach(function (btn) {{
+    btn.addEventListener('click', function () {{
+      var group = btn.closest('[role="tablist"]');
+      group.querySelectorAll('[role="tab"]').forEach(function (b) {{
+        var active = b === btn;
+        b.classList.toggle('active', active);
+        b.setAttribute('aria-selected', active ? 'true' : 'false');
+      }});
+      document.querySelectorAll('[role="tabpanel"]').forEach(function (p) {{
+        p.hidden = p.id !== btn.getAttribute('aria-controls');
+      }});
+    }});
+  }});
+  if (window.lucide) {{ lucide.createIcons(); }}
+</script>
+</body>
+</html>
