@@ -1,6 +1,6 @@
-"""M4 启发式血缘建议：AI 建议边必须人工确认后才生效（业务不变量#4）。
+"""M4/M5 血缘建议：AI 建议边必须人工确认后才生效（业务不变量#4）。
 
-启发式（不调用 LLM，可离线运行）：
+启发式（M4，不调用 LLM，可离线运行）：
 1. **同名字段优先**：字段名小写并去掉下划线后完全相等 → confidence 0.7；
 2. **包含关系其次**：去下划线小写后一方包含另一方（较短者至少 3 个字符）
    → confidence 0.6；
@@ -8,6 +8,10 @@
 4. 候选以 ``source='ai'`` 落库并写 change_log(added)；
 5. ``confirm`` 将 source 改为 manual 并写 change_log(updated)；
    ``reject`` 删除候选边并写 change_log(deleted)。
+
+语义层（M5，演进规划 07 §三#9）：配置了 EMBEDDING_* 时，对字段名+描述做
+向量化，余弦 ≥ SEMANTIC_THRESHOLD 的跨数据集字段对补充为候选（confidence
+0.65）；embedding 未配置或调用失败时**静默降级**为纯启发式。
 
 候选方向：以请求给出的数据集/字段为上游（from），其他数据集的相似字段为下游（to）。
 """
@@ -22,6 +26,8 @@ MAX_SUGGESTIONS = 20
 EXACT_CONFIDENCE = 0.7
 CONTAINMENT_CONFIDENCE = 0.6
 MIN_CONTAINMENT_LENGTH = 3
+SEMANTIC_CONFIDENCE = 0.65
+SEMANTIC_THRESHOLD = 0.75
 
 _EDGE_COLUMNS = (
     "id, from_dataset, from_field, to_dataset, to_field, transform,"
@@ -88,6 +94,79 @@ def _match(focus_name: str, target_name: str) -> tuple[float, str] | None:
     return None
 
 
+def _cosine(left: list[float], right: list[float]) -> float:
+    dot = sum(x * y for x, y in zip(left, right))
+    norm_left = sum(x * x for x in left) ** 0.5
+    norm_right = sum(y * y for y in right) ** 0.5
+    if norm_left == 0 or norm_right == 0:
+        return 0.0
+    return dot / (norm_left * norm_right)
+
+
+def _augment_semantic(
+    conn: sqlite3.Connection,
+    dataset: str,
+    field: str | None,
+    existing: set[tuple],
+    seen: set[tuple],
+    candidates: list[dict],
+) -> list[dict]:
+    """语义层（M5）：embedding 可用时补充同名字段规则覆盖不到的候选。
+
+    任何失败（未配置 / 网络 / 维度异常）都静默降级——语义是 best-effort，
+    不能拖垮纯启发式的可用性。
+    """
+    from . import llm  # 延迟导入，避免测试桩循环依赖
+
+    try:
+        embeddings = llm.get_embeddings()
+        if embeddings is None:
+            return candidates
+        focus_rows = conn.execute(
+            "SELECT dataset_id, name, COALESCE(description, '') AS description"
+            " FROM field WHERE dataset_id=?"
+            + (" AND name=?" if field else "") + " ORDER BY name",
+            (dataset, field) if field else (dataset,),
+        ).fetchall()
+        target_rows = conn.execute(
+            "SELECT dataset_id, name, COALESCE(description, '') AS description"
+            " FROM field WHERE dataset_id <> ? ORDER BY dataset_id, name",
+            (dataset,)).fetchall()
+        rows = [*focus_rows, *target_rows]
+        if not rows:
+            return candidates
+        vectors = llm.embed_texts(
+            [f"{row['name']} {row['description']}".strip() for row in rows])
+        if len(vectors) != len(rows):
+            return candidates
+        vectors = vectors[:len(focus_rows)], vectors[len(focus_rows):]
+        focus_vectors, target_vectors = vectors
+
+        semantic: list[dict] = []
+        for focus_row, focus_vec in zip(focus_rows, focus_vectors):
+            for target_row, target_vec in zip(target_rows, target_vectors):
+                key = (focus_row["dataset_id"], focus_row["name"],
+                       target_row["dataset_id"], target_row["name"])
+                if key in existing or key in seen:
+                    continue
+                score = _cosine(focus_vec, target_vec)
+                if score < SEMANTIC_THRESHOLD:
+                    continue
+                seen.add(key)
+                semantic.append({
+                    "from_dataset": focus_row["dataset_id"],
+                    "from_field": focus_row["name"],
+                    "to_dataset": target_row["dataset_id"],
+                    "to_field": target_row["name"],
+                    "confidence": SEMANTIC_CONFIDENCE,
+                    "reason": f"语义相似（embedding 余弦 {score:.2f}）："
+                              f"{focus_row['name']} 与 {target_row['name']}",
+                })
+        return candidates + semantic
+    except Exception:  # noqa: BLE001 —— 语义层任何异常都降级为纯启发式
+        return candidates
+
+
 def suggest_edges(conn: sqlite3.Connection, dataset: str, field: str | None,
                   actor: str) -> list[dict]:
     """生成并落库 AI 候选边，返回本次新增的候选列表。
@@ -122,7 +201,11 @@ def suggest_edges(conn: sqlite3.Connection, dataset: str, field: str | None,
                 "reason": reason,
             })
 
-    # 同名字段（0.7）优先于包含关系（0.6）；同置信度按目标字段稳定排序
+    # M5 语义层：embedding 配置齐全时补充语义相似候选（失败静默降级）
+    candidates = _augment_semantic(
+        conn, dataset, field, existing, seen, candidates)
+
+    # 同名字段（0.7）优先于语义/包含（0.65/0.6）；同置信度按目标字段稳定排序
     candidates.sort(key=lambda item: (
         -item["confidence"], item["to_dataset"], item["to_field"],
         item["from_dataset"], item["from_field"]))

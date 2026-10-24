@@ -1,13 +1,20 @@
-"""LLM 只读工具集（M4）：复用既有查询能力，返回 JSON 可序列化结果。
+"""LLM 只读工具集（M4/M5）：复用既有查询能力，返回 JSON 可序列化结果。
 
-工具只读，绝不写库；每个函数接收 ``sqlite3.Connection``，由 ``chat.py`` 在
-每轮工具调用时通过 ``get_db()`` 打开连接。
+工具只读，绝不写业务库；每个函数接收 ``sqlite3.Connection``，由 ``chat.py`` 在
+每轮工具调用时通过 ``get_db()`` 打开连接。两个例外（均不触碰业务数据）：
+
+- ``suggest_lineage``：把血缘候选写为 ``source='ai'`` 边（必须人工确认才生效，
+  业务不变量#4）；
+- ``draft_descriptions``：把描述草稿写为 ``description_draft`` 工作区表。
 
 - ``search_fields``：字段名/数据集/描述/标注的模糊搜索（数据模型 §3.2 的轻量实现）；
 - ``get_field_details``：字段元数据 + 源定位器 + 回源预览 + 标注（复用 preview.py）；
 - ``trace_lineage``：N 跳血缘子图（复用 lineage.py 的 GraphPayload）；
 - ``get_field_history``：字段的 change_log 变更历史（复用 changes.py 快照解析）；
-- ``mark_highlight``：声明要在画布上高亮的字段（画布联动信号，只校验存在性）。
+- ``mark_highlight``：声明要在画布上高亮的字段（画布联动信号，只校验存在性）；
+- ``suggest_lineage``：对字段跑血缘建议（启发式 + 语义层），候选落库待人工确认；
+- ``analyze_impact``：字段下游影响面聚合（下游字段/源文件/最近变更）；
+- ``draft_descriptions``：为缺描述字段生成 AI 描述草稿（落草稿表待确认）。
 """
 
 from __future__ import annotations
@@ -18,10 +25,14 @@ import sqlite3
 from ..changes import load_snapshot
 from ..lineage import DIRECTIONS, MAX_HOPS, LineageNotFound, lineage_subgraph
 from ..preview import PreviewError, field_preview
+from .descriptions import MAX_DRAFT_FIELDS
+from .llm import LLMError, LLMNotConfigured
 
 MAX_SEARCH_RESULTS = 20
 MAX_HISTORY_ROWS = 50
 MAX_HIGHLIGHT_FIELDS = 8
+MAX_IMPACT_HOPS = 5
+MAX_IMPACT_CHANGES = 10
 
 TOOL_SCHEMAS: list[dict] = [
     {
@@ -135,6 +146,71 @@ TOOL_SCHEMAS: list[dict] = [
                     },
                 },
                 "required": ["fields"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "suggest_lineage",
+            "description": (
+                "对某个数据集/字段运行血缘建议（启发式 + 语义相似），候选边以"
+                " source='ai' 落库并立即出现在画布上（蓝色虚线），必须由用户"
+                "在画布/详情面板人工确认后才转为正式血缘。当用户想让你"
+                "「补充/建议/推测」缺失血缘时调用。"
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "dataset": {"type": "string", "description": "上游数据集 ID"},
+                    "field": {"type": "string",
+                              "description": "上游字段名；省略则对整个数据集起草"},
+                },
+                "required": ["dataset"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "analyze_impact",
+            "description": (
+                "分析字段下游影响面：递归下游字段清单、各自源文件与核查状态、"
+                "最近变更。回答「改了这个字段会影响什么」类问题时使用。"
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "dataset": {"type": "string", "description": "数据集 ID"},
+                    "field": {"type": "string", "description": "字段名"},
+                    "hops": {"type": "integer", "minimum": 1,
+                             "maximum": MAX_IMPACT_HOPS,
+                             "description": f"下游跳数 1~{MAX_IMPACT_HOPS}，默认 3"},
+                },
+                "required": ["dataset", "field"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "draft_descriptions",
+            "description": (
+                "为数据集字段生成 AI 描述草稿（落草稿区，用户确认后才成为标注）。"
+                "fields 省略时自动选取描述为空的字段。当用户要求"
+                "「补全/生成字段描述」时调用。"
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "dataset": {"type": "string", "description": "数据集 ID"},
+                    "fields": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "字段名列表（最多 10 个）；省略则自动选取缺描述字段",
+                    },
+                },
+                "required": ["dataset"],
             },
         },
     },
@@ -355,11 +431,141 @@ TOOL_FUNCS = {
 }
 
 
-def run_tool(conn: sqlite3.Connection, name: str, args: dict | None) -> dict:
-    """按名称执行工具；未知工具/非法参数抛 :class:`ToolError`。"""
+def suggest_lineage(conn: sqlite3.Connection, args: dict, actor: str) -> dict:
+    """对话内血缘建议：候选以 source='ai' 落库，必须人工确认（不变量#4）。"""
+    dataset = _text(args, "dataset")
+    field = _text(args, "field", required=False)
+    from . import suggest
+
+    try:
+        candidates = suggest.suggest_edges(conn, dataset, field, actor=actor)
+    except LookupError as exc:
+        raise ToolError(str(exc)) from None
+    return {"dataset": dataset, "field": field,
+            "candidates": candidates, "count": len(candidates)}
+
+
+def analyze_impact(conn: sqlite3.Connection, args: dict) -> dict:
+    """下游影响面聚合：字段级下游链 + 源文件 + 最近变更。"""
+    dataset = _text(args, "dataset")
+    field = _text(args, "field")
+    value = args.get("hops", 3)
+    try:
+        hops = int(value) if not isinstance(value, bool) else 0
+    except (TypeError, ValueError):
+        raise ToolError(f"hops 必须是 1~{MAX_IMPACT_HOPS} 的整数") from None
+    if not 1 <= hops <= MAX_IMPACT_HOPS:
+        raise ToolError(f"hops 必须是 1~{MAX_IMPACT_HOPS} 的整数")
+
+    try:
+        graph = lineage_subgraph(conn, dataset, field, hops, "down")
+    except (LineageNotFound, ValueError) as exc:
+        raise ToolError(str(exc)) from None
+
+    # 沿字段级边从起点做下游 BFS，收集受影响字段（不含起点）
+    adjacency: dict[tuple, list[tuple]] = {}
+    for edge in graph["edges"]:
+        if edge["from_field"] is None or edge["to_field"] is None:
+            continue
+        adjacency.setdefault((edge["from_dataset"], edge["from_field"]), [])\
+            .append((edge["to_dataset"], edge["to_field"]))
+    impacted: list[dict] = []
+    visited = {(dataset, field)}
+    queue = [(dataset, field)]
+    while queue:
+        current = queue.pop(0)
+        for target in adjacency.get(current, []):
+            if target in visited:
+                continue
+            visited.add(target)
+            queue.append(target)
+            row = conn.execute(
+                "SELECT f.field_type, COALESCE(f.description, '') AS description,"
+                " s.original_name AS source_file, s.src_type"
+                " FROM field f JOIN source_file s ON s.id=f.source_file_id"
+                " WHERE f.dataset_id=? AND f.name=?", target).fetchone()
+            impacted.append({
+                "dataset": target[0],
+                "field": target[1],
+                "field_type": row["field_type"] if row else None,
+                "source_file": row["source_file"] if row else None,
+                "src_type": row["src_type"] if row else None,
+            })
+    impacted.sort(key=lambda item: (item["dataset"], item["field"]))
+
+    # 受影响字段最近的变更（change_log），每字段取最新一条
+    changes: list[dict] = []
+    if impacted:
+        keys = [f"{item['dataset']}.{item['field']}" for item in impacted]
+        placeholders = ",".join("?" for _ in keys)
+        rows = conn.execute(
+            f"SELECT entity_key, op, actor, created_at FROM change_log"
+            f" WHERE entity_kind='field' AND entity_key IN ({placeholders})"
+            f" ORDER BY id DESC LIMIT {MAX_IMPACT_CHANGES * 4}",
+            keys).fetchall()
+        latest: dict[str, dict] = {}
+        for row in rows:
+            latest.setdefault(row["entity_key"], {
+                "entity_key": row["entity_key"], "op": row["op"],
+                "actor": row["actor"], "created_at": row["created_at"]})
+        changes = sorted(latest.values(),
+                         key=lambda item: item["created_at"],
+                         reverse=True)[:MAX_IMPACT_CHANGES]
+
+    return {
+        "focus": {"dataset": dataset, "field": field},
+        "hops": hops,
+        "impacted_fields": impacted,
+        "impacted_count": len(impacted),
+        "recent_changes": changes,
+        "datasets": [d["id"] for d in graph["datasets"]],
+    }
+
+
+def draft_descriptions_tool(conn: sqlite3.Connection, args: dict,
+                            actor: str) -> dict:
+    """对话内描述草稿：生成 → description_draft(pending) → 前端确认卡。"""
+    dataset = _text(args, "dataset")
+    raw_fields = args.get("fields")
+    if raw_fields is None:
+        fields: list[str] = []
+    elif isinstance(raw_fields, list) and all(isinstance(f, str) for f in raw_fields):
+        fields = [f.strip() for f in raw_fields if f.strip()][:MAX_DRAFT_FIELDS]
+    else:
+        raise ToolError("fields 必须是字段名字符串数组")
+    try:
+        from . import descriptions
+
+        items = descriptions.draft_descriptions(conn, dataset, fields, actor)
+    except LookupError as exc:
+        raise ToolError(str(exc)) from None
+    except LLMNotConfigured as exc:
+        raise ToolError(str(exc)) from None
+    except LLMError as exc:
+        raise ToolError(str(exc)) from None
+    return {"dataset": dataset, "items": items, "count": len(items)}
+
+
+def run_tool(conn: sqlite3.Connection, name: str, args: dict | None,
+             actor: str = "system") -> dict:
+    """按名称执行工具；未知工具/非法参数抛 :class:`ToolError`。
+
+    ``actor`` 仅被会写候选/草稿的两个工具使用（change_log / created_by 需要
+    真实用户；系统内部调用缺省 "system"）。
+    """
+    if name == "suggest_lineage":
+        if args is None:
+            args = {}
+        return suggest_lineage(conn, args, actor)
+    if name == "draft_descriptions":
+        if args is None:
+            args = {}
+        return draft_descriptions_tool(conn, args, actor)
+
     func = TOOL_FUNCS.get(name)
     if func is None:
-        raise ToolError(f"未知工具「{name}」，可用工具：{', '.join(TOOL_FUNCS)}")
+        raise ToolError(f"未知工具「{name}」，可用工具："
+                        f"{', '.join([*TOOL_FUNCS, 'suggest_lineage', 'draft_descriptions'])}")
     if args is None:
         args = {}
     if not isinstance(args, dict):
