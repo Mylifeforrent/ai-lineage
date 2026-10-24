@@ -1,6 +1,8 @@
+import { useI18n, type MessageKey } from '../i18n';
+
 interface SourceMeta {
   label: string;
-  description: string;
+  descKey: MessageKey;
   classes: string;
   dot: string;
 }
@@ -8,38 +10,30 @@ interface SourceMeta {
 const SOURCE_META: Record<string, SourceMeta> = {
   imported: {
     label: 'imported',
-    description: '文件导入',
+    descKey: 'sourceBadge.importedDesc',
     classes: 'border-slate-200 bg-slate-100 text-slate-700',
     dot: 'bg-slate-600',
   },
   manual: {
     label: 'manual',
-    description: '人工确认',
+    descKey: 'sourceBadge.manualDesc',
     classes: 'border-teal-200 bg-teal-50 text-teal-700',
     dot: 'bg-teal-600',
   },
   ai: {
     label: 'ai',
-    description: 'AI 建议',
+    descKey: 'sourceBadge.aiDesc',
     classes: 'border-ai/25 bg-ai-soft text-ai-deep',
     dot: 'bg-ai',
   },
 };
 
 const UNKNOWN_META: SourceMeta = {
-  label: '未知',
-  description: '来源未登记',
+  label: '',
+  descKey: 'sourceBadge.unknownDesc',
   classes: 'border-line bg-card/70 text-ink-muted',
   dot: 'bg-ink-faint',
 };
-
-export function sourceMeta(source: string | null | undefined): SourceMeta {
-  if (!source) return UNKNOWN_META;
-  return SOURCE_META[source] ?? {
-    ...UNKNOWN_META,
-    label: source,
-  };
-}
 
 interface SourceBadgeProps {
   source: string | null | undefined;
@@ -52,16 +46,20 @@ export function SourceBadge({
   withDescription = true,
   className = '',
 }: SourceBadgeProps) {
-  const meta = sourceMeta(source);
+  const { t } = useI18n();
+  const known = source ? SOURCE_META[source] : undefined;
+  const meta = known ?? UNKNOWN_META;
+  const label = known ? known.label : (source || t('sourceBadge.unknownLabel'));
+  const description = t(meta.descKey);
   return (
     <span
       className={`inline-flex h-5 items-center gap-1.5 rounded-full border px-2 text-[11px] leading-none ${meta.classes} ${className}`}
-      title={`来源 ${meta.label}：${meta.description}`}
+      title={t('sourceBadge.title', { label, desc: description })}
     >
       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${meta.dot}`} />
-      <span className="font-mono font-medium">{meta.label}</span>
+      <span className="font-mono font-medium">{label}</span>
       {withDescription && (
-        <span className="font-medium">· {meta.description}</span>
+        <span className="font-medium">· {description}</span>
       )}
     </span>
   );

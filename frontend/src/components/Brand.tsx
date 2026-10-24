@@ -1,3 +1,5 @@
+import { useI18n } from '../i18n';
+
 interface BrandMarkProps {
   size?: number;
   className?: string;
@@ -54,6 +56,7 @@ export function BrandMark({ size = 34, className = '' }: BrandMarkProps) {
 }
 
 export function Brand({ compact = false }: { compact?: boolean }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center gap-2.5">
       <BrandMark size={compact ? 30 : 34} className="text-brand-800" />
@@ -63,7 +66,7 @@ export function Brand({ compact = false }: { compact?: boolean }) {
         </div>
         {!compact && (
           <div className="mt-1 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
-            字段级血缘 · 顺线溯源
+            {t('brand.tagline')}
           </div>
         )}
       </div>

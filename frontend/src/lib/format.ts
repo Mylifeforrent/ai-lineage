@@ -2,6 +2,7 @@ import type {
   LocatorEnvelope,
   PreviewCell,
 } from '../types';
+import type { Locale, TranslateFn } from '../i18n';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -57,8 +58,11 @@ export function locatorTypeLabel(type: string | null | undefined): string {
   }
 }
 
-export function humanizeLocator(locator: LocatorEnvelope | null | undefined): string {
-  if (!locator?.type) return '定位器信息不可用';
+export function humanizeLocator(
+  locator: LocatorEnvelope | null | undefined,
+  t: TranslateFn,
+): string {
+  if (!locator?.type) return t('format.locatorUnavailable');
   const input = asRecord(locator.input) ?? {};
   const resolved = asRecord(locator.resolved) ?? {};
 
@@ -68,9 +72,9 @@ export function humanizeLocator(locator: LocatorEnvelope | null | undefined): st
       asNumber(resolved.column_index) ??
       asNumber(input.column) ??
       asNumber(resolved.column);
-    const parts = ['CSV 源文件'];
-    if (header) parts.push(`表头「${header}」`);
-    if (column) parts.push(`第 ${column} 列`);
+    const parts = [t('format.csvSource')];
+    if (header) parts.push(t('format.headerQuoted', { header }));
+    if (column) parts.push(t('format.columnOrdinal', { column }));
     return parts.join(' · ');
   }
 
@@ -88,20 +92,30 @@ export function humanizeLocator(locator: LocatorEnvelope | null | undefined): st
       asNumber(resolved.row_start) ?? asNumber(input.row_start);
     const rowEnd = asNumber(resolved.row_end) ?? asNumber(input.row_end);
 
-    const parts = ['XLSX 源文件'];
-    if (sheet) parts.push(`工作表「${sheet}」`);
+    const parts = [t('format.xlsxSource')];
+    if (sheet) parts.push(t('format.sheetQuoted', { sheet }));
     if (headerPath.length) {
-      parts.push(`表头路径 ${headerPath.map((item) => `「${item}」`).join(' → ')}`);
-    }
-    if (column) {
       parts.push(
-        columnIndex && !inputColumn && !resolvedColumn
-          ? `${column} 列`
-          : `列 ${column}${columnIndex ? `（第 ${columnIndex} 列）` : ''}`,
+        t('format.headerPath', {
+          path: headerPath.map((item) => `「${item}」`).join(' → '),
+        }),
       );
     }
+    if (column) {
+      if (columnIndex && !inputColumn && !resolvedColumn) {
+        parts.push(t('format.columnLetter', { column }));
+      } else if (columnIndex) {
+        parts.push(t('format.columnWithIndex', { column, columnIndex }));
+      } else {
+        parts.push(t('format.columnPlain', { column }));
+      }
+    }
     if (rowStart) {
-      parts.push(rowEnd ? `数据行 ${rowStart}:${rowEnd}` : `数据行 ${rowStart} 起`);
+      parts.push(
+        rowEnd
+          ? t('format.dataRows', { start: rowStart, end: rowEnd })
+          : t('format.dataRowsFrom', { start: rowStart }),
+      );
     }
 
     const anchors = Array.isArray(resolved.merged_anchors)
@@ -113,7 +127,11 @@ export function humanizeLocator(locator: LocatorEnvelope | null | undefined): st
       const value = asText(anchor.value);
       const range = asText(anchor.range);
       if (range) {
-        parts.push(value ? `合并表头「${value}」${range}` : `合并区域 ${range}`);
+        parts.push(
+          value
+            ? t('format.mergedHeader', { value, range })
+            : t('format.mergedRange', { range }),
+        );
       }
     }
     return parts.join(' · ');
@@ -121,10 +139,12 @@ export function humanizeLocator(locator: LocatorEnvelope | null | undefined): st
 
   if (locator.type === 'json') {
     const jsonPath = asText(input.json_path) ?? asText(resolved.json_path);
-    return jsonPath ? `JSON 源文件 · ${jsonPath}` : 'JSON 源文件 · 路径信息缺失';
+    return jsonPath
+      ? t('format.jsonSourcePath', { path: jsonPath })
+      : t('format.jsonSourceMissing');
   }
 
-  return `定位器类型「${locator.type}」`;
+  return t('format.locatorType', { type: locator.type });
 }
 
 export function formatConfidence(value: number | null | undefined): string {
@@ -152,8 +172,8 @@ export function formatJsonValue(value: unknown): string {
   return String(value);
 }
 
-export function formatCount(value: number): string {
-  return new Intl.NumberFormat('zh-CN').format(value);
+export function formatCount(value: number, locale: Locale = 'zh'): string {
+  return new Intl.NumberFormat(locale === 'zh' ? 'zh-CN' : 'en-US').format(value);
 }
 
 /** ISO8601 →「2026-10-23 14:30」（本地阅读用，秒级截断）。 */

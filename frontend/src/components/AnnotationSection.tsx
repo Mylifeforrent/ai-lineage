@@ -9,6 +9,7 @@ import {
 } from '../lib/api';
 import { formatDateTime } from '../lib/format';
 import { Icon } from './Icon';
+import { useI18n } from '../i18n';
 
 interface AnnotationSectionProps {
   token: string;
@@ -27,6 +28,7 @@ export function AnnotationSection({
   targetId,
   canWrite,
 }: AnnotationSectionProps) {
+  const { t } = useI18n();
   const [items, setItems] = useState<Annotation[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export function AnnotationSection({
         setLoadError(
           reason instanceof ApiError
             ? reason.message
-            : '无法读取标注，请稍后重试。',
+            : t('annotation.loadFailed'),
         );
       })
       .finally(() => {
@@ -83,7 +85,7 @@ export function AnnotationSection({
         setSubmitError(
           reason instanceof ApiError
             ? reason.message
-            : '标注提交失败，请稍后重试。',
+            : t('annotation.submitFailed'),
         );
       } finally {
         setSubmitting(false);
@@ -99,17 +101,17 @@ export function AnnotationSection({
       <div className="mb-2 flex items-center justify-between">
         <h3 className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
           <Icon name="message-square" size={12} />
-          标注（{count}）
+          {t('annotation.title', { count })}
         </h3>
         <span className="rounded-full border border-line bg-page px-1.5 py-px font-mono text-[11px] text-ink-faint">
-          追加式
+          {t('annotation.appendOnly')}
         </span>
       </div>
 
       <div className="space-y-2">
         {loading && (
           <div className="animate-soft-pulse rounded-lg border border-line-soft bg-subtle px-3 py-3 text-[12px] text-ink-muted">
-            正在读取标注…
+            {t('annotation.loading')}
           </div>
         )}
         {!loading && loadError && (
@@ -119,7 +121,7 @@ export function AnnotationSection({
         )}
         {!loading && !loadError && count === 0 && (
           <div className="rounded-lg border border-dashed border-line px-3 py-3 text-center text-[12px] text-ink-muted">
-            暂无标注
+            {t('annotation.empty')}
           </div>
         )}
         {!loading &&
@@ -144,7 +146,7 @@ export function AnnotationSection({
       {canWrite ? (
         <form onSubmit={handleSubmit} className="mt-2">
           <label htmlFor={`annotation-${targetKind}-${targetId}`} className="sr-only">
-            添加标注
+            {t('annotation.inputLabel')}
           </label>
           <textarea
             id={`annotation-${targetKind}-${targetId}`}
@@ -152,13 +154,13 @@ export function AnnotationSection({
             onChange={(event) => setBody(event.target.value)}
             rows={2}
             maxLength={4000}
-            placeholder="添加标注（追加式，不覆盖原值）"
+            placeholder={t('annotation.placeholder')}
             className="field-input min-h-[62px] resize-y py-2 text-[13px] leading-5"
             disabled={submitting}
           />
           <div className="mt-1.5 flex items-center justify-between gap-2">
             <span className="font-mono text-[11px] text-ink-faint">
-              {body.length}/4000 · 标注不随版本回滚删除
+              {t('annotation.counter', { count: body.length })}
             </span>
             <button
               type="submit"
@@ -166,7 +168,7 @@ export function AnnotationSection({
               className="flex h-7 items-center gap-1 rounded-lg bg-brand-700 px-2.5 text-[12px] font-medium text-white transition-colors duration-150 hover:bg-brand-800 active:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
             >
               <Icon name="plus" size={12} />
-              {submitting ? '提交中…' : '提交标注'}
+              {submitting ? t('annotation.submitting') : t('annotation.submit')}
             </button>
           </div>
           {submitError && (
@@ -178,7 +180,7 @@ export function AnnotationSection({
       ) : (
         <p className="mt-2 flex items-center gap-1.5 text-[11px] text-ink-faint">
           <Icon name="lock" size={10} />
-          当前角色为只读，不能追加标注。
+          {t('annotation.readonly')}
         </p>
       )}
     </section>

@@ -5,6 +5,7 @@ import {
   TABLE_TARGET_HANDLE,
 } from '../lib/handles';
 import { Icon } from './Icon';
+import { useI18n } from '../i18n';
 
 /**
  * 「折叠为组」占位节点（M3 前端最小实现）。
@@ -26,12 +27,13 @@ export type GroupFlowNode = Node<GroupNodeData, 'group'>;
 export function GroupNode({ id, data }: NodeProps) {
   const nodeData = data as unknown as GroupNodeData;
   const { label, memberIds, onExpand } = nodeData;
+  const { t } = useI18n();
   const count = memberIds.length;
 
   return (
     <article
       className="group relative w-[248px] rounded-xl border border-dashed border-brand-600/65 bg-brand-50/85 p-3 shadow-node transition-shadow duration-150 hover:shadow-card"
-      aria-label={`折叠分组 ${label}，包含 ${count} 个数据集，点击展开`}
+      aria-label={t('groupNode.aria', { label, count })}
     >
       <Handle
         type="target"
@@ -56,14 +58,14 @@ export function GroupNode({ id, data }: NodeProps) {
           onExpand(id);
         }}
         className="nodrag nopan block w-full rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-card"
-        title="展开该分组"
+        title={t('groupNode.expandTitle')}
       >
         <div className="flex items-center justify-between gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-brand-200 bg-card text-brand-700">
             <Icon name="group" size={14} />
           </span>
           <span className="rounded-full border border-brand-200 bg-card px-1.5 py-px font-mono text-[11px] text-brand-800">
-            {count} 个数据集
+            {t('groupNode.datasetCount', { count })}
           </span>
         </div>
         <h3 className="mt-2 truncate text-[13px] font-medium text-ink">
@@ -71,7 +73,7 @@ export function GroupNode({ id, data }: NodeProps) {
         </h3>
         <div className="mt-1 flex items-center gap-1.5 font-mono text-[11px] text-brand-700">
           <Icon name="unfold-all" size={10} />
-          点击展开
+          {t('groupNode.clickExpand')}
         </div>
       </button>
     </article>

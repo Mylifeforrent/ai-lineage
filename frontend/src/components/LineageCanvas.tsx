@@ -45,6 +45,7 @@ import {
 } from './LineageEdge';
 import type { EdgeKind, LineageEdgeData, LineageFlowEdge } from './LineageEdge';
 import { Icon } from './Icon';
+import { useI18n } from '../i18n';
 
 const nodeTypes = { dataset: DatasetNode, group: GroupNode };
 const edgeTypes = { lineage: LineageEdgeView };
@@ -129,6 +130,7 @@ export function LineageCanvas({
   onRetry,
   aiFocusFields,
 }: LineageCanvasProps) {
+  const { t } = useI18n();
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<LineageFlowEdge>([]);
   const [flowInstance, setFlowInstance] = useState<ReactFlowInstance<
@@ -242,10 +244,14 @@ export function LineageCanvas({
       ]),
     );
     const names = selectedNodeIds.map((id) => nameById.get(id) ?? id);
+    const joiner = t('canvas.groupNameJoin');
     const label =
       names.length > 2
-        ? `${names.slice(0, 2).join('、')} 等`
-        : names.join('、');
+        ? t('canvas.groupLabelMore', {
+            names: names.slice(0, 2).join(joiner),
+            rest: names.length - 2,
+          })
+        : names.join(joiner);
     const groupId = `group-${nextGroupId.current}`;
     nextGroupId.current += 1;
 
@@ -287,7 +293,7 @@ export function LineageCanvas({
         edge.selected ? { ...edge, selected: false } : edge,
       ),
     );
-  }, [graph, nodes, selectedNodeIds, setEdges, setNodes]);
+  }, [graph, nodes, selectedNodeIds, setEdges, setNodes, t]);
 
   /** 追踪前保证链路字段可见：折叠的表自动展开，超出预览上限的字段列表自动展开 */
   const revealChainFields = useCallback(
@@ -402,13 +408,13 @@ export function LineageCanvas({
       const { source, target, sourceHandle, targetHandle } = connection;
       if (!source || !target || !sourceHandle || !targetHandle) return;
       if (source === target && sourceHandle === targetHandle) {
-        onNotice('上下游不能是同一个字段或同一个节点。');
+        onNotice(t('canvas.noticeSameFieldOrNode'));
         return;
       }
       const sourceIsTable = sourceHandle === TABLE_SOURCE_HANDLE;
       const targetIsTable = targetHandle === TABLE_TARGET_HANDLE;
       if (sourceIsTable !== targetIsTable) {
-        onNotice('字段级与表级血缘不能混连：请字段连字段，或表头 handle 连表头 handle。');
+        onNotice(t('canvas.noticeMixedLevel'));
         return;
       }
 
@@ -419,15 +425,15 @@ export function LineageCanvas({
         ? null
         : parseFieldHandle(targetHandle, 'field:in:');
       if (!sourceIsTable && (!fromField || !toField)) {
-        onNotice('未能识别字段 handle，请重新拖拽。');
+        onNotice(t('canvas.noticeHandleUnrecognized'));
         return;
       }
       if (source === target && sourceIsTable) {
-        onNotice('上下游不能是同一个数据集。');
+        onNotice(t('canvas.noticeSameDataset'));
         return;
       }
       if (source === target && fromField !== null && fromField === toField) {
-        onNotice('上下游不能是同一个字段。');
+        onNotice(t('canvas.noticeSameField'));
         return;
       }
 
@@ -438,7 +444,7 @@ export function LineageCanvas({
         to_field: toField,
       });
     },
-    [onConnectRequest, onNotice],
+    [onConnectRequest, onNotice, t],
   );
 
   useEffect(() => {
@@ -652,7 +658,11 @@ export function LineageCanvas({
           targetHandle: TABLE_TARGET_HANDLE,
           type: 'lineage',
           data,
-          ariaLabel: `表级血缘，从 ${edge.from_dataset} 到 ${edge.to_dataset}，来源 ${edge.source}`,
+          ariaLabel: t('canvas.ariaTableEdge', {
+            from: edge.from_dataset,
+            to: edge.to_dataset,
+            source: edge.source,
+          }),
           style: {
             stroke: visual.color,
             strokeWidth: visual.width,
@@ -711,7 +721,11 @@ export function LineageCanvas({
         targetHandle: fieldTargetHandle(toField),
         type: 'lineage',
         data,
-        ariaLabel: `字段级血缘，从 ${edge.from_dataset}.${fromField} 到 ${edge.to_dataset}.${toField}，来源 ${edge.source}`,
+        ariaLabel: t('canvas.ariaFieldEdge', {
+          from: `${edge.from_dataset}.${fromField}`,
+          to: `${edge.to_dataset}.${toField}`,
+          source: edge.source,
+        }),
         style: {
           stroke: strokeColor,
           strokeWidth: focusState === 'chain' ? 2.6 : visual.width,
@@ -786,7 +800,10 @@ export function LineageCanvas({
           fromLabel: `${link.from_dataset}.${link.from_field}`,
           toLabel: `${link.to_dataset}.${link.to_field}`,
         },
-        ariaLabel: `同名字段匹配推断线，从 ${link.from_dataset}.${link.from_field} 到 ${link.to_dataset}.${link.to_field}`,
+        ariaLabel: t('canvas.ariaDerivedEdge', {
+          from: `${link.from_dataset}.${link.from_field}`,
+          to: `${link.to_dataset}.${link.to_field}`,
+        }),
         style: {
           stroke: strokeColor,
           strokeWidth: focusState === 'chain' ? 2.6 : 1.3,
@@ -832,7 +849,11 @@ export function LineageCanvas({
         targetHandle: TABLE_TARGET_HANDLE,
         type: 'lineage',
         data,
-        ariaLabel: `跨组聚合血缘，从 ${aggregate.sourceLabel} 到 ${aggregate.targetLabel}，共 ${aggregate.count} 条`,
+        ariaLabel: t('canvas.ariaAggregateEdge', {
+          from: aggregate.sourceLabel,
+          to: aggregate.targetLabel,
+          count: aggregate.count,
+        }),
         style: {
           stroke: visual.color,
           strokeWidth: 1.5,
@@ -873,6 +894,7 @@ export function LineageCanvas({
     onRequestDeleteEdge,
     setNodes,
     setEdges,
+    t,
   ]);
 
   useEffect(() => {
@@ -904,10 +926,10 @@ export function LineageCanvas({
             <Icon name="network" size={22} />
           </div>
           <h2 className="mt-4 text-xl font-medium text-ink">
-            选择一个数据集
+            {t('canvas.emptyTitle')}
           </h2>
           <p className="mt-2 text-[13px] leading-5 text-ink-muted">
-            从左侧数据集栏选择种子，画布会展示字段级与表级上下游血缘。
+            {t('canvas.emptyHint')}
           </p>
         </div>
       </div>
@@ -947,7 +969,7 @@ export function LineageCanvas({
           elevateNodesOnSelect
           proOptions={{ hideAttribution: true }}
           className="lineage-flow"
-          aria-label="字段级血缘画布"
+          aria-label={t('canvas.ariaCanvas')}
         >
           <Controls
             position="bottom-left"
@@ -963,7 +985,7 @@ export function LineageCanvas({
             nodeBorderRadius={4}
             maskColor="rgba(248, 250, 252, 0.65)"
             className="lineage-minimap"
-            ariaLabel="血缘画布缩略图"
+            ariaLabel={t('canvas.ariaMinimap')}
           />
 
           <Panel position="top-left" className="!m-3">
@@ -974,10 +996,13 @@ export function LineageCanvas({
                 </span>
                 <div className="px-0.5">
                   <div className="max-w-[140px] truncate text-[13px] font-medium text-ink">
-                    {seedName || '血缘子图'}
+                    {seedName || t('canvas.subgraphFallback')}
                   </div>
                   <div className="mt-0.5 font-mono text-[11px] tabular-nums text-ink-faint">
-                    {graph.datasets.length} 个数据集 · {graph.edges.length} 条连线
+                    {t('canvas.subgraphStats', {
+                      datasets: graph.datasets.length,
+                      edges: graph.edges.length,
+                    })}
                   </div>
                 </div>
                 <span className="mx-1 h-5 w-px bg-line" aria-hidden="true" />
@@ -985,13 +1010,17 @@ export function LineageCanvas({
                   type="button"
                   onClick={onToggleAll}
                   className="flex h-7 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1"
-                  title={allCollapsed ? '展开全部字段' : '收起全部字段'}
+                  title={
+                    allCollapsed
+                      ? t('canvas.expandAllFieldsTitle')
+                      : t('canvas.collapseAllFieldsTitle')
+                  }
                 >
                   <Icon
                     name={allCollapsed ? 'unfold-all' : 'fold-all'}
                     size={12}
                   />
-                  {allCollapsed ? '全部展开' : '全部收起'}
+                  {allCollapsed ? t('canvas.expandAll') : t('canvas.collapseAll')}
                 </button>
               </div>
 
@@ -1005,10 +1034,10 @@ export function LineageCanvas({
                       type="button"
                       onClick={handleCollapseSelected}
                       className="flex h-7 items-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-2.5 text-[12px] font-medium text-brand-800 transition-colors duration-150 hover:border-brand-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1"
-                      title="把框选的节点折叠成一个组占位节点"
+                      title={t('canvas.groupSelectedTitle')}
                     >
                       <Icon name="fold-all" size={12} />
-                      折叠选中（{groupableCount}）
+                      {t('canvas.groupSelected', { count: groupableCount })}
                     </button>
                   )}
                   {groups.length > 0 && (
@@ -1023,7 +1052,7 @@ export function LineageCanvas({
                       className="flex h-7 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1"
                     >
                       <Icon name="unfold-all" size={12} />
-                      展开全部组（{groups.length}）
+                      {t('canvas.expandAllGroups', { count: groups.length })}
                     </button>
                   )}
                 </div>
@@ -1033,17 +1062,17 @@ export function LineageCanvas({
 
           <Panel position="bottom-center" className="!mb-2 hidden md:block">
             <div className="flex items-center gap-2.5 rounded-full border border-line bg-card/90 px-3 py-1.5 font-mono text-[11px] text-ink-muted shadow-float">
-              <span>拖拽平移</span>
+              <span>{t('canvas.hintPan')}</span>
               <span className="h-2 w-px bg-line" />
-              <span>Shift + 拖拽框选</span>
+              <span>{t('canvas.hintBoxSelect')}</span>
               <span className="h-2 w-px bg-line" />
-              <span>悬停/点击连线查看详情</span>
+              <span>{t('canvas.hintEdgeDetails')}</span>
               <span className="h-2 w-px bg-line" />
-              <span>点击字段高亮上下游链路</span>
+              <span>{t('canvas.hintFieldTrace')}</span>
               {canEdit && (
                 <>
                   <span className="h-2 w-px bg-line" />
-                  <span>拖拽 handle 新增血缘</span>
+                  <span>{t('canvas.hintCreateEdge')}</span>
                 </>
               )}
             </div>
@@ -1060,9 +1089,9 @@ export function LineageCanvas({
           <div className="flex items-center gap-2.5 rounded-lg border border-line bg-card px-4 py-3 shadow-float">
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand-200 border-t-brand-600" />
             <div>
-              <div className="text-[13px] font-medium text-ink">正在加载血缘子图</div>
+              <div className="text-[13px] font-medium text-ink">{t('canvas.loadingTitle')}</div>
               <div className="mt-0.5 font-mono text-[11px] text-ink-faint">
-                展开 {seedDatasetId} · {hops} 跳邻域
+                {t('canvas.loadingDetail', { seed: seedDatasetId ?? '', hops })}
               </div>
             </div>
           </div>
@@ -1081,7 +1110,7 @@ export function LineageCanvas({
               </span>
               <div className="min-w-0">
                 <h2 className="text-[13px] font-semibold text-ink">
-                  无法加载当前子图
+                  {t('canvas.errorTitle')}
                 </h2>
                 <p className="mt-1.5 break-words text-[12px] leading-5 text-ink-muted">
                   {error}
@@ -1092,7 +1121,7 @@ export function LineageCanvas({
                   className="mt-3 inline-flex h-7 items-center gap-1.5 rounded-lg bg-brand-700 px-2.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-brand-800 active:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1"
                 >
                   <Icon name="refresh" size={12} />
-                  重新加载
+                  {t('canvas.reload')}
                 </button>
               </div>
             </div>

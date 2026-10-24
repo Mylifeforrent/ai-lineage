@@ -23,6 +23,7 @@ import {
   locatorTypeLabel,
 } from '../lib/format';
 import { Icon } from './Icon';
+import { useI18n } from '../i18n';
 
 interface PreviewModalProps {
   selection: FieldSelection;
@@ -75,28 +76,35 @@ function PreviewShell({
 }
 
 function TargetColumnBadge({ label }: { label: string }) {
+  const { t } = useI18n();
   return (
     <span className="inline-flex items-center gap-1 rounded-full border border-brand-200 bg-brand-50 px-2 py-0.5 font-mono text-[11px] text-brand-800">
       <span className="h-1 w-1 rounded-full bg-brand-600" />
-      高亮列 {label}
+      {t('preview.targetColumnBadge', { label })}
     </span>
   );
 }
 
 function CsvPreviewTable({ preview }: { preview: CsvPreview }) {
+  const { t } = useI18n();
   const targetIndex = preview.column_index - 1;
-  const targetHeader = preview.header[targetIndex] ?? `第 ${preview.column_index} 列`;
+  const targetHeader =
+    preview.header[targetIndex] ??
+    t('preview.columnOrdinal', { index: preview.column_index });
 
   return (
     <PreviewShell
-      title="CSV 数据预览"
-      subtitle={`${preview.rows.length} 行 · 前 50 行 · 表头 ${preview.header.length} 列`}
+      title={t('preview.csvTitle')}
+      subtitle={t('preview.csvSubtitle', {
+        rows: preview.rows.length,
+        cols: preview.header.length,
+      })}
       right={<TargetColumnBadge label={`${columnIndexToLabel(preview.column_index)} · ${targetHeader}`} />}
     >
       <div className="max-h-[46vh] overflow-auto">
         <table className="w-full min-w-[680px] border-collapse text-left text-[13px]">
           <caption className="sr-only">
-            CSV 源文件数据预览，高亮字段所在列 {targetHeader}
+            {t('preview.csvCaption', { header: targetHeader })}
           </caption>
           <thead className="sticky top-0 z-10">
             <tr className="bg-subtle">
@@ -120,7 +128,7 @@ function CsvPreviewTable({ preview }: { preview: CsvPreview }) {
                       <span className="text-[12px] font-medium">{header || '—'}</span>
                       {target && (
                         <span className="ml-auto rounded bg-brand-700 px-1 py-px font-mono text-[11px] text-white">
-                          字段
+                          {t('common.field')}
                         </span>
                       )}
                     </div>
@@ -165,10 +173,12 @@ function CsvPreviewTable({ preview }: { preview: CsvPreview }) {
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line-soft bg-page px-3.5 py-2 text-[11px] text-ink-muted">
         <span>
-          高亮列为字段定位列 · 第 {preview.column_index} 列（
-          {columnIndexToLabel(preview.column_index)}）
+          {t('preview.csvFooterTarget', {
+            index: preview.column_index,
+            label: columnIndexToLabel(preview.column_index),
+          })}
         </span>
-        <span className="font-mono">最多显示 50 行</span>
+        <span className="font-mono">{t('preview.maxRows')}</span>
       </div>
     </PreviewShell>
   );
@@ -212,6 +222,7 @@ interface MergeAnchor {
 }
 
 function XlsxPreviewTable({ preview }: { preview: XlsxPreview }) {
+  const { t } = useI18n();
   const headerCount = preview.header_rows.length;
   const entryByRow = new Map<number, DisplayRow>();
   const displayedRows: DisplayRow[] = [];
@@ -279,25 +290,36 @@ function XlsxPreviewTable({ preview }: { preview: XlsxPreview }) {
 
   const mergedPreview = preview.merged_ranges.slice(0, 4);
   const rowEndLabel = preview.row_end >= preview.row_start
-    ? `数据行 ${preview.row_start}:${preview.row_end}`
-    : `数据行 ${preview.row_start} 起`;
+    ? t('preview.dataRowsRange', {
+        start: preview.row_start,
+        end: preview.row_end,
+      })
+    : t('preview.dataRowsFrom', { start: preview.row_start });
   const targetLabel = columnIndexToLabel(preview.column_index);
 
   return (
     <PreviewShell
-      title={`工作表「${preview.sheet}」`}
-      subtitle={`${headerCount} 行表头 · ${rowEndLabel} · 当前预览 ${preview.rows.length} 行`}
-      right={<TargetColumnBadge label={`${targetLabel} · 第 ${preview.column_index} 列`} />}
+      title={t('preview.sheetTitle', { sheet: preview.sheet })}
+      subtitle={t('preview.xlsxSubtitle', {
+        headerRows: headerCount,
+        rowsLabel: rowEndLabel,
+        rows: preview.rows.length,
+      })}
+      right={
+        <TargetColumnBadge
+          label={`${targetLabel} · ${t('preview.columnOrdinal', { index: preview.column_index })}`}
+        />
+      }
     >
       <div className="max-h-[46vh] overflow-auto">
         <table className="w-full min-w-[720px] border-collapse text-left text-[13px]">
           <caption className="sr-only">
-            XLSX 源文件预览，工作表 {preview.sheet}，高亮字段所在列 {targetLabel}
+            {t('preview.xlsxCaption', { sheet: preview.sheet, label: targetLabel })}
           </caption>
           <thead className="sticky top-0 z-10">
             <tr className="bg-subtle">
               <th className="sticky left-0 z-20 w-12 border-b border-r border-line bg-subtle px-2 py-1.5 text-center font-mono text-[11px] font-normal text-ink-muted">
-                行
+                {t('preview.rowHeader')}
               </th>
               {Array.from({ length: totalCols }, (_, index) => {
                 const column = index + 1;
@@ -335,7 +357,11 @@ function XlsxPreviewTable({ preview }: { preview: XlsxPreview }) {
                       ? 'bg-warning-soft text-warning-deep'
                       : 'bg-page text-ink-faint'
                   }`}
-                  title={entry.isHeader ? '表头行' : `源文件第 ${entry.row} 行`}
+                  title={
+                    entry.isHeader
+                      ? t('preview.headerRow')
+                      : t('preview.sourceRow', { row: entry.row })
+                  }
                 >
                   {entry.row}
                 </th>
@@ -366,7 +392,7 @@ function XlsxPreviewTable({ preview }: { preview: XlsxPreview }) {
                       title={displayCell(value)}
                     >
                       {merge && displayCell(value) === '—' ? (
-                        <span className="text-ink-faint">合并单元格</span>
+                        <span className="text-ink-faint">{t('preview.mergedCell')}</span>
                       ) : (
                         displayCell(value)
                       )}
@@ -381,13 +407,17 @@ function XlsxPreviewTable({ preview }: { preview: XlsxPreview }) {
       <div className="border-t border-line-soft bg-page px-3.5 py-2">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-ink-muted">
           <span>
-            高亮列 {targetLabel}（第 {preview.column_index} 列） · {rowEndLabel}
+            {t('preview.xlsxFooterTarget', {
+              label: targetLabel,
+              index: preview.column_index,
+              rows: rowEndLabel,
+            })}
           </span>
           {mergedPreview.length > 0 && (
             <>
               <span className="hidden h-2.5 w-px bg-line sm:block" />
               <span className="flex flex-wrap items-center gap-1">
-                合并区域
+                {t('preview.mergedRanges')}
                 {mergedPreview.map((range) => (
                   <span
                     key={range}
@@ -404,7 +434,7 @@ function XlsxPreviewTable({ preview }: { preview: XlsxPreview }) {
               </span>
             </>
           )}
-          <span className="ml-auto font-mono">最多显示 50 个数据行</span>
+          <span className="ml-auto font-mono">{t('preview.maxDataRows')}</span>
         </div>
       </div>
     </PreviewShell>
@@ -412,13 +442,14 @@ function XlsxPreviewTable({ preview }: { preview: XlsxPreview }) {
 }
 
 function JsonPreviewPanel({ preview }: { preview: JsonPreview }) {
+  const { t } = useI18n();
   return (
     <PreviewShell
-      title="JSON 命中样本"
-      subtitle="JSONPath 实时求值 · 仅展示前 10 个命中值"
+      title={t('preview.jsonTitle')}
+      subtitle={t('preview.jsonSubtitle')}
       right={
         <span className="inline-flex items-center gap-1 rounded-full border border-transparent bg-info-soft px-2 py-0.5 font-mono text-[11px] text-info-deep">
-          {preview.hits} 个命中
+          {t('preview.jsonHits', { count: preview.hits })}
         </span>
       }
     >
@@ -460,9 +491,12 @@ function JsonPreviewPanel({ preview }: { preview: JsonPreview }) {
         </div>
 
         <div className="mt-2.5 flex items-center justify-between text-[11px] text-ink-muted">
-          <span>命中样本保持源文件中的原始类型。</span>
+          <span>{t('preview.jsonTypesNote')}</span>
           <span className="font-mono">
-            显示 {preview.samples.length}/{Math.min(preview.hits, 10)}
+            {t('preview.jsonShown', {
+              shown: preview.samples.length,
+              total: Math.min(preview.hits, 10),
+            })}
           </span>
         </div>
       </div>
@@ -471,13 +505,14 @@ function JsonPreviewPanel({ preview }: { preview: JsonPreview }) {
 }
 
 function PreviewBody({ data }: { data: PreviewResponse }) {
+  const { t } = useI18n();
   const preview = data.preview;
   if (isCsvPreview(preview)) return <CsvPreviewTable preview={preview} />;
   if (isXlsxPreview(preview)) return <XlsxPreviewTable preview={preview} />;
   if (isJsonPreview(preview)) return <JsonPreviewPanel preview={preview} />;
   return (
     <div className="rounded-xl border border-dashed border-line px-4 py-8 text-center text-[13px] text-ink-muted">
-      不支持的预览数据类型
+      {t('preview.unsupportedType')}
     </div>
   );
 }
@@ -498,22 +533,23 @@ function ErrorPreview({
   error: PreviewErrorState;
   onRetry: () => void;
 }) {
+  const { t } = useI18n();
   const title =
     error.status === 409
-      ? '定位已失效'
+      ? t('preview.errorLocatorStale')
       : error.status === 403
-        ? '权限不足'
+        ? t('preview.errorForbidden')
         : error.status === 404
-          ? '找不到预览对象'
+          ? t('preview.errorNotFound')
           : error.status === 401
-            ? '登录已过期'
-            : '预览加载失败';
+            ? t('preview.errorUnauthorized')
+            : t('preview.errorGeneric');
   const hint =
     error.status === 409
-      ? '源文件可能已更新：工作表、列、表头路径或 JSONPath 已无法解析。请核对源文件后重新导入字段定位器。'
+      ? t('preview.hintLocatorStale')
       : error.status === 403
-        ? '当前角色没有读取源文件预览的权限，请联系管理员确认角色。'
-        : '请确认字段与源文件仍存在，或稍后重试。';
+        ? t('preview.hintForbidden')
+        : t('preview.hintGeneric');
 
   return (
     <div className="rounded-xl border border-line bg-card p-6">
@@ -544,7 +580,7 @@ function ErrorPreview({
             className="mt-4 inline-flex h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-3 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
           >
             <Icon name="refresh" size={12} />
-            重新尝试
+            {t('common.retry')}
           </button>
         )}
       </div>
@@ -553,6 +589,7 @@ function ErrorPreview({
 }
 
 export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
+  const { t } = useI18n();
   const [data, setData] = useState<PreviewResponse | null>(null);
   const [error, setError] = useState<PreviewErrorState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -584,7 +621,7 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
         } else {
           setError({
             status: 0,
-            message: '无法读取源文件预览，请检查网络连接后重试。',
+            message: t('preview.errorNetwork'),
           });
         }
       })
@@ -636,7 +673,7 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
 
   const resolvedFile = data?.file ?? selection.field.source_file;
   const resolvedLocator = data?.locator ?? selection.field.src_locator;
-  const locatorText = humanizeLocator(resolvedLocator);
+  const locatorText = humanizeLocator(resolvedLocator, t);
   const typeLabel = locatorTypeLabel(resolvedLocator.type);
 
   async function handleDownload() {
@@ -652,7 +689,7 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
       setDownloadError(
         reason instanceof ApiError
           ? reason.message
-          : '下载源文件失败，请稍后重试。',
+          : t('preview.downloadError'),
       );
     } finally {
       setDownloading(false);
@@ -693,7 +730,7 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
-                  源文件回源 / 只读
+                  {t('preview.kicker')}
                 </span>
                 <span className="rounded border border-line bg-card px-1.5 py-px font-mono text-[11px] uppercase text-ink-muted">
                   {typeLabel}
@@ -703,7 +740,7 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
                 id="preview-title"
                 className="mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-[14px] font-semibold text-ink"
               >
-                <span>回源预览</span>
+                <span>{t('preview.title')}</span>
                 <span className="truncate font-mono text-[12px] font-normal text-ink-muted">
                   {selection.dataset.id}.{selection.field.name}
                 </span>
@@ -717,14 +754,14 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
               className="hidden h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white sm:flex"
             >
               <Icon name="copy" size={12} />
-              {copied ? '已复制' : '复制定位'}
+              {copied ? t('common.copied') : t('preview.copyLocator')}
             </button>
             <button
               ref={closeButtonRef}
               type="button"
               onClick={onClose}
               className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-              aria-label="关闭回源预览"
+              aria-label={t('preview.closeAria')}
             >
               <Icon name="close" size={16} />
             </button>
@@ -735,7 +772,7 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
           <section className="mb-3.5 grid gap-3 rounded-xl border border-line bg-card p-3.5 sm:grid-cols-2">
             <div>
               <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
-                源文件
+                {t('preview.fileLabel')}
               </div>
               <div className="mt-1 flex items-center gap-1.5">
                 <Icon name="file" size={13} className="text-brand-600" />
@@ -744,20 +781,20 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
                 </span>
               </div>
               <div className="mt-1 font-mono text-[11px] text-ink-faint">
-                托管文件 · 源文件 #{resolvedFile.id}
+                {t('preview.managedFile', { id: resolvedFile.id })}
               </div>
               {data?.file.sha256 && (
                 <div
                   className="mt-0.5 font-mono text-[11px] text-ink-faint"
                   title={`sha256 ${data.file.sha256}`}
                 >
-                  sha256 {data.file.sha256.slice(0, 12)}… · 已去重
+                  {t('preview.shaDeduped', { hash: data.file.sha256.slice(0, 12) })}
                 </div>
               )}
             </div>
             <div className="border-t border-line-soft pt-2 sm:border-l sm:border-t-0 sm:pl-3.5 sm:pt-0">
               <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
-                定位器
+                {t('preview.locatorLabel')}
               </div>
               <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
                 {locatorText}
@@ -766,25 +803,27 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
             <div className="border-t border-line-soft pt-2 sm:col-span-2">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
-                  实文件核查
+                  {t('preview.verificationLabel')}
                 </span>
                 {data?.verification?.status === 'passed' ? (
                   <>
                     <span className="inline-flex items-center gap-1 rounded-full border border-transparent bg-success-soft px-1.5 py-px font-mono text-[11px] text-success-deep">
                       <Icon name="check" size={12} />
-                      通过
+                      {t('preview.verificationPassed')}
                     </span>
                     <span className="text-[12px] text-ink-muted">
-                      v{data.verification.version_no} 导入时校验 ·{' '}
-                      {data.verification.checked_at.slice(0, 10)} ·{' '}
-                      {data.verification.checked_by}
+                      {t('preview.verificationDetail', {
+                        version: data.verification.version_no,
+                        date: data.verification.checked_at.slice(0, 10),
+                        user: data.verification.checked_by,
+                      })}
                     </span>
                   </>
                 ) : (
                   <span className="text-[12px] text-ink-muted">
                     {data
-                      ? data.verification?.status || '无导入核查记录'
-                      : '读取中…'}
+                      ? data.verification?.status || t('preview.noVerification')
+                      : t('common.loading')}
                   </span>
                 )}
               </div>
@@ -808,28 +847,28 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
         <footer className="flex h-12 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-t border-line-soft bg-card px-4 text-[11px] text-ink-muted">
           <span className="flex items-center gap-1.5">
             <Icon name="lock" size={12} />
-            只读 · 存储路径不对外暴露
+            {t('preview.readonlyNote')}
           </span>
           <span className="hidden h-3 w-px bg-line sm:block" />
           <span className="font-mono">
-            {typeLabel} · 按定位器实时解析
+            {t('preview.resolveNote', { type: typeLabel })}
           </span>
           <button
             type="button"
             onClick={handleDownload}
             disabled={downloading}
             className="ml-auto inline-flex h-7 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
-            title="经 GET /files/{id}/download 受控下载，存储路径不暴露"
+            title={t('preview.downloadTitle')}
           >
             <Icon name="download" size={12} />
-            {downloading ? '下载中…' : '下载源文件（权限受控）'}
+            {downloading ? t('preview.downloading') : t('preview.downloadButton')}
           </button>
           <button
             type="button"
             onClick={onClose}
             className="inline-flex h-7 items-center rounded-lg px-2.5 text-[12px] font-medium text-ink-muted transition-colors duration-150 hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
           >
-            关闭
+            {t('common.close')}
           </button>
           {downloadError && (
             <span className="w-full text-danger-deep" role="alert">

@@ -21,6 +21,8 @@ import { isAdmin, isEditor } from '../lib/roles';
 import { Icon } from './Icon';
 import { ConfirmDialog } from './ConfirmDialog';
 import type { ToastTone } from './Toast';
+import { useI18n } from '../i18n';
+import type { VersionKey } from '../i18n/dicts/version';
 
 interface VersionDrawerProps {
   token: string;
@@ -30,16 +32,16 @@ interface VersionDrawerProps {
   onNotify: (message: string, tone?: ToastTone) => void;
 }
 
-const KIND_LABELS: Record<TargetKind, string> = {
-  dataset: '数据集',
-  field: '字段',
-  edge: '血缘边',
+const KIND_LABEL_KEYS: Record<TargetKind, VersionKey> = {
+  dataset: 'version.kind.dataset',
+  field: 'version.kind.field',
+  edge: 'version.kind.edge',
 };
 
-const OP_LABELS: Record<ChangeOp, string> = {
-  added: '新增',
-  updated: '修改',
-  deleted: '删除',
+const OP_LABEL_KEYS: Record<ChangeOp, VersionKey> = {
+  added: 'version.op.added',
+  updated: 'version.op.updated',
+  deleted: 'version.op.deleted',
 };
 
 const OP_STYLES: Record<ChangeOp, string> = {
@@ -55,6 +57,7 @@ export function VersionDrawer({
   onDataChanged,
   onNotify,
 }: VersionDrawerProps) {
+  const { t } = useI18n();
   const canWrite = isEditor(role);
   const canRollback = isAdmin(role);
 
@@ -99,7 +102,7 @@ export function VersionDrawer({
         setLoadError(
           reason instanceof ApiError
             ? reason.message
-            : '无法读取版本信息，请稍后重试。',
+            : t('version.loadFailed'),
         );
       })
       .finally(() => {
@@ -159,12 +162,12 @@ export function VersionDrawer({
         setTagName('');
         setTagNote('');
         setReloadKey((value) => value + 1);
-        onNotify(`版本标签「${created.name}」已创建`, 'success');
+        onNotify(t('version.tagCreated', { name: created.name }), 'success');
       } catch (reason) {
         setCreateError(
           reason instanceof ApiError
             ? reason.message
-            : '创建版本标签失败，请稍后重试。',
+            : t('version.createFailed'),
         );
       } finally {
         setCreating(false);
@@ -185,7 +188,7 @@ export function VersionDrawer({
       setDiffError(
         reason instanceof ApiError
           ? reason.message
-          : '无法计算版本差异，请稍后重试。',
+          : t('version.diffFailed'),
       );
     } finally {
       setDiffLoading(false);
@@ -198,9 +201,9 @@ export function VersionDrawer({
     try {
       const result = await rollbackVersionTag(token, pendingRollback.name);
       setRollbackNotice(
-        `已回滚到「${pendingRollback.name}」，反做 ${result.reverted} 条变更。`,
+        t('version.rollbackDone', { name: pendingRollback.name, count: result.reverted }),
       );
-      onNotify(`已回滚到「${pendingRollback.name}」`, 'success');
+      onNotify(t('version.rollbackToast', { name: pendingRollback.name }), 'success');
       setPendingRollback(null);
       setReloadKey((value) => value + 1);
       setDiff(null);
@@ -209,7 +212,7 @@ export function VersionDrawer({
       onNotify(
         reason instanceof ApiError
           ? reason.message
-          : '回滚失败，请稍后重试。',
+          : t('version.rollbackFailed'),
         'error',
       );
     } finally {
@@ -241,7 +244,7 @@ export function VersionDrawer({
               id="version-drawer-title"
               className="min-w-0 text-[14px] font-semibold text-ink"
             >
-              版本
+              {t('version.title')}
             </h2>
           </div>
           <div className="flex shrink-0 items-center gap-1">
@@ -249,8 +252,8 @@ export function VersionDrawer({
               type="button"
               onClick={() => setReloadKey((value) => value + 1)}
               className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-              aria-label="刷新版本信息"
-              title="刷新"
+              aria-label={t('version.refresh')}
+              title={t('version.refreshShort')}
             >
               <Icon name="refresh" size={14} />
             </button>
@@ -259,7 +262,7 @@ export function VersionDrawer({
               type="button"
               onClick={onClose}
               className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-              aria-label="关闭版本抽屉"
+              aria-label={t('version.close')}
             >
               <Icon name="close" size={16} />
             </button>
@@ -287,7 +290,7 @@ export function VersionDrawer({
                 className="mt-2 inline-flex h-7 items-center gap-1 rounded-lg border border-line-strong bg-card px-2 text-[11px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               >
                 <Icon name="refresh" size={11} />
-                重新加载
+                {t('history.reload')}
               </button>
             </div>
           )}
@@ -296,7 +299,7 @@ export function VersionDrawer({
             <div className="space-y-5">
               <div className="flex items-start gap-2 rounded-lg border border-line bg-card px-3 py-2.5 text-[12px] leading-5 text-ink-muted">
                 <Icon name="info" size={12} className="mt-0.5 shrink-0 text-ink-faint" />
-                <span>回滚只反做变更日志；标注为追加式，不受回滚影响。</span>
+                <span>{t('version.rollbackIntro')}</span>
               </div>
 
               {rollbackNotice && (
@@ -310,10 +313,10 @@ export function VersionDrawer({
                 <div className="mb-2 flex items-center justify-between">
                   <h3 className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
                     <Icon name="layers" size={11} />
-                    导入批次
+                    {t('version.batches')}
                   </h3>
                   <span className="font-mono text-[11px] tabular-nums text-ink-faint">
-                    {batches?.length ?? 0} 个批次
+                    {t('version.batchCount', { count: batches?.length ?? 0 })}
                   </span>
                 </div>
                 {batches?.length ? (
@@ -337,11 +340,11 @@ export function VersionDrawer({
                         </span>
                         {batch.rolled_back_at ? (
                           <span className="rounded-full border border-line bg-subtle px-1.5 py-px font-mono text-[11px] text-ink-muted">
-                            已回滚
+                            {t('version.rolledBack')}
                           </span>
                         ) : (
                           <span className="rounded-full border border-transparent bg-success-soft px-1.5 py-px font-mono text-[11px] text-success-deep">
-                            有效
+                            {t('version.active')}
                           </span>
                         )}
                       </div>
@@ -349,7 +352,7 @@ export function VersionDrawer({
                   </div>
                 ) : (
                   <div className="rounded-xl border border-dashed border-line px-3 py-4 text-center text-[12px] text-ink-muted">
-                    暂无导入批次
+                    {t('version.noBatches')}
                   </div>
                 )}
               </section>
@@ -358,10 +361,10 @@ export function VersionDrawer({
                 <div className="mb-2 flex items-center justify-between">
                   <h3 className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
                     <Icon name="tag" size={11} />
-                    业务标签
+                    {t('version.tags')}
                   </h3>
                   <span className="font-mono text-[11px] tabular-nums text-ink-faint">
-                    {tags?.length ?? 0} 个标签
+                    {t('version.tagCount', { count: tags?.length ?? 0 })}
                   </span>
                 </div>
 
@@ -374,7 +377,7 @@ export function VersionDrawer({
                             {tag.name}
                           </span>
                           <span className="rounded border border-line bg-page px-1.5 py-px font-mono text-[11px] tabular-nums text-ink-faint">
-                            变更序号 #{tag.change_seq}
+                            {t('version.changeSeq', { seq: tag.change_seq })}
                           </span>
                           <span className="font-mono text-[11px] text-ink-faint">
                             {formatDateTime(tag.created_at)} · {tag.created_by}
@@ -389,7 +392,7 @@ export function VersionDrawer({
                               className="ml-auto inline-flex h-7 items-center gap-1 rounded-md border border-danger/25 bg-danger-soft px-2 text-[11px] font-medium text-danger-deep transition-colors duration-150 hover:border-danger/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                             >
                               <Icon name="rollback" size={11} />
-                              回滚到此标签
+                              {t('version.rollbackTo')}
                             </button>
                           )}
                         </div>
@@ -403,7 +406,7 @@ export function VersionDrawer({
                   </div>
                 ) : (
                   <div className="rounded-xl border border-dashed border-line px-3 py-4 text-center text-[12px] text-ink-muted">
-                    还没有业务标签。标签会锚定当前变更序号，供版本差异与回滚使用。
+                    {t('version.noTags')}
                   </div>
                 )}
 
@@ -411,27 +414,27 @@ export function VersionDrawer({
                   <form onSubmit={handleCreateTag} className="mt-2.5 rounded-xl border border-line bg-card p-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <label htmlFor="version-tag-name" className="sr-only">
-                        版本标签名
+                        {t('version.tagNameLabel')}
                       </label>
                       <input
                         id="version-tag-name"
                         type="text"
                         value={tagName}
                         onChange={(event) => setTagName(event.target.value)}
-                        placeholder="标签名，如 v3.0-r1"
+                        placeholder={t('version.tagNamePlaceholder')}
                         maxLength={64}
                         className="field-input h-8 w-[150px] font-mono text-[12px]"
                         disabled={creating}
                       />
                       <label htmlFor="version-tag-note" className="sr-only">
-                        版本标签说明
+                        {t('version.tagNoteLabel')}
                       </label>
                       <input
                         id="version-tag-note"
                         type="text"
                         value={tagNote}
                         onChange={(event) => setTagNote(event.target.value)}
-                        placeholder="标签说明（可选）"
+                        placeholder={t('version.tagNotePlaceholder')}
                         maxLength={200}
                         className="field-input h-8 min-w-[160px] flex-1 text-[13px]"
                         disabled={creating}
@@ -442,11 +445,11 @@ export function VersionDrawer({
                         className="flex h-8 shrink-0 items-center gap-1 rounded-lg bg-brand-700 px-2.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-brand-800 active:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                       >
                         <Icon name="plus" size={11} />
-                        {creating ? '创建中…' : '打标签'}
+                        {creating ? t('version.creating') : t('version.createTag')}
                       </button>
                     </div>
                     <p className="mt-1.5 font-mono text-[11px] text-ink-faint">
-                      编辑及以上角色可创建；重名会返回 409。
+                      {t('version.tagHint')}
                     </p>
                     {createError && (
                       <p className="mt-1.5 rounded-md border border-danger/25 bg-danger-soft px-2 py-1.5 text-[11px] leading-4 text-danger-deep" role="alert">
@@ -457,7 +460,7 @@ export function VersionDrawer({
                 ) : (
                   <p className="mt-2 flex items-center gap-1.5 text-[11px] text-ink-faint">
                     <Icon name="lock" size={11} />
-                    只读角色不能创建标签或回滚版本。
+                    {t('version.readonly')}
                   </p>
                 )}
               </section>
@@ -466,10 +469,10 @@ export function VersionDrawer({
                 <div className="mb-2 flex items-center justify-between">
                   <h3 className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
                     <Icon name="diff" size={11} />
-                    标签间差异
+                    {t('version.diffTitle')}
                   </h3>
                   <span className="font-mono text-[11px] text-ink-faint">
-                    净变更摘要
+                    {t('version.netChanges')}
                   </span>
                 </div>
 
@@ -477,7 +480,7 @@ export function VersionDrawer({
                   <div className="rounded-xl border border-line bg-card p-3">
                     <div className="flex flex-wrap items-end gap-2">
                       <label className="block">
-                        <span className="mb-1.5 block text-[12px] font-medium text-ink-soft">起始标签</span>
+                        <span className="mb-1.5 block text-[12px] font-medium text-ink-soft">{t('version.fromLabel')}</span>
                         <span className="relative block">
                           <select
                             value={diffFrom}
@@ -499,7 +502,7 @@ export function VersionDrawer({
                       </label>
                       <Icon name="arrow-right" size={12} className="pb-2 text-ink-faint" aria-hidden="true" />
                       <label className="block">
-                        <span className="mb-1.5 block text-[12px] font-medium text-ink-soft">结束标签</span>
+                        <span className="mb-1.5 block text-[12px] font-medium text-ink-soft">{t('version.toLabel')}</span>
                         <span className="relative block">
                           <select
                             value={diffTo}
@@ -526,7 +529,7 @@ export function VersionDrawer({
                         className="flex h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-3 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-wait disabled:opacity-50"
                       >
                         <Icon name="diff" size={11} />
-                        {diffLoading ? '计算中…' : '计算差异'}
+                        {diffLoading ? t('version.diffCalculating') : t('version.diffRun')}
                       </button>
                     </div>
 
@@ -543,19 +546,19 @@ export function VersionDrawer({
                             {diffFrom} → {diffTo}
                           </span>
                           <span className="rounded-full border border-transparent bg-success-soft px-2 py-px font-mono text-[11px] tabular-nums text-success-deep">
-                            +{diff.summary.added} 新增
+                            {t('version.diffAdded', { count: diff.summary.added })}
                           </span>
                           <span className="rounded-full border border-transparent bg-warning-soft px-2 py-px font-mono text-[11px] tabular-nums text-warning-deep">
-                            ~{diff.summary.updated} 修改
+                            {t('version.diffUpdated', { count: diff.summary.updated })}
                           </span>
                           <span className="rounded-full border border-transparent bg-danger-soft px-2 py-px font-mono text-[11px] tabular-nums text-danger-deep">
-                            −{diff.summary.deleted} 删除
+                            {t('version.diffDeleted', { count: diff.summary.deleted })}
                           </span>
                         </div>
 
                         {diff.items.length === 0 ? (
                           <p className="mt-2 text-[12px] text-ink-muted">
-                            两个标签之间没有净变更。
+                            {t('version.diffEmpty')}
                           </p>
                         ) : (
                           <ul className="mt-2 max-h-[240px] divide-y divide-line-soft overflow-y-auto overflow-hidden rounded-lg border border-line-soft">
@@ -565,10 +568,10 @@ export function VersionDrawer({
                                 className="flex items-start gap-2 bg-card px-2.5 py-1.5"
                               >
                                 <span className={`shrink-0 rounded border px-1.5 py-px font-mono text-[11px] ${OP_STYLES[item.op]}`}>
-                                  {OP_LABELS[item.op]}
+                                  {t(OP_LABEL_KEYS[item.op])}
                                 </span>
                                 <span className="shrink-0 text-[11px] text-ink-faint">
-                                  {KIND_LABELS[item.entity_kind]}
+                                  {t(KIND_LABEL_KEYS[item.entity_kind])}
                                 </span>
                                 <span className="min-w-0 break-all font-mono text-[12px] text-ink-soft">
                                   {item.entity_key}
@@ -579,14 +582,14 @@ export function VersionDrawer({
                         )}
                         <p className="mt-2 flex items-center gap-1 text-[11px] text-ink-faint">
                           <Icon name="info" size={10} />
-                          差异按实体自然键归并，统计净变化；标注不参与差异统计。
+                          {t('version.diffHint')}
                         </p>
                       </div>
                     )}
                   </div>
                 ) : (
                   <div className="rounded-xl border border-dashed border-line px-3 py-4 text-center text-[12px] text-ink-muted">
-                    至少创建两个标签后，才能对比标签之间的净变更。
+                    {t('version.diffNeedTwo')}
                   </div>
                 )}
               </section>
@@ -597,19 +600,18 @@ export function VersionDrawer({
 
       <ConfirmDialog
         open={Boolean(pendingRollback)}
-        title="回滚到版本标签"
+        title={t('version.rollbackTitle')}
         danger
         busy={rollingBack}
-        confirmLabel="确认回滚"
-        cancelLabel="取消"
+        confirmLabel={t('version.rollbackConfirm')}
+        cancelLabel={t('common.cancel')}
         message={
           <div className="space-y-1.5">
             <p>
-              将反做标签「{pendingRollback?.name}」之后的所有变更（含人工编辑与导入批次），
-              并立即刷新画布。
+              {t('version.rollbackMessage', { name: pendingRollback?.name ?? '' })}
             </p>
             <p className="font-mono text-[11px] leading-4 text-ink-faint">
-              回滚可重复执行（幂等）；标注不会被删除。
+              {t('version.rollbackIdempotent')}
             </p>
           </div>
         }

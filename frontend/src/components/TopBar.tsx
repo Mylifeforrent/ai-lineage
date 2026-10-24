@@ -3,6 +3,8 @@ import type { Session } from '../types';
 import { isAdmin, roleLabel } from '../lib/roles';
 import { Brand } from './Brand';
 import { Icon } from './Icon';
+import { LanguageToggle } from './LanguageToggle';
+import { useI18n } from '../i18n';
 
 // 与后端 /lineage/subgraph 的 hops 1..5 契约保持一致
 const HOP_OPTIONS = [1, 2, 3, 4, 5] as const;
@@ -61,6 +63,7 @@ export function TopBar({
   onOpenUsers,
   onLogout,
 }: TopBarProps) {
+  const { t } = useI18n();
   const searchRef = useRef<HTMLInputElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -113,10 +116,10 @@ export function TopBar({
         <span className="hidden h-8 w-px bg-line xl:block" />
         <div className="hidden xl:block">
           <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
-            工作台 / 血缘画布
+            {t('topbar.workspacePath')}
           </div>
           <h1 className="mt-0.5 text-[13px] font-semibold text-ink-soft">
-            血缘画布
+            {t('topbar.pageTitle')}
           </h1>
         </div>
       </div>
@@ -124,7 +127,7 @@ export function TopBar({
       <div className="min-w-[180px] md:ml-2 md:max-w-[340px] md:flex-1">
         <div className="group relative">
           <label htmlFor="dataset-search" className="sr-only">
-            搜索数据集或字段
+            {t('topbar.searchLabel')}
           </label>
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint transition-colors duration-150 group-focus-within:text-brand-600">
             <Icon name="search" size={14} />
@@ -135,7 +138,7 @@ export function TopBar({
             type="search"
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="搜索数据集 / 字段…"
+            placeholder={t('topbar.searchPlaceholder')}
             className="field-input h-8 rounded-lg pl-9 pr-[92px] text-[13px]"
             autoComplete="off"
             spellCheck={false}
@@ -149,7 +152,7 @@ export function TopBar({
                   searchRef.current?.focus();
                 }}
                 className="pointer-events-auto flex h-6 w-6 items-center justify-center rounded text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1"
-                aria-label="清空搜索"
+                aria-label={t('topbar.clearSearch')}
               >
                 <Icon name="close" size={12} />
               </button>
@@ -171,10 +174,10 @@ export function TopBar({
             type="button"
             onClick={onOpenImport}
             className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-brand-700 px-2.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-brand-800 active:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-            title="上传源文件并导入血缘清单（editor 及以上角色）"
+            title={t('topbar.importTitle')}
           >
             <Icon name="upload" size={14} />
-            导入数据
+            {t('topbar.import')}
           </button>
         )}
 
@@ -188,30 +191,30 @@ export function TopBar({
               ? 'border-ai/25 bg-ai-soft text-ai-deep'
               : 'border-line bg-card text-ink-muted hover:border-ai/25 hover:text-ai-deep'
           }`}
-          title="打开 AI 助手：自然语言查血缘并联动出图"
+          title={t('topbar.aiTitle')}
         >
           <Icon name="sparkles" size={14} className={aiOpen ? 'text-ai' : ''} />
-          AI 助手
+          {t('topbar.ai')}
         </button>
 
         <button
           type="button"
           onClick={onOpenVersions}
           className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 active:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-          title="查看导入批次、业务标签、版本差异与回滚"
+          title={t('topbar.versionsTitle')}
         >
           <Icon name="tag" size={14} />
-          版本
+          {t('topbar.versions')}
         </button>
 
         <div className="flex items-center gap-2 rounded-lg border border-line bg-card p-1 pl-2.5">
           <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
-            跳数
+            {t('topbar.hops')}
           </span>
           <div
             className="flex items-center gap-0.5"
             role="group"
-            aria-label="血缘子图跳数"
+            aria-label={t('topbar.hopsGroup')}
           >
             {HOP_OPTIONS.map((option) => (
               <button
@@ -224,7 +227,7 @@ export function TopBar({
                     : 'text-ink-muted hover:bg-subtle hover:text-ink'
                 }`}
                 aria-pressed={option === hops}
-                aria-label={`${option} 跳`}
+                aria-label={t('topbar.hopLabel', { count: option })}
               >
                 {option}
               </button>
@@ -233,10 +236,12 @@ export function TopBar({
           {graphLoading && (
             <span
               className="mr-1 h-2.5 w-2.5 animate-spin rounded-full border-[1.5px] border-brand-300 border-t-brand-700"
-              aria-label="正在加载子图"
+              aria-label={t('topbar.loadingSubgraph')}
             />
           )}
         </div>
+
+        <LanguageToggle />
 
         <div
           ref={userMenuRef}
@@ -248,7 +253,7 @@ export function TopBar({
             className="flex items-center gap-2 rounded-lg px-1 py-1 text-left transition-colors duration-150 hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
             aria-haspopup="menu"
             aria-expanded={userMenuOpen}
-            title="用户菜单"
+            title={t('topbar.userMenu')}
           >
             <span
               className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-800 font-mono text-[11px] font-medium text-white"
@@ -265,7 +270,7 @@ export function TopBar({
                   ROLE_BADGE_CLASSES[session.role] ?? ROLE_BADGE_CLASSES.viewer
                 }`}
               >
-                {roleLabel(session.role)}
+                {roleLabel(session.role, t)}
               </span>
             </span>
             <Icon
@@ -281,7 +286,7 @@ export function TopBar({
             <div
               className="absolute right-0 top-full z-30 mt-2 w-[200px] overflow-hidden rounded-lg border border-line bg-card py-1 shadow-float animate-fade-in"
               role="menu"
-              aria-label="用户菜单"
+              aria-label={t('topbar.userMenu')}
             >
               <div className="border-b border-line-soft bg-page px-3 py-2.5">
                 <div className="truncate text-[13px] font-medium text-ink">
@@ -293,7 +298,7 @@ export function TopBar({
                       ROLE_BADGE_CLASSES[session.role] ?? ROLE_BADGE_CLASSES.viewer
                     }`}
                   >
-                    {roleLabel(session.role)}
+                    {roleLabel(session.role, t)}
                   </span>
                   <span className="font-mono text-[11px] text-ink-muted">
                     {session.role}
@@ -311,7 +316,7 @@ export function TopBar({
                   className="flex h-8 w-full items-center gap-2 px-3 text-left text-[13px] text-ink-soft transition-colors duration-150 hover:bg-subtle focus-visible:bg-subtle focus-visible:outline-none"
                 >
                   <Icon name="users" size={13} />
-                  用户管理
+                  {t('topbar.userManagement')}
                 </button>
               )}
               <button
@@ -324,7 +329,7 @@ export function TopBar({
                 className="mt-1 flex h-8 w-full items-center gap-2 border-t border-line-soft px-3 text-left text-[13px] text-ink-soft transition-colors duration-150 hover:bg-subtle focus-visible:bg-subtle focus-visible:outline-none"
               >
                 <Icon name="logout" size={13} />
-                退出登录
+                {t('topbar.logout')}
               </button>
             </div>
           )}

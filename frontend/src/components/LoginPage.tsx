@@ -9,6 +9,8 @@ import {
 import type { Session } from '../types';
 import { Brand, BrandMark } from './Brand';
 import { Icon } from './Icon';
+import { LanguageToggle } from './LanguageToggle';
+import { useI18n } from '../i18n';
 
 interface LoginPageProps {
   notice: string | null;
@@ -26,6 +28,7 @@ function MiniNode({
   active?: boolean;
   collapsed?: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <div
       className={`overflow-hidden rounded-xl border bg-brand-800 text-left ${
@@ -52,7 +55,7 @@ function MiniNode({
       </div>
       {collapsed ? (
         <div className="px-3 py-2.5 font-mono text-[11px] text-brand-300">
-                  4 个字段 · 已收起
+                  {t('login.collapsedFields', { count: 4 })}
         </div>
       ) : (
         <div className="divide-y divide-brand-700">
@@ -67,7 +70,7 @@ function MiniNode({
             >
               <span>{field}</span>
               <span className="text-brand-300">
-                {index === 0 ? '文本' : '数值'}
+                {index === 0 ? t('login.typeText') : t('login.typeNumber')}
               </span>
             </div>
           ))}
@@ -78,6 +81,7 @@ function MiniNode({
 }
 
 export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
+  const { t } = useI18n();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -94,7 +98,7 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
     if (submitting) return;
     const name = username.trim();
     if (!name || !password) {
-      setError('请输入用户名和密码');
+      setError(t('login.validationEmpty'));
       return;
     }
 
@@ -111,7 +115,7 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
     } catch (reason) {
       if (isAbortError(reason)) return;
       setError(
-        reason instanceof ApiError ? reason.message : '无法连接服务，请稍后重试',
+        reason instanceof ApiError ? reason.message : t('common.networkError'),
       );
     } finally {
       if (!controller.signal.aborted) setSubmitting(false);
@@ -121,6 +125,9 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
   return (
     <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-page p-3 sm:p-6 lg:p-8">
       <section className="relative grid w-full max-w-[1180px] overflow-hidden rounded-2xl border border-line bg-card shadow-float lg:min-h-[690px] lg:grid-cols-[1.08fr_0.92fr]">
+      <div className="absolute right-4 top-4 z-20">
+        <LanguageToggle />
+      </div>
         <div className="relative hidden overflow-hidden bg-brand-900 px-10 py-9 lg:flex lg:flex-col xl:px-14 xl:py-11">
           <div className="relative z-10 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -130,28 +137,27 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
                   Clew<span className="text-brand-300">.</span>
                 </div>
                 <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-brand-300">
-                  让数据来源清晰可见
+                  {t('login.leftTagline')}
                 </div>
               </div>
             </div>
             <span className="rounded-full border border-brand-700 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-brand-200">
-              M3 · 编辑与版本
+              {t('login.milestoneBadge')}
             </span>
           </div>
 
           <div className="relative z-10 mt-16 max-w-[510px] animate-fade-up xl:mt-20">
             <div className="mb-4 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-brand-300">
               <span className="h-px w-8 bg-brand-400" />
-              字段级血缘 · 源文件可回查
+              {t('login.eyebrow')}
             </div>
             <h1 className="text-[28px] font-bold leading-[1.25] tracking-tight text-white">
-              每一条血缘，
+              {t('login.headline1')}
               <br />
-              都落回原始文件。
+              {t('login.headline2')}
             </h1>
             <p className="mt-5 max-w-[430px] text-[13px] leading-6 text-brand-100">
-              从字段到工作表、行列与 JSONPath，把「数据从哪来」变成
-              可以被打开、核对与讨论的证据。
+              {t('login.intro')}
             </p>
           </div>
 
@@ -217,10 +223,10 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
                 </span>
                 <div>
                   <div className="font-mono text-[11px] text-brand-100">
-                    订单明细.xlsx · 工作表「订单」
+                    {t('login.demoFile')}
                   </div>
                   <div className="mt-0.5 font-mono text-[11px] text-brand-300">
-                    C 列 · 数据行 3:15000
+                    {t('login.demoLocator')}
                   </div>
                 </div>
               </div>
@@ -229,9 +235,9 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
 
           <div className="relative z-10 mt-8 grid grid-cols-3 gap-3 border-t border-brand-700 pt-5">
             {[
-              ['01', '身份与角色', 'JWT / RBAC'],
-              ['02', '字段级定位', 'CSV / XLSX / JSON'],
-              ['03', '系统内回源', '高亮核查'],
+              ['01', t('login.f1Title'), t('login.f1Detail')],
+              ['02', t('login.f2Title'), t('login.f2Detail')],
+              ['03', t('login.f3Title'), t('login.f3Detail')],
             ].map(([index, title, detail]) => (
               <div key={index}>
                 <div className="font-mono text-[11px] text-brand-300">{index}</div>
@@ -250,7 +256,7 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
           <div className="mb-9 flex items-center justify-between lg:hidden">
             <Brand compact />
             <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
-              字段级血缘
+              {t('login.mobileLabel')}
             </span>
           </div>
 
@@ -259,14 +265,14 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
               <div className="mb-3 flex items-center gap-2">
                 <span className="h-px w-7 bg-brand-600" />
                 <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-brand-700">
-                  工作台访问
+                  {t('login.accessEyebrow')}
                 </span>
               </div>
               <h2 className="text-2xl font-semibold tracking-tight text-ink">
-                回到血缘现场
+                {t('login.heading')}
               </h2>
               <p className="mt-2.5 text-[13px] leading-6 text-ink-muted">
-                登录后浏览字段级血缘、校验源文件定位，并查看你所在角色的可操作范围。
+                {t('login.subheading')}
               </p>
             </div>
 
@@ -286,7 +292,7 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
                   htmlFor="login-username"
                   className="mb-1.5 block text-[12px] font-medium text-ink-soft"
                 >
-                  用户名
+                  {t('login.usernameLabel')}
                 </label>
                 <div className="group relative">
                   <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint transition-colors duration-150 group-focus-within:text-brand-600">
@@ -300,7 +306,7 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
                     autoFocus
                     value={username}
                     onChange={(event) => setUsername(event.target.value)}
-                    placeholder="请输入用户名"
+                    placeholder={t('login.usernamePlaceholder')}
                     className="field-input h-9 pl-9"
                     disabled={submitting}
                     required
@@ -313,7 +319,7 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
                   htmlFor="login-password"
                   className="mb-1.5 block text-[12px] font-medium text-ink-soft"
                 >
-                  密码
+                  {t('login.passwordLabel')}
                 </label>
                 <div className="group relative">
                   <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint transition-colors duration-150 group-focus-within:text-brand-600">
@@ -326,7 +332,7 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
                     autoComplete="current-password"
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
-                    placeholder="请输入密码"
+                    placeholder={t('login.passwordPlaceholder')}
                     className="field-input h-9 pl-9 pr-11"
                     disabled={submitting}
                     required
@@ -335,7 +341,7 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
                     type="button"
                     onClick={() => setShowPassword((value) => !value)}
                     className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-                    aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                    aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
                     aria-pressed={showPassword}
                   >
                     <Icon name={showPassword ? 'eye-off' : 'eye'} size={14} />
@@ -361,11 +367,11 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
                 {submitting ? (
                   <>
                     <span className="h-3.5 w-3.5 animate-spin rounded-full border-[1.5px] border-white/40 border-t-white" />
-                    正在验证身份
+                    {t('login.submitting')}
                   </>
                 ) : (
                   <>
-                    登录工作台
+                    {t('login.submit')}
                     <Icon
                       name="arrow-right"
                       size={14}
@@ -380,12 +386,11 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
               <div className="flex items-start gap-2.5 text-[12px] leading-5 text-ink-muted">
                 <Icon name="lock" size={13} className="mt-0.5 shrink-0" />
                 <p>
-                  账号由管理员创建，密码仅保存加盐哈希。登录态使用短期 JWT，
-                  失效后会自动返回此页。
+                  {t('login.footerNote')}
                 </p>
               </div>
               <div className="mt-4 flex flex-wrap gap-1.5">
-                {['viewer 只读', 'editor 可编辑', 'admin 可管理'].map((role) => (
+                {[t('login.roleViewer'), t('login.roleEditor'), t('login.roleAdmin')].map((role) => (
                   <span
                     key={role}
                     className="inline-flex h-6 items-center rounded-md border border-line bg-card px-2 font-mono text-[11px] text-ink-muted"

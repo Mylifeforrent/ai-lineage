@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import type { UserAccount } from '../types';
 import { ApiError, createUser, getUsers, isAbortError } from '../lib/api';
 import { roleLabel } from '../lib/roles';
+import { useI18n } from '../i18n';
 import { Icon } from './Icon';
 
 interface UserManagementModalProps {
@@ -11,10 +12,12 @@ interface UserManagementModalProps {
   onClose: () => void;
 }
 
-const ROLE_OPTIONS = [
-  { value: 'viewer', label: '只读（viewer）' },
-  { value: 'editor', label: '可编辑（editor）' },
-  { value: 'admin', label: '管理员（admin）' },
+import type { UserMgmtKey } from '../i18n/dicts/userMgmt';
+
+const ROLE_OPTION_KEYS: ReadonlyArray<{ value: string; labelKey: UserMgmtKey }> = [
+  { value: 'viewer', labelKey: 'userMgmt.roleViewer' },
+  { value: 'editor', labelKey: 'userMgmt.roleEditor' },
+  { value: 'admin', labelKey: 'userMgmt.roleAdmin' },
 ];
 
 const ROLE_BADGE_STYLES: Record<string, string> = {
@@ -28,6 +31,7 @@ export function UserManagementModal({
   currentUsername,
   onClose,
 }: UserManagementModalProps) {
+  const { t } = useI18n();
   const [users, setUsers] = useState<UserAccount[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -56,7 +60,7 @@ export function UserManagementModal({
         setLoadError(
           reason instanceof ApiError
             ? reason.message
-            : '无法读取用户列表，请稍后重试。',
+            : t('userMgmt.loadFailed'),
         );
       })
       .finally(() => {
@@ -87,11 +91,11 @@ export function UserManagementModal({
     if (submitting) return;
     const name = username.trim();
     if (name.length < 2) {
-      setFormError('用户名至少 2 个字符。');
+      setFormError(t('userMgmt.nameTooShort'));
       return;
     }
     if (password.length < 6) {
-      setFormError('密码至少 6 个字符。');
+      setFormError(t('userMgmt.passwordTooShort'));
       return;
     }
 
@@ -105,7 +109,7 @@ export function UserManagementModal({
         display_name: displayName.trim() || null,
         role,
       });
-      setNotice(`已创建用户「${created.username}」，角色 ${roleLabel(created.role)}。`);
+      setNotice(t('userMgmt.created', { name: created.username, role: roleLabel(created.role, t) }));
       setUsername('');
       setDisplayName('');
       setPassword('');
@@ -115,7 +119,7 @@ export function UserManagementModal({
       setFormError(
         reason instanceof ApiError
           ? reason.message
-          : '创建用户失败，请稍后重试。',
+          : t('userMgmt.createFailed'),
       );
     } finally {
       setSubmitting(false);
@@ -142,10 +146,10 @@ export function UserManagementModal({
             </span>
             <div className="min-w-0">
               <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
-                管理员功能
+                {t('userMgmt.eyebrow')}
               </div>
               <h2 id="user-management-title" className="mt-0.5 text-[14px] font-semibold text-ink">
-                用户管理
+                {t('userMgmt.title')}
               </h2>
             </div>
           </div>
@@ -154,8 +158,8 @@ export function UserManagementModal({
               type="button"
               onClick={() => setReloadKey((value) => value + 1)}
               className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-              aria-label="刷新用户列表"
-              title="刷新"
+              aria-label={t('userMgmt.refresh')}
+              title={t('userMgmt.refreshShort')}
             >
               <Icon name="refresh" size={14} />
             </button>
@@ -164,7 +168,7 @@ export function UserManagementModal({
               type="button"
               onClick={onClose}
               className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-              aria-label="关闭用户管理"
+              aria-label={t('userMgmt.close')}
             >
               <Icon name="close" size={16} />
             </button>
@@ -175,10 +179,10 @@ export function UserManagementModal({
           <section>
             <div className="mb-2 flex items-center justify-between">
               <h3 className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
-                用户列表
+                {t('userMgmt.list')}
               </h3>
               <span className="font-mono text-[11px] tabular-nums text-ink-faint">
-                {users?.length ?? 0} 个账号
+                {t('userMgmt.accountCount', { count: users?.length ?? 0 })}
               </span>
             </div>
 
@@ -213,12 +217,12 @@ export function UserManagementModal({
                         </span>
                         {user.username === currentUsername && (
                           <span className="rounded-full border border-brand-200 bg-brand-50 px-1.5 py-px font-mono text-[11px] text-brand-800">
-                            当前账号
+                            {t('userMgmt.currentAccount')}
                           </span>
                         )}
                       </div>
                       <div className="mt-0.5 truncate font-mono text-[11px] text-ink-faint">
-                        {user.display_name || '未登记显示名'}
+                        {user.display_name || t('userMgmt.noDisplayName')}
                       </div>
                     </div>
                     <span
@@ -237,7 +241,7 @@ export function UserManagementModal({
           <section className="mt-4">
             <h3 className="mb-2 flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
               <Icon name="user-plus" size={11} />
-              新增用户
+              {t('userMgmt.createSection')}
             </h3>
             <form
               onSubmit={handleSubmit}
@@ -250,7 +254,7 @@ export function UserManagementModal({
                     htmlFor="um-username"
                     className="mb-1.5 block text-[12px] font-medium text-ink-soft"
                   >
-                    用户名
+                    {t('userMgmt.usernameLabel')}
                   </label>
                   <input
                     id="um-username"
@@ -258,7 +262,7 @@ export function UserManagementModal({
                     value={username}
                     onChange={(event) => setUsername(event.target.value)}
                     className="field-input h-9 font-mono text-[13px]"
-                    placeholder="至少 2 个字符"
+                    placeholder={t('userMgmt.usernamePlaceholder')}
                     autoComplete="off"
                     maxLength={64}
                     disabled={submitting}
@@ -270,7 +274,7 @@ export function UserManagementModal({
                     htmlFor="um-display-name"
                     className="mb-1.5 block text-[12px] font-medium text-ink-soft"
                   >
-                    显示名（可选）
+                    {t('userMgmt.displayNameLabel')}
                   </label>
                   <input
                     id="um-display-name"
@@ -278,7 +282,7 @@ export function UserManagementModal({
                     value={displayName}
                     onChange={(event) => setDisplayName(event.target.value)}
                     className="field-input h-9 text-[13px]"
-                    placeholder="如 张三"
+                    placeholder={t('userMgmt.displayNamePlaceholder')}
                     maxLength={64}
                     disabled={submitting}
                   />
@@ -288,7 +292,7 @@ export function UserManagementModal({
                     htmlFor="um-password"
                     className="mb-1.5 block text-[12px] font-medium text-ink-soft"
                   >
-                    初始密码
+                    {t('userMgmt.passwordLabel')}
                   </label>
                   <input
                     id="um-password"
@@ -296,7 +300,7 @@ export function UserManagementModal({
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                     className="field-input h-9 font-mono text-[13px]"
-                    placeholder="至少 6 个字符"
+                    placeholder={t('userMgmt.passwordPlaceholder')}
                     autoComplete="new-password"
                     disabled={submitting}
                     required
@@ -307,7 +311,7 @@ export function UserManagementModal({
                     htmlFor="um-role"
                     className="mb-1.5 block text-[12px] font-medium text-ink-soft"
                   >
-                    角色
+                    {t('userMgmt.roleLabel')}
                   </label>
                   <span className="relative block">
                     <select
@@ -317,9 +321,9 @@ export function UserManagementModal({
                       className="field-input h-9 appearance-none pr-8 text-[13px] text-ink"
                       disabled={submitting}
                     >
-                      {ROLE_OPTIONS.map((option) => (
+                      {ROLE_OPTION_KEYS.map((option) => (
                         <option key={option.value} value={option.value}>
-                          {option.label}
+                          {t(option.labelKey)}
                         </option>
                       ))}
                     </select>
@@ -341,17 +345,17 @@ export function UserManagementModal({
                   {submitting ? (
                     <>
                       <span className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-white/40 border-t-white" />
-                      创建中…
+                      {t('userMgmt.creating')}
                     </>
                   ) : (
                     <>
                       <Icon name="user-plus" size={12} />
-                      创建用户
+                      {t('userMgmt.create')}
                     </>
                   )}
                 </button>
                 <span className="font-mono text-[11px] text-ink-faint">
-                  密码仅保存加盐哈希；用户名重复返回 409。
+                  {t('userMgmt.hint')}
                 </span>
               </div>
 
@@ -368,10 +372,7 @@ export function UserManagementModal({
             </form>
             <div className="mt-2 flex items-start gap-2 rounded-lg border border-brand-100 bg-brand-50 px-3 py-2.5 text-[12px] leading-5 text-brand-800">
               <Icon name="info" size={12} className="mt-0.5 shrink-0" />
-              <span>
-                账号由 admin 创建；当前接口仅支持新增用户。角色变更与停用账号尚未提供接口；原型中的逐行角色下拉与
-                RBAC 权限矩阵暂未实现，如需调整请由后端补充管理员接口。
-              </span>
+              <span>{t('userMgmt.scopeNote')}</span>
             </div>
           </section>
         </div>

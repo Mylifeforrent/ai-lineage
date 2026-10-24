@@ -2,6 +2,7 @@ import type { DatasetSummary, LineageGraph } from '../types';
 import { formatCount } from '../lib/format';
 import { EDGE_COLORS } from '../lib/edgeColors';
 import { Icon } from './Icon';
+import { useI18n } from '../i18n';
 import { SourceBadge } from './SourceBadge';
 
 interface DatasetSidebarProps {
@@ -24,12 +25,7 @@ interface DatasetSidebarProps {
   onClearSearch: () => void;
 }
 
-const CONFIDENCE_OPTIONS = [
-  { value: 0, label: '不限置信度' },
-  { value: 0.6, label: '置信度 ≥ 0.6' },
-  { value: 0.8, label: '置信度 ≥ 0.8' },
-  { value: 1, label: '置信度 = 1.0' },
-];
+const CONFIDENCE_OPTIONS = [0, 0.6, 0.8, 1] as const;
 
 /** 图例线样与 getEdgeVisual 完全同参（00 §2.4，色值走 lib/edgeColors 单一来源） */
 const LEGEND_LINE_VISUALS = {
@@ -93,18 +89,19 @@ export function DatasetSidebar({
   onRetry,
   onClearSearch,
 }: DatasetSidebarProps) {
+  const { t, locale } = useI18n();
   return (
     <aside className="flex max-h-[46vh] w-full shrink-0 flex-col border-b border-line bg-card xl:h-full xl:max-h-none xl:w-[240px] xl:border-b-0 xl:border-r">
       <div className="border-b border-line-soft px-4 py-3">
         <div className="flex items-center justify-between">
           <div>
             <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
-              数据资产
+              {t('sidebar.assets')}
             </div>
             <h2 className="mt-0.5 flex items-center gap-2 text-[13px] font-semibold text-ink">
-              数据集
+              {t('sidebar.datasets')}
               <span className="rounded-full border border-line bg-card px-1.5 font-mono text-[11px] font-medium tabular-nums text-ink-muted">
-                {formatCount(datasets.length)}
+                {formatCount(datasets.length, locale)}
               </span>
             </h2>
           </div>
@@ -116,22 +113,21 @@ export function DatasetSidebar({
           <div className="mt-2 flex items-center gap-1.5 text-[12px] text-ink-muted">
             <Icon name="search" size={11} />
             <span>
-              匹配 <span className="font-mono tabular-nums text-ink">{visibleDatasets.length}</span>{' '}
-              个结果
+              {t('sidebar.searchMatch', { count: visibleDatasets.length })}
             </span>
           </div>
         )}
         <div className="mt-2 text-[12px] leading-4 text-ink-faint">
-          选择数据集作为种子，加载 ±{hops} 跳子图
+          {t('sidebar.seedHint', { hops })}
         </div>
       </div>
 
       <div className="border-b border-line-soft px-4 py-3">
         <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
-          过滤
+          {t('sidebar.filters')}
         </div>
         <label className="mt-2 flex items-center justify-between gap-2 text-[12px] text-ink-muted">
-          <span className="shrink-0">连线</span>
+          <span className="shrink-0">{t('sidebar.edges')}</span>
           <span className="relative min-w-0 flex-1">
             <select
               value={minConfidence}
@@ -139,11 +135,15 @@ export function DatasetSidebar({
                 onMinConfidenceChange(Number(event.target.value))
               }
               className="field-input h-8 appearance-none rounded-md pr-8 text-[12px]"
-              aria-label="置信度过滤"
+              aria-label={t('sidebar.confidenceFilter')}
             >
               {CONFIDENCE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
+                <option key={option} value={option}>
+                  {option === 0
+                    ? t('sidebar.confidenceAll')
+                    : option === 1
+                      ? t('sidebar.confidenceEq')
+                      : t('sidebar.confidenceGte', { value: option })}
                 </option>
               ))}
             </select>
@@ -161,7 +161,7 @@ export function DatasetSidebar({
             onChange={(event) => onHideAiEdgesChange(event.target.checked)}
             className="h-3 w-3 rounded border-line accent-brand-600"
           />
-          隐藏 AI 建议边
+          {t('sidebar.hideAi')}
         </label>
         <label className="mt-1.5 flex cursor-pointer items-center gap-1.5 text-[12px] text-ink-muted">
           <input
@@ -170,10 +170,10 @@ export function DatasetSidebar({
             onChange={(event) => onConfirmedOnlyChange(event.target.checked)}
             className="h-3 w-3 rounded border-line accent-brand-600"
           />
-          仅显示确认血缘
+          {t('sidebar.confirmedOnly')}
         </label>
         <p className="mt-1.5 text-[11px] leading-4 text-ink-muted">
-          AI 建议（source=ai）需人工确认后才计入确认血缘。
+          {t('sidebar.confirmedHint')}
         </p>
       </div>
 
@@ -190,7 +190,7 @@ export function DatasetSidebar({
               />
               <div>
                 <div className="text-[13px] font-medium text-danger-deep">
-                  数据集加载失败
+                  {t('sidebar.loadFailed')}
                 </div>
                 <p className="mt-1 text-[12px] leading-4 text-danger-deep">
                   {error}
@@ -201,7 +201,7 @@ export function DatasetSidebar({
                   className="mt-2 inline-flex h-7 items-center gap-1 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1"
                 >
                   <Icon name="refresh" size={12} />
-                  重试
+                  {t('common.retry')}
                 </button>
               </div>
             </div>
@@ -214,7 +214,7 @@ export function DatasetSidebar({
               <Icon name={search ? 'search' : 'database'} size={16} />
             </div>
             <p className="mt-2.5 text-[13px] font-medium text-ink-soft">
-              {search ? '没有匹配的数据集' : '当前还没有数据集'}
+              {search ? t('sidebar.noMatch') : t('sidebar.noDatasets')}
             </p>
             {search && (
               <button
@@ -222,14 +222,14 @@ export function DatasetSidebar({
                 onClick={onClearSearch}
                 className="mt-2 text-[12px] font-medium text-brand-700 underline decoration-brand-300 underline-offset-2 hover:text-brand-800"
               >
-                清空搜索
+                {t('topbar.clearSearch')}
               </button>
             )}
           </div>
         )}
 
         {!loading && !error && visibleDatasets.length > 0 && (
-          <ul className="space-y-1" aria-label="数据集列表">
+          <ul className="space-y-1" aria-label={t('sidebar.datasetList')}>
             {visibleDatasets.map((dataset, index) => {
               const active = dataset.id === selectedId;
               return (
@@ -266,7 +266,7 @@ export function DatasetSidebar({
                         {dataset.name || dataset.id}
                       </span>
                       <span className="shrink-0 font-mono text-[11px] tabular-nums text-ink-faint">
-                        {formatCount(dataset.field_count)} 字段
+                        {t('sidebar.fieldsUnit', { count: dataset.field_count })}
                       </span>
                     </div>
                     <div className="mt-1 flex items-center gap-1.5 pl-1">
@@ -280,7 +280,7 @@ export function DatasetSidebar({
                       </span>
                       {active && (
                         <span className="shrink-0 rounded bg-brand-100 px-1.5 py-px font-mono text-[11px] uppercase text-brand-800">
-                          种子
+                          {t('sidebar.seed')}
                         </span>
                       )}
                       <Icon
@@ -306,47 +306,45 @@ export function DatasetSidebar({
           <div className="mb-3.5 rounded-lg border border-line bg-subtle/60 px-2.5 py-2">
             <div className="flex items-center justify-between">
               <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
-                当前子图
+                {t('sidebar.subgraph')}
               </span>
               <span className="h-1.5 w-1.5 rounded-full bg-brand-600" />
             </div>
             <div className="mt-1.5 flex items-center gap-3 font-mono text-[12px] tabular-nums text-ink-soft">
               <span>
-                <span className="font-medium text-ink">{graph.datasets.length}</span>{' '}
-                数据集
+                {t('sidebar.subgraphDatasets', { count: graph.datasets.length })}
               </span>
               <span className="h-3 w-px bg-line" />
               <span>
-                <span className="font-medium text-ink">{graph.edges.length}</span>{' '}
-                条连线
+                {t('sidebar.subgraphEdges', { count: graph.edges.length })}
               </span>
             </div>
           </div>
         )}
 
         <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
-          连线图例
+          {t('sidebar.legend')}
         </div>
         <div className="mt-2 space-y-1.5 text-[12px] text-ink-muted">
           <div className="flex items-center gap-2">
             <EdgeLegendLine variant="field" />
-            <span>字段级血缘</span>
+            <span>{t('sidebar.legendField')}</span>
           </div>
           <div className="flex items-center gap-2">
             <EdgeLegendLine variant="table" />
-            <span>表级血缘</span>
+            <span>{t('sidebar.legendTable')}</span>
           </div>
           <div className="flex items-center gap-2">
             <EdgeLegendLine variant="derived" />
-            <span>同名字段匹配（推断）</span>
+            <span>{t('sidebar.legendDerived')}</span>
           </div>
           <div className="flex items-center gap-2">
             <EdgeLegendLine variant="focus" />
-            <span className="text-brand-700">点击字段的追踪链路</span>
+            <span className="text-brand-700">{t('sidebar.legendFocus')}</span>
           </div>
           <div className="flex items-center gap-2">
             <EdgeLegendLine variant="ai" />
-            <span className="text-ai-deep">AI 建议 · 待确认</span>
+            <span className="text-ai-deep">{t('sidebar.legendAi')}</span>
           </div>
         </div>
 
@@ -356,7 +354,7 @@ export function DatasetSidebar({
           <SourceBadge source="ai" withDescription={false} />
         </div>
         <p className="mt-2.5 text-[11px] leading-4 text-ink-muted">
-          悬停连线查看转换说明、置信度与来源。
+          {t('sidebar.legendHint')}
         </p>
       </div>
     </aside>

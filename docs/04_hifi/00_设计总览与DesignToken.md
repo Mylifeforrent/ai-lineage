@@ -460,6 +460,14 @@ danger ghost 变体（列表内删除入口）：`border border-danger/25 bg-dan
 - 尺寸三档：12（行内微图标）/ 14（按钮、菜单、徽章，默认）/ 16（工具栏、空态）。装饰性图标 `aria-hidden`，语义图标保留现有 `aria-label` 约定。
 - 颜色一律 `currentColor`（继承文字色）；禁止给图标单独上色档外值。
 
+### 7.12 国际化与语言切换（zh/EN，2026-10 新增）
+
+- **方案**：自研轻量 i18n（`src/i18n/`：`I18nProvider` + `useI18n()` + `t(key, params)`，`{var}` 插值），不引入第三方库。默认 zh，不做浏览器语言自动检测；偏好持久化于 `localStorage['clew.locale']`，切换即时生效。
+- **字典**：按组件分模块 `src/i18n/dicts/<ns>.ts`（zh 词条 `as const` 为类型基准，en 以 `Record<XxxKey, string>` 编译期强制键一致），`zh.ts`/`en.ts` 只做聚合；通用词条集中在 `dicts/common.ts`（common.*），禁止在组件内写裸文案。
+- **切换控件 LanguageToggle**：两段式 `中 | EN`；容器 `flex h-7 items-center rounded-lg border border-line-strong bg-card p-0.5`，段按钮 `flex h-6 items-center rounded-md px-1.5 font-mono text-[11px] font-medium`，选中 `bg-subtle text-ink`、未选 `text-ink-faint hover:text-ink-soft`，`aria-pressed`；挂载位：TopBar 跳数组与用户区之间、登录页卡片右上角（`absolute right-4 top-4 z-20`）。
+- **跟随 locale 的全局项**：`<html lang>`（zh-CN/en）、`document.title`（`Clew · 字段级血缘` / `Clew · Field-level Data Lineage`）、`formatCount` 的 `Intl.NumberFormat`。
+- **不翻译项**：后端错误消息与 AI 回答（后端文案，本期不做 Accept-Language 跟随）、业务数据（数据集/字段名）、source 值与格式词（csv/xlsx/json、sheet 名）、代码注释。
+
 ---
 
 ## 八、Tailwind 配置目标代码与 index.css 关键段

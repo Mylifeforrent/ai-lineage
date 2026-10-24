@@ -16,6 +16,8 @@ import { formatFileSize } from '../lib/format';
 import { Icon } from './Icon';
 import { ConfirmDialog } from './ConfirmDialog';
 import type { ToastTone } from './Toast';
+import { useI18n, type TranslateFn } from '../i18n';
+import type { ImportWizKey } from '../i18n/dicts/importWiz';
 
 interface ImportWizardModalProps {
   token: string;
@@ -27,25 +29,30 @@ interface ImportWizardModalProps {
   onNotify: (message: string, tone?: ToastTone) => void;
 }
 
-const STEPS = ['上传源文件', '上传清单', '校验执行', '批次报告'] as const;
+const STEP_KEYS = [
+  'importWiz.step1Upload',
+  'importWiz.step2Manifest',
+  'importWiz.step3Validate',
+  'importWiz.step4Report',
+] as const;
 
 const SUPPORTED_EXTENSIONS = ['csv', 'xlsx', 'json'] as const;
 
-const FORMAT_HINTS: Record<ImportFormat, string> = {
-  csv: 'datasets.csv + lineage.csv 两个文件（UTF-8，兼容 BOM）',
-  xlsx: '单个工作簿，含 datasets / lineage 两个 sheet',
-  json: '单文件 {"datasets": [], "lineage": []}',
+const FORMAT_HINT_KEYS: Record<ImportFormat, ImportWizKey> = {
+  csv: 'importWiz.fmtCsvHint',
+  xlsx: 'importWiz.fmtXlsxHint',
+  json: 'importWiz.fmtJsonHint',
 };
 
-const KIND_LABELS: Record<string, string> = {
-  field: '字段',
-  edge: '血缘边',
+const KIND_KEYS: Partial<Record<string, ImportWizKey>> = {
+  field: 'importWiz.kindField',
+  edge: 'importWiz.kindEdge',
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  ok: '成功',
-  merged: '合并',
-  rejected: '拒绝',
+const STATUS_KEYS: Partial<Record<string, ImportWizKey>> = {
+  ok: 'importWiz.statusOk',
+  merged: 'importWiz.statusMerged',
+  rejected: 'importWiz.statusRejected',
 };
 
 const STATUS_BADGES: Record<string, string> = {
@@ -57,6 +64,17 @@ const STATUS_BADGES: Record<string, string> = {
 function fileExtension(name: string): string {
   const index = name.lastIndexOf('.');
   return index === -1 ? '' : name.slice(index + 1).toLowerCase();
+}
+
+/** 非组件场景：kind/status 映射查不到时回退后端原始值 */
+function kindLabel(t: TranslateFn, kind: string): string {
+  const key = KIND_KEYS[kind];
+  return key ? t(key) : kind;
+}
+
+function statusLabel(t: TranslateFn, status: string): string {
+  const key = STATUS_KEYS[status];
+  return key ? t(key) : status;
 }
 
 /** 步骤①上传行（hi-fi 06 §3.3 文件列表行） */
@@ -141,18 +159,19 @@ function Dropzone({
 
 /** 步骤条（hi-fi 06 §3.2：纯展示，aria-current 标当前步，回退只经脚部「上一步」） */
 function Stepper({ current }: { current: number }) {
+  const { t } = useI18n();
   return (
     <nav
-      aria-label="导入步骤"
+      aria-label={t('importWiz.stepsAria')}
       className="shrink-0 border-b border-line-soft px-4 py-3"
     >
       <ol className="flex w-full items-center gap-2">
-        {STEPS.map((label, index) => {
+        {STEP_KEYS.map((key, index) => {
           const stepNo = index + 1;
           const done = stepNo < current;
           const active = stepNo === current;
           const node = (
-            <li key={label} className="flex shrink-0 items-center gap-1.5" aria-current={active ? 'step' : undefined}>
+            <li key={key} className="flex shrink-0 items-center gap-1.5" aria-current={active ? 'step' : undefined}>
               <span
                 className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-medium leading-none ${
                   done
@@ -173,15 +192,15 @@ function Stepper({ current }: { current: number }) {
                       : 'text-ink-faint'
                 }`}
               >
-                {label}
+                {t(key)}
               </span>
             </li>
           );
-          return stepNo < STEPS.length
+          return stepNo < STEP_KEYS.length
             ? [
                 node,
                 <span
-                  key={`${label}-connector`}
+                  key={`${key}-connector`}
                   className={`h-px flex-1 ${stepNo < current ? 'bg-brand-300' : 'bg-line'}`}
                   aria-hidden="true"
                 />,
@@ -215,6 +234,7 @@ function ManifestFileRow({
   file: File;
   onRemove: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="mt-2 flex items-center gap-2 rounded-lg border border-line bg-card px-3 py-2">
       <Icon name="file" size={14} className="shrink-0 text-ink-faint" />
@@ -231,7 +251,7 @@ function ManifestFileRow({
         type="button"
         onClick={onRemove}
         className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-ink-faint transition-colors duration-150 hover:bg-danger-soft hover:text-danger-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-        aria-label={`移除清单文件 ${file.name}`}
+        aria-label={t('importWiz.removeManifestFile', { name: file.name })}
       >
         <Icon name="close" size={12} />
       </button>
@@ -241,10 +261,11 @@ function ManifestFileRow({
 
 /** 列结构参考折叠块（hi-fi 06 §3.4，复用 03 §3.2⑩ details 规格） */
 function ColumnsReference() {
+  const { t } = useI18n();
   return (
     <details className="group rounded-xl border border-line-soft bg-card">
       <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[13px] font-medium text-ink-muted outline-none transition-colors duration-150 hover:text-ink focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white">
-        列结构参考
+        {t('importWiz.colsReference')}
         <Icon
           name="chevron-down"
           size={12}
@@ -252,18 +273,9 @@ function ColumnsReference() {
         />
       </summary>
       <div className="border-t border-line-soft bg-subtle/50 px-3 py-2.5 font-mono text-[11px] leading-4 text-ink-muted">
-        <p className="break-words">
-          datasets 列：dataset_id / dataset_name / field_name / field_type /
-          src_file / src_type / src_locator / description
-        </p>
-        <p className="mt-1.5 break-words">
-          lineage 列：from_dataset / from_field / to_dataset / to_field /
-          transform / confidence / note
-        </p>
-        <p className="mt-1.5 break-words">
-          src_file 可填源文件 ID（数字）或本批绑定文件集内的原始文件名（须唯一）；
-          src_locator 为定位器 JSON（CSV/XLSX 清单中是 JSON 字符串单元格）。
-        </p>
+        <p className="break-words">{t('importWiz.colsDatasets')}</p>
+        <p className="mt-1.5 break-words">{t('importWiz.colsLineage')}</p>
+        <p className="mt-1.5 break-words">{t('importWiz.colsLocatorNote')}</p>
       </div>
     </details>
   );
@@ -284,6 +296,7 @@ export function ImportWizardModal({
   onOpenVersions,
   onNotify,
 }: ImportWizardModalProps) {
+  const { t, locale } = useI18n();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [uploadRows, setUploadRows] = useState<UploadRow[]>([]);
   const [batchError, setBatchError] = useState<string | null>(null);
@@ -416,7 +429,9 @@ export function ImportWizardModal({
     });
     setBatchError(
       rejected.length
-        ? `仅支持 csv / xlsx / json 文件，以下文件未上传：${rejected.join('、')}`
+        ? t('importWiz.unsupportedFiles', {
+            names: rejected.join(locale === 'zh' ? '、' : ', '),
+          })
         : null,
     );
     if (!accepted.length) return;
@@ -436,7 +451,7 @@ export function ImportWizardModal({
           setUploadRows((current) =>
             current.map((item) =>
               item.key === row.key
-                ? { ...item, error: '上传响应异常，请重试' }
+                ? { ...item, error: t('importWiz.uploadBadResponse') }
                 : item,
             ),
           );
@@ -457,7 +472,7 @@ export function ImportWizardModal({
                   error:
                     reason instanceof ApiError
                       ? reason.message
-                      : '上传失败，请稍后重试',
+                      : t('importWiz.uploadFailed'),
                 }
               : item,
           ),
@@ -472,7 +487,9 @@ export function ImportWizardModal({
     if (!currentFormat) return;
     const ext = fileExtension(file.name);
     if (ext !== currentFormat) {
-      setManifestError(`清单文件应与所选格式一致：需要 .${currentFormat} 文件`);
+      setManifestError(
+        t('importWiz.manifestFormatMismatch', { ext: currentFormat }),
+      );
       return;
     }
     setManifestError(null);
@@ -525,7 +542,7 @@ export function ImportWizardModal({
         message:
           reason instanceof ApiError
             ? reason.message
-            : '网络错误，导入未能执行，请检查连接后重试。',
+            : t('common.networkError'),
         retryable: !(reason instanceof ApiError),
       });
     } finally {
@@ -556,7 +573,7 @@ export function ImportWizardModal({
       anchor.remove();
       URL.revokeObjectURL(url);
     } catch {
-      onNotify('下载报告失败，请稍后重试', 'error');
+      onNotify(t('importWiz.reportDownloadFailed'), 'error');
     }
   }
 
@@ -586,7 +603,7 @@ export function ImportWizardModal({
     format === 'csv'
       ? [manifestDatasets?.name, manifestLineage?.name]
           .filter((name): name is string => Boolean(name))
-          .join('、')
+          .join(locale === 'zh' ? '、' : ', ')
       : manifest?.name ?? '';
 
   function renderStepBody(): ReactNode {
@@ -595,10 +612,7 @@ export function ImportWizardModal({
         <div className="space-y-4 animate-fade-in">
           <div className="flex items-start gap-2 rounded-lg border border-line bg-card px-3 py-2.5 text-[12px] leading-5 text-ink-muted">
             <Icon name="info" size={12} className="mt-0.5 shrink-0 text-ink-faint" />
-            <span>
-              三步入库：源文件 → 清单 → 校验报告。第一步：上传第一手源文件。
-              导入清单将以文件 ID 或原始文件名引用它们；相同内容（sha256）自动去重复用。
-            </span>
+            <span>{t('importWiz.step1Intro')}</span>
           </div>
 
           {(batchError || failedCount > 0) && (
@@ -609,14 +623,14 @@ export function ImportWizardModal({
               <Icon name="warning" size={12} className="mt-0.5 shrink-0" />
               <span>
                 {batchError ??
-                  `${failedCount} 个文件上传失败，可移除后重新选择；已成功文件不受影响（sha256 去重兜底）。`}
+                  t('importWiz.failedFilesSummary', { count: failedCount })}
               </span>
             </div>
           )}
 
           <Dropzone
-            title="拖放源文件到此处，或点击选择"
-            hint="csv / xlsx / json · 单文件 ≤ 50MB（MAX_UPLOAD_MB）· 按 sha256 去重"
+            title={t('importWiz.dropSourceTitle')}
+            hint={t('importWiz.dropSourceHint')}
             accept=".csv,.xlsx,.json"
             multiple
             disabled={uploading}
@@ -666,8 +680,8 @@ export function ImportWizardModal({
                           }`}
                         >
                           {row.record.deduped
-                            ? `复用已有 #${row.record.id}`
-                            : `新登记 #${row.record.id}`}
+                            ? t('importWiz.reusedFile', { id: row.record.id })
+                            : t('importWiz.newFile', { id: row.record.id })}
                         </span>
                       </>
                     ) : (
@@ -676,7 +690,9 @@ export function ImportWizardModal({
                           className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-brand-200 border-t-brand-600"
                           aria-hidden="true"
                         />
-                        <span className="text-[11px] text-ink-faint">上传中…</span>
+                        <span className="text-[11px] text-ink-faint">
+                          {t('importWiz.uploading')}
+                        </span>
                       </span>
                     )}
                     {!uploading && (
@@ -688,8 +704,10 @@ export function ImportWizardModal({
                           );
                         }}
                         className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-ink-faint transition-colors duration-150 hover:bg-danger-soft hover:text-danger-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-                        aria-label={`移除文件 ${row.file.name}`}
-                        title="移除（仅放弃本次引用，已登记记录由 sha256 去重兜底）"
+                        aria-label={t('importWiz.removeFile', {
+                          name: row.file.name,
+                        })}
+                        title={t('importWiz.removeFileTitle')}
                       >
                         <Icon name="close" size={12} />
                       </button>
@@ -708,7 +726,7 @@ export function ImportWizardModal({
         <div className="space-y-4 animate-fade-in">
           <div className="rounded-xl border border-line bg-card px-3 py-2.5">
             <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
-              绑定的源文件 · {uploadedRecords.length} 个
+              {t('importWiz.boundSources', { count: uploadedRecords.length })}
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               {uploadedRecords.map((record) => (
@@ -718,18 +736,18 @@ export function ImportWizardModal({
                 type="button"
                 onClick={goBack}
                 className="inline-flex h-7 items-center gap-1 rounded-lg px-2 text-[12px] text-ink-muted transition-colors duration-150 hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-                title="回上一步修改"
+                title={t('importWiz.backToEditTitle')}
               >
                 <Icon name="chevron-left" size={12} />
-                修改
+                {t('importWiz.modify')}
               </button>
             </div>
           </div>
 
           <fieldset className="rounded-xl border border-line bg-card px-3 py-3">
-            <legend className="sr-only">清单格式</legend>
+            <legend className="sr-only">{t('importWiz.manifestFormat')}</legend>
             <div className="grid gap-3 sm:grid-cols-3">
-              {(Object.keys(FORMAT_HINTS) as ImportFormat[]).map((value) => (
+              {(Object.keys(FORMAT_HINT_KEYS) as ImportFormat[]).map((value) => (
                 <label
                   key={value}
                   className={`flex cursor-pointer items-start gap-2.5 rounded-lg border bg-card px-3 py-2.5 transition-colors duration-150 focus-within:ring-2 focus-within:ring-brand-600/60 ${
@@ -751,7 +769,7 @@ export function ImportWizardModal({
                       {value}
                     </span>
                     <span className="mt-1 block text-[12px] leading-4 text-ink-muted">
-                      {FORMAT_HINTS[value]}
+                      {t(FORMAT_HINT_KEYS[value])}
                     </span>
                   </span>
                 </label>
@@ -763,10 +781,10 @@ export function ImportWizardModal({
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <span className="mb-1.5 block text-[12px] font-medium text-ink-soft">
-                  datasets.csv（数据集与字段清单）
+                  {t('importWiz.labelDatasetsCsv')}
                 </span>
                 <Dropzone
-                  title="拖放或点击选择"
+                  title={t('importWiz.dropCompactTitle')}
                   hint=".csv"
                   accept=".csv"
                   compact
@@ -782,10 +800,10 @@ export function ImportWizardModal({
               </div>
               <div>
                 <span className="mb-1.5 block text-[12px] font-medium text-ink-soft">
-                  lineage.csv（血缘清单）
+                  {t('importWiz.labelLineageCsv')}
                 </span>
                 <Dropzone
-                  title="拖放或点击选择"
+                  title={t('importWiz.dropCompactTitle')}
                   hint=".csv"
                   accept=".csv"
                   compact
@@ -804,11 +822,11 @@ export function ImportWizardModal({
 
           {format === 'xlsx' && (
             <div>
-              <span className="mb-1.5 block text-[12px] font-medium text-ink-soft">
-                清单工作簿（xlsx，含 datasets / lineage 两个 sheet）
-              </span>
+                <span className="mb-1.5 block text-[12px] font-medium text-ink-soft">
+                  {t('importWiz.labelXlsxWorkbook')}
+                </span>
               <Dropzone
-                title="拖放或点击选择"
+                title={t('importWiz.dropCompactTitle')}
                 hint=".xlsx"
                 accept=".xlsx"
                 compact
@@ -826,11 +844,11 @@ export function ImportWizardModal({
 
           {format === 'json' && (
             <div>
-              <span className="mb-1.5 block text-[12px] font-medium text-ink-soft">
-                清单文件（json）
-              </span>
+                <span className="mb-1.5 block text-[12px] font-medium text-ink-soft">
+                  {t('importWiz.labelJsonFile')}
+                </span>
               <Dropzone
-                title="拖放或点击选择"
+                title={t('importWiz.dropCompactTitle')}
                 hint=".json"
                 accept=".json"
                 compact
@@ -873,9 +891,11 @@ export function ImportWizardModal({
               className="h-6 w-6 animate-spin rounded-full border-2 border-brand-200 border-t-brand-600"
               aria-hidden="true"
             />
-            <p className="text-[13px] font-medium text-ink-soft">正在校验并导入…</p>
+            <p className="text-[13px] font-medium text-ink-soft">
+              {t('importWiz.validatingImport')}
+            </p>
             <p className="text-xs text-ink-muted">
-              清单较大时可能需要数十秒，请勿关闭窗口
+              {t('importWiz.validatingHint')}
             </p>
           </div>
         );
@@ -888,7 +908,9 @@ export function ImportWizardModal({
               className="rounded-xl border border-danger/25 bg-danger-soft px-3.5 py-3"
               role="alert"
             >
-              <p className="text-[13px] font-medium text-danger-deep">导入未执行</p>
+              <p className="text-[13px] font-medium text-danger-deep">
+                {t('importWiz.importNotExecuted')}
+              </p>
               <p className="mt-1 break-words text-[12px] leading-5 text-danger-deep">
                 {submitError.message}
               </p>
@@ -898,7 +920,7 @@ export function ImportWizardModal({
                   onClick={goBack}
                   className="inline-flex h-8 items-center gap-1 rounded-lg border border-line-strong bg-card px-3 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                 >
-                  返回上一步
+                  {t('importWiz.backToPrevious')}
                 </button>
                 {submitError.retryable && (
                   <button
@@ -907,7 +929,7 @@ export function ImportWizardModal({
                     className="inline-flex h-8 items-center gap-1 rounded-lg border border-line-strong bg-card px-3 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                   >
                     <Icon name="refresh" size={12} />
-                    重试
+                    {t('common.retry')}
                   </button>
                 )}
               </div>
@@ -930,10 +952,7 @@ export function ImportWizardModal({
           />
           <div className="flex items-start gap-2 rounded-lg border border-brand-100 bg-brand-50 px-3 py-2.5 text-[12px] leading-5 text-brand-800">
             <Icon name="info" size={12} className="mt-0.5 shrink-0 text-brand-700" />
-            <span>
-              提交后后端在同一事务内完成行级校验与入库：行级失败进报告、不阻塞成功行；
-              清单文件级错误（缺 sheet、表头缺失、根解析失败等）整批失败。
-            </span>
+            <span>{t('importWiz.step3Notice')}</span>
           </div>
         </div>
       );
@@ -948,19 +967,20 @@ export function ImportWizardModal({
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-success/25 bg-success-soft px-3 py-2.5 text-[13px] leading-5 text-success-deep">
           <Icon name="check" size={12} className="shrink-0" />
           <span>
-            导入完成 · 已入库为版本{' '}
-            <span className="font-mono tabular-nums">v{result?.version_no}</span> ·
-            批次 <span className="font-mono tabular-nums">#{result?.batch_id}</span>
+            {t('importWiz.importDone')} · {t('importWiz.importedAsVersion')}{' '}
+            <span className="font-mono tabular-nums">v{result?.version_no}</span> ·{' '}
+            {t('importWiz.batch')}{' '}
+            <span className="font-mono tabular-nums">#{result?.batch_id}</span>
           </span>
         </div>
 
         {summary && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatCard label="清单总行数" value={summary.total} />
-            <StatCard label="成功（新增 / 更新 / 未变化）" value={summary.ok} tone="success" />
-            <StatCard label="合并（同批同键，后到覆盖）" value={summary.merged} tone="warning" />
+            <StatCard label={t('importWiz.statTotal')} value={summary.total} />
+            <StatCard label={t('importWiz.statOk')} value={summary.ok} tone="success" />
+            <StatCard label={t('importWiz.statMerged')} value={summary.merged} tone="warning" />
             <StatCard
-              label="拒绝（见下表）"
+              label={t('importWiz.statRejected')}
               value={summary.rejected}
               tone="danger"
               alert={summary.rejected > 0}
@@ -969,16 +989,18 @@ export function ImportWizardModal({
         )}
 
         {summary && summary.rejected === 0 && (
-          <p className="text-[12px] text-success-deep">全部行均成功，无拒绝行。</p>
+          <p className="text-[12px] text-success-deep">
+            {t('importWiz.allRowsOk')}
+          </p>
         )}
 
         {rejectedItems.length > 0 && (
           <div className="overflow-hidden rounded-xl border border-line bg-card">
             <div className="flex items-center gap-2 border-b border-line bg-subtle px-3 py-2 font-mono text-[11px] font-medium text-ink-muted">
-              <span className="w-12 shrink-0">行号</span>
-              <span className="w-16 shrink-0">类型</span>
-              <span className="w-[220px] shrink-0">对象</span>
-              <span className="min-w-0 flex-1">拒绝原因</span>
+              <span className="w-12 shrink-0">{t('importWiz.colRow')}</span>
+              <span className="w-16 shrink-0">{t('common.type')}</span>
+              <span className="w-[220px] shrink-0">{t('importWiz.colRef')}</span>
+              <span className="min-w-0 flex-1">{t('importWiz.colReason')}</span>
             </div>
             <ul className="divide-y divide-line-soft" role="list">
               {rejectedItems.map((item, index) => (
@@ -991,7 +1013,7 @@ export function ImportWizardModal({
                   </span>
                   <span className="w-16 shrink-0">
                     <span className="rounded border border-line bg-page px-1.5 py-px font-mono text-[11px] text-ink-faint">
-                      {KIND_LABELS[item.kind] ?? item.kind}
+                      {kindLabel(t, item.kind)}
                     </span>
                   </span>
                   <span className="w-[220px] shrink-0 break-all font-mono text-[12px] text-ink">
@@ -999,7 +1021,7 @@ export function ImportWizardModal({
                   </span>
                   <span className="min-w-0 flex-1 break-words text-[12px] leading-5 text-ink-soft">
                     <span className="mr-1.5 inline-flex h-5 items-center rounded-full border border-transparent bg-danger-soft px-1.5 font-mono text-[11px] text-danger-deep">
-                      拒绝
+                      {t('importWiz.statusRejected')}
                     </span>
                     {item.reason ?? '—'}
                   </span>
@@ -1012,7 +1034,9 @@ export function ImportWizardModal({
         {result && result.report.items.length > 0 && (
           <details className="group rounded-xl border border-line-soft bg-card">
             <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[13px] font-medium text-ink-muted outline-none transition-colors duration-150 hover:text-ink focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white">
-              全部 {result.report.summary.total} 条结果
+              {t('importWiz.allResults', {
+                count: result.report.summary.total,
+              })}
               <Icon
                 name="chevron-down"
                 size={12}
@@ -1030,10 +1054,10 @@ export function ImportWizardModal({
                       STATUS_BADGES[item.status] ?? 'border-line bg-subtle text-ink-muted'
                     }`}
                   >
-                    {STATUS_LABELS[item.status] ?? item.status}
+                    {statusLabel(t, item.status)}
                   </span>
                   <span className="w-14 shrink-0 text-[11px] text-ink-faint">
-                    {KIND_LABELS[item.kind] ?? item.kind}
+                    {kindLabel(t, item.kind)}
                   </span>
                   <span className="min-w-0 flex-1 break-all font-mono text-[12px] text-ink-soft">
                     {item.ref}
@@ -1049,10 +1073,7 @@ export function ImportWizardModal({
 
         <div className="flex items-start gap-2 rounded-lg border border-brand-100 bg-brand-50 px-3 py-2.5 text-[12px] leading-5 text-brand-800">
           <Icon name="info" size={12} className="mt-0.5 shrink-0 text-brand-700" />
-          <span>
-            拒绝行不阻塞成功行；全部变更（含合并）逐条写入 change_log，可按批次回滚
-            （admin，见版本抽屉说明）。
-          </span>
+          <span>{t('importWiz.step4Notice')}</span>
         </div>
       </div>
     );
@@ -1084,13 +1105,17 @@ export function ImportWizardModal({
                 id="import-wizard-title"
                 className="min-w-0 text-[14px] font-semibold text-ink"
               >
-                导入数据
+                {t('importWiz.title')}
               </h2>
               {step >= 3 && versionBadgeValue !== null && (
                 <span className="hidden rounded-full border border-line bg-subtle px-2 py-px font-mono text-[11px] text-ink-muted sm:inline-flex">
                   {result
-                    ? `已入库为版本 v${versionBadgeValue}`
-                    : `将入库为版本 v${versionBadgeValue}`}
+                    ? t('importWiz.badgeImported', {
+                        version: versionBadgeValue,
+                      })
+                    : t('importWiz.badgeWillImport', {
+                        version: versionBadgeValue,
+                      })}
                 </span>
               )}
             </div>
@@ -1100,7 +1125,7 @@ export function ImportWizardModal({
               onClick={requestClose}
               disabled={busy}
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
-              aria-label="关闭导入向导"
+              aria-label={t('importWiz.closeAria')}
             >
               <Icon name="close" size={16} />
             </button>
@@ -1122,7 +1147,7 @@ export function ImportWizardModal({
                   className="inline-flex h-8 items-center gap-1 rounded-lg px-2.5 text-[13px] font-medium text-ink-muted transition-colors duration-150 hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                 >
                   <Icon name="plus" size={12} />
-                  再次导入
+                  {t('importWiz.importAgain')}
                 </button>
                 <button
                   type="button"
@@ -1130,7 +1155,7 @@ export function ImportWizardModal({
                   className="inline-flex h-8 items-center gap-1 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                 >
                   <Icon name="download" size={12} />
-                  下载完整报告（JSON）
+                  {t('importWiz.downloadReport')}
                 </button>
               </div>
             ) : (
@@ -1143,7 +1168,7 @@ export function ImportWizardModal({
                     className="inline-flex h-8 items-center gap-1 rounded-lg border border-line-strong bg-card px-3 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-line-strong"
                   >
                     <Icon name="chevron-left" size={12} />
-                    上一步
+                    {t('importWiz.prevStep')}
                   </button>
                 ) : (
                   <span aria-hidden="true" />
@@ -1153,7 +1178,7 @@ export function ImportWizardModal({
 
             {step !== 4 && (
               <span className="shrink-0 font-mono text-[11px] tabular-nums text-ink-faint">
-                步骤 {step}/4
+                {t('importWiz.stepProgress', { step })}
               </span>
             )}
 
@@ -1165,7 +1190,7 @@ export function ImportWizardModal({
                   className="inline-flex h-8 items-center gap-1 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                 >
                   <Icon name="tag" size={12} />
-                  查看版本抽屉
+                  {t('importWiz.openVersions')}
                 </button>
                 <button
                   type="button"
@@ -1173,7 +1198,7 @@ export function ImportWizardModal({
                   className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand-700 px-3.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-brand-800 active:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                 >
                   <Icon name="check" size={12} />
-                  完成
+                  {t('importWiz.done')}
                 </button>
               </div>
             ) : (
@@ -1202,9 +1227,9 @@ export function ImportWizardModal({
                 )}
                 {step === 3
                   ? submitting
-                    ? '导入中…'
-                    : '开始校验并导入'
-                  : '下一步'}
+                    ? t('importWiz.importing')
+                    : t('importWiz.startImport')
+                  : t('importWiz.nextStep')}
               </button>
             )}
           </footer>
@@ -1213,14 +1238,11 @@ export function ImportWizardModal({
 
       <ConfirmDialog
         open={confirmOpen}
-        title="放弃本次导入？"
-        confirmLabel="关闭并放弃"
+        title={t('importWiz.discardTitle')}
+        confirmLabel={t('importWiz.discardConfirm')}
         message={
           <div className="space-y-1.5">
-            <p>
-              关闭将放弃当前导入进度；已上传的源文件已登记入库，
-              再次导入时可按 sha256 去重复用。
-            </p>
+            <p>{t('importWiz.discardMessage')}</p>
           </div>
         }
         onConfirm={() => {
@@ -1243,27 +1265,34 @@ function SummaryCard({
   records: SourceFileRecord[];
   manifestNames: string;
 }) {
+  const { t } = useI18n();
   return (
     <div className="divide-y divide-line-soft rounded-xl border border-line bg-card">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-3 py-2.5">
-        <span className="text-[12px] text-ink-muted">清单格式</span>
+        <span className="text-[12px] text-ink-muted">
+          {t('importWiz.manifestFormat')}
+        </span>
         <span className="font-mono text-[13px] font-medium text-ink">
           {format ?? '—'}
         </span>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-3 py-2.5">
-        <span className="text-[12px] text-ink-muted">绑定源文件</span>
+        <span className="text-[12px] text-ink-muted">
+          {t('importWiz.summaryBoundSources')}
+        </span>
         <span className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
           {records.map((record) => (
             <SourceChip key={record.id} record={record} />
           ))}
           <span className="font-mono text-[11px] tabular-nums text-ink-faint">
-            {records.length} 个
+            {t('importWiz.fileCount', { count: records.length })}
           </span>
         </span>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-3 py-2.5">
-        <span className="text-[12px] text-ink-muted">清单文件</span>
+        <span className="text-[12px] text-ink-muted">
+          {t('importWiz.summaryManifestFiles')}
+        </span>
         <span
           className="min-w-0 max-w-full truncate font-mono text-[13px] text-ink"
           title={manifestNames}

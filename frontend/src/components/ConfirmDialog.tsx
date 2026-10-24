@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { Icon } from './Icon';
+import { useI18n } from '../i18n';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -19,13 +20,14 @@ export function ConfirmDialog({
   open,
   title,
   message,
-  confirmLabel = '确认',
-  cancelLabel = '取消',
+  confirmLabel,
+  cancelLabel,
   danger = false,
   busy = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const { t } = useI18n();
   const cancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -92,7 +94,7 @@ export function ConfirmDialog({
             disabled={busy}
             className="inline-flex h-8 items-center justify-center rounded-lg border border-line-strong bg-card px-3 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 active:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-line-strong"
           >
-            {cancelLabel}
+            {cancelLabel ?? t('common.cancel')}
           </button>
           <button
             type="button"
@@ -107,7 +109,7 @@ export function ConfirmDialog({
             {busy && (
               <span className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-white/40 border-t-white" />
             )}
-            {busy ? '处理中…' : confirmLabel}
+            {busy ? t('confirmDialog.busy') : (confirmLabel ?? t('common.confirm'))}
           </button>
         </div>
       </div>

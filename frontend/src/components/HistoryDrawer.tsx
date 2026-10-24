@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ChangeEntry, ChangeOp, LocatorEnvelope, TargetKind } from '../types';
 import { ApiError, getChanges, isAbortError } from '../lib/api';
 import { formatDateTime, humanizeLocator } from '../lib/format';
+import { useI18n, type TranslateFn } from '../i18n';
 import { Icon } from './Icon';
 
 interface HistoryDrawerProps {
@@ -12,33 +13,35 @@ interface HistoryDrawerProps {
   onClose: () => void;
 }
 
-const FIELD_LABELS: Record<string, string> = {
-  dataset_id: '数据集',
-  name: '名称',
-  field_type: '类型',
-  source_file_id: '源文件',
-  src_locator: '定位器',
-  description: '描述',
-  from_dataset: '上游数据集',
-  from_field: '上游字段',
-  to_dataset: '下游数据集',
-  to_field: '下游字段',
-  transform: '转换',
-  confidence: '置信度',
-  source: '来源',
-  note: '备注',
+import type { HistoryKey } from '../i18n/dicts/history';
+
+const FIELD_LABEL_KEYS: Record<string, HistoryKey> = {
+  dataset_id: 'history.field.dataset_id',
+  name: 'history.field.name',
+  field_type: 'history.field.field_type',
+  source_file_id: 'history.field.source_file_id',
+  src_locator: 'history.field.src_locator',
+  description: 'history.field.description',
+  from_dataset: 'history.field.from_dataset',
+  from_field: 'history.field.from_field',
+  to_dataset: 'history.field.to_dataset',
+  to_field: 'history.field.to_field',
+  transform: 'history.field.transform',
+  confidence: 'history.field.confidence',
+  source: 'history.field.source',
+  note: 'history.field.note',
 };
 
-const KIND_LABELS: Record<TargetKind, string> = {
-  dataset: '数据集',
-  field: '字段',
-  edge: '血缘边',
+const KIND_LABEL_KEYS: Record<TargetKind, HistoryKey> = {
+  dataset: 'history.kind.dataset',
+  field: 'history.kind.field',
+  edge: 'history.kind.edge',
 };
 
-const OP_LABELS: Record<ChangeOp, string> = {
-  added: '新增',
-  updated: '修改',
-  deleted: '删除',
+const OP_LABEL_KEYS: Record<ChangeOp, HistoryKey> = {
+  added: 'history.op.added',
+  updated: 'history.op.updated',
+  deleted: 'history.op.deleted',
 };
 
 const OP_STYLES: Record<ChangeOp, string> = {
@@ -53,19 +56,19 @@ const OP_DOT_STYLES: Record<ChangeOp, string> = {
   deleted: 'bg-danger',
 };
 
-function valueText(value: unknown): string {
-  if (value === null || value === undefined) return '空';
-  if (typeof value === 'string') return value || '空';
+function valueText(value: unknown, t: TranslateFn): string {
+  if (value === null || value === undefined) return t('history.emptyValue');
+  if (typeof value === 'string') return value || t('history.emptyValue');
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
   if (typeof value === 'object') {
     const record = value as Record<string, unknown>;
     if ('type' in record && ('input' in record || 'resolved' in record)) {
-      return humanizeLocator(value as LocatorEnvelope);
+      return humanizeLocator(value as LocatorEnvelope, t);
     }
     try {
       return JSON.stringify(value);
     } catch {
-      return '[无法展示]';
+      return t('history.unserializable');
     }
   }
   return String(value);
@@ -86,13 +89,13 @@ function changedKeys(
   );
 }
 
-function ChangeSummary({ entry }: { entry: ChangeEntry }) {
+function ChangeSummary({ entry, t }: { entry: ChangeEntry; t: TranslateFn }) {
   const keys = changedKeys(entry.before, entry.after);
   if (entry.op === 'updated') {
     if (keys.length === 0) {
       return (
         <p className="text-[11px] leading-4 text-ink-faint">
-          内容与上一版本一致（未产生实质变更）。
+          {t('history.noRealChange')}
         </p>
       );
     }
@@ -103,13 +106,13 @@ function ChangeSummary({ entry }: { entry: ChangeEntry }) {
             key={key}
             className="grid grid-cols-[64px_minmax(0,1fr)] gap-x-1.5 gap-y-1 text-[11px] leading-4"
           >
-            <span className="text-ink-faint">{FIELD_LABELS[key] ?? key}</span>
+            <span className="text-ink-faint">{FIELD_LABEL_KEYS[key] ? t(FIELD_LABEL_KEYS[key]) : key}</span>
             <span className="min-w-0 break-words font-mono text-[11px] leading-4">
               <span className="line-through decoration-line-strong text-ink-faint">
-                {valueText(entry.before?.[key])}
+                {valueText(entry.before?.[key], t)}
               </span>
               <span className="mx-1 text-ink-faint">→</span>
-              <span className="text-brand-800">{valueText(entry.after?.[key])}</span>
+              <span className="text-brand-800">{valueText(entry.after?.[key], t)}</span>
             </span>
           </li>
         ))}
@@ -126,8 +129,8 @@ function ChangeSummary({ entry }: { entry: ChangeEntry }) {
     <div className="flex flex-wrap gap-x-3 gap-y-1">
       {summaryKeys.map((key) => (
         <span key={key} className="min-w-0 break-words font-mono text-[11px] leading-4 text-ink-muted">
-          <span className="text-ink-faint">{FIELD_LABELS[key] ?? key} </span>
-          {valueText(snapshot[key])}
+          <span className="text-ink-faint">{FIELD_LABEL_KEYS[key] ? t(FIELD_LABEL_KEYS[key]) : key} </span>
+          {valueText(snapshot[key], t)}
         </span>
       ))}
     </div>
@@ -142,6 +145,7 @@ export function HistoryDrawer({
   title,
   onClose,
 }: HistoryDrawerProps) {
+  const { t } = useI18n();
   const [entries, setEntries] = useState<ChangeEntry[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -161,7 +165,7 @@ export function HistoryDrawer({
         setError(
           reason instanceof ApiError
             ? reason.message
-            : '无法读取变更历史，请稍后重试。',
+            : t('history.loadFailed'),
         );
       })
       .finally(() => {
@@ -208,7 +212,7 @@ export function HistoryDrawer({
             </span>
             <div className="min-w-0">
               <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
-                变更历史 · {KIND_LABELS[entityKind]}
+                {t('history.titlePrefix', { kind: t(KIND_LABEL_KEYS[entityKind]) })}
               </div>
               <h2
                 id="history-drawer-title"
@@ -223,8 +227,8 @@ export function HistoryDrawer({
               type="button"
               onClick={() => setReloadKey((value) => value + 1)}
               className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-              aria-label="刷新变更历史"
-              title="刷新"
+              aria-label={t('history.refresh')}
+              title={t('history.refreshShort')}
             >
               <Icon name="refresh" size={14} />
             </button>
@@ -233,7 +237,7 @@ export function HistoryDrawer({
               type="button"
               onClick={onClose}
               className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-              aria-label="关闭变更历史"
+              aria-label={t('history.close')}
             >
               <Icon name="close" size={16} />
             </button>
@@ -247,10 +251,7 @@ export function HistoryDrawer({
             </p>
             <p className="mt-1.5 flex items-start gap-1.5 text-[11px] leading-4 text-ink-muted">
               <Icon name="info" size={11} className="mt-0.5 shrink-0 text-ink-faint" />
-              <span>
-                变更日志按时间倒序展示（最多 50 条）。导入与人工编辑都会留痕，
-                标注不写入变更日志。
-              </span>
+              <span>{t('history.intro')}</span>
             </p>
           </div>
 
@@ -274,16 +275,16 @@ export function HistoryDrawer({
                 className="mt-2 inline-flex h-7 items-center gap-1 rounded-lg border border-line-strong bg-card px-2 text-[11px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               >
                 <Icon name="refresh" size={11} />
-                重新加载
+                {t('history.reload')}
               </button>
             </div>
           )}
 
           {!loading && !error && entries?.length === 0 && (
             <div className="rounded-xl border border-dashed border-line px-4 py-8 text-center">
-              <div className="text-[12px] text-ink-muted">暂无变更记录</div>
+              <div className="text-[12px] text-ink-muted">{t('history.empty')}</div>
               <p className="mt-1 text-[11px] text-ink-muted">
-                该实体的创建与修改尚未写入变更日志。
+                {t('history.emptyHint')}
               </p>
             </div>
           )}
@@ -301,7 +302,7 @@ export function HistoryDrawer({
                       <span
                         className={`rounded border px-1.5 py-px font-mono text-[11px] ${OP_STYLES[entry.op]}`}
                       >
-                        {OP_LABELS[entry.op]}
+                        {t(OP_LABEL_KEYS[entry.op])}
                       </span>
                       <span className="font-mono text-[11px] tabular-nums text-ink-faint">
                         #{entry.id}
@@ -311,11 +312,11 @@ export function HistoryDrawer({
                       </span>
                     </div>
                     <div className="mt-1.5">
-                      <ChangeSummary entry={entry} />
+                      <ChangeSummary entry={entry} t={t} />
                     </div>
                     <div className="mt-1.5 flex items-center gap-1 font-mono text-[11px] text-ink-faint">
                       <Icon name="user" size={10} />
-                      操作者 {entry.actor}
+                      {t('history.actor', { actor: entry.actor })}
                     </div>
                   </article>
                 </li>

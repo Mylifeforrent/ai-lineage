@@ -34,6 +34,7 @@ import { AiAssistantDrawer } from './AiAssistantDrawer';
 import { UserManagementModal } from './UserManagementModal';
 import { Toast } from './Toast';
 import type { ToastMessage, ToastTone } from './Toast';
+import { useI18n } from '../i18n';
 
 interface WorkspaceProps {
   session: Session;
@@ -46,6 +47,7 @@ function errorMessage(reason: unknown, fallback: string): string {
 }
 
 export function Workspace({ session, onLogout }: WorkspaceProps) {
+  const { t } = useI18n();
   const canEdit = isEditor(session.role);
   const admin = isAdmin(session.role);
 
@@ -177,7 +179,7 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
       .catch((reason: unknown) => {
         if (controller.signal.aborted || isAbortError(reason)) return;
         setDatasetsError(
-          errorMessage(reason, '无法读取数据集列表，请检查后端服务是否已启动'),
+          errorMessage(reason, t('workspace.loadDatasetsFailed')),
         );
       })
       .finally(() => {
@@ -213,7 +215,7 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
       .catch((reason: unknown) => {
         if (controller.signal.aborted || isAbortError(reason)) return;
         setGraphError(
-          errorMessage(reason, '无法读取血缘子图，请稍后重试'),
+          errorMessage(reason, t('workspace.loadGraphFailed')),
         );
       })
       .finally(() => {
@@ -347,11 +349,14 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
       applyGraph(payload);
       setGraphError(null);
       showToast(
-        `画布已更新：${payload.datasets.length} 个数据集 · ${payload.edges.length} 条连线`,
+        t('workspace.canvasUpdated', {
+          datasets: payload.datasets.length,
+          edges: payload.edges.length,
+        }),
         'success',
       );
     },
-    [applyGraph, showToast],
+    [applyGraph, showToast, t],
   );
 
   const handleSelectField = useCallback(
@@ -393,7 +398,7 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
     setDeletingEdge(true);
     try {
       await deleteEdge(session.access_token, pendingDeleteEdge.id);
-      showToast(`已删除血缘边 #${pendingDeleteEdge.id}`, 'success');
+      showToast(t('workspace.edgeDeleted', { id: pendingDeleteEdge.id }), 'success');
       if (selectedEdgeId === pendingDeleteEdge.id) {
         setSelectedEdgeId(null);
         setEdgeStartEditing(false);
@@ -403,7 +408,7 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
       showToast(
         reason instanceof ApiError
           ? reason.message
-          : '删除血缘边失败，请稍后重试。',
+          : t('workspace.edgeDeleteFailed'),
         'error',
       );
     } finally {
@@ -417,6 +422,7 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
     selectedEdgeId,
     session.access_token,
     showToast,
+    t,
   ]);
 
   const handleConnectRequest = useCallback((draft: EdgeDraft) => {
@@ -429,10 +435,10 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
       setSelectedField(null);
       setSelectedEdgeId(edge.id);
       setEdgeStartEditing(false);
-      showToast(`已新增血缘边 #${edge.id}（人工补边）`, 'success');
+      showToast(t('workspace.edgeCreated', { id: edge.id }), 'success');
       refreshGraph();
     },
-    [refreshGraph, showToast],
+    [refreshGraph, showToast, t],
   );
 
   const handleCanvasNotice = useCallback(
@@ -444,9 +450,9 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
   const handleAiSuggested = useCallback(
     (count: number) => {
       refreshGraph();
-      showToast(`AI 已落库 ${count} 条血缘候选边，请在画布上人工确认`, 'info');
+      showToast(t('workspace.aiSuggested', { count }), 'info');
     },
-    [refreshGraph, showToast],
+    [refreshGraph, showToast, t],
   );
 
   /** 回答内证据锚点点击：把该字段应用为画布追踪焦点（seq 递增触发应用）。 */
@@ -480,7 +486,10 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
   }, [aiFocus, aiGraph, selectedDatasetId]);
 
   const deleteDescription = pendingDeleteEdge
-    ? `${edgeEntityKey(pendingDeleteEdge)}（来源 ${pendingDeleteEdge.source}）`
+    ? t('workspace.deleteDesc', {
+        key: edgeEntityKey(pendingDeleteEdge),
+        source: pendingDeleteEdge.source,
+      })
     : '';
 
   return (
@@ -597,16 +606,16 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
 
       <ConfirmDialog
         open={Boolean(pendingDeleteEdge)}
-        title="删除血缘边"
+        title={t('workspace.deleteEdgeTitle')}
         danger
         busy={deletingEdge}
-        confirmLabel="确认删除"
+        confirmLabel={t('workspace.deleteConfirm')}
         message={
           <div className="space-y-1.5">
             <p className="break-all font-mono text-[11px] text-ink-soft">
               {deleteDescription}
             </p>
-            <p>删除会写入变更日志；如需恢复，可由管理员回滚到之前的版本标签。</p>
+            <p>{t('workspace.deleteNote')}</p>
           </div>
         }
         onConfirm={handleConfirmDeleteEdge}

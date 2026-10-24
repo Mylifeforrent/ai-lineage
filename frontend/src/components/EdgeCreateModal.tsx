@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import type { EdgeDraft, LineageEdge } from '../types';
 import { ApiError, createEdge, isAbortError } from '../lib/api';
 import { Icon } from './Icon';
+import { useI18n } from '../i18n';
 
 interface EdgeCreateModalProps {
   draft: EdgeDraft;
@@ -21,6 +22,7 @@ export function EdgeCreateModal({
   onClose,
   onCreated,
 }: EdgeCreateModalProps) {
+  const { t } = useI18n();
   const [transform, setTransform] = useState('');
   const [confidence, setConfidence] = useState('1');
   const [note, setNote] = useState('');
@@ -59,7 +61,7 @@ export function EdgeCreateModal({
     if (submitting) return;
     const parsedConfidence = Number(confidence);
     if (!Number.isFinite(parsedConfidence) || parsedConfidence < 0 || parsedConfidence > 1) {
-      setError('置信度必须是 0 到 1 之间的数字。');
+      setError(t('edgeCreate.confidenceInvalid'));
       return;
     }
 
@@ -85,7 +87,7 @@ export function EdgeCreateModal({
       setError(
         reason instanceof ApiError
           ? reason.message
-          : '新增血缘失败，请稍后重试。',
+          : t('edgeCreate.submitFailed'),
       );
     } finally {
       if (!controller.signal.aborted) setSubmitting(false);
@@ -112,10 +114,10 @@ export function EdgeCreateModal({
             </span>
             <div className="min-w-0">
               <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
-                人工补边 · {isFieldLevel ? '字段级' : '表级'}
+                {isFieldLevel ? t('edgeCreate.eyebrowField') : t('edgeCreate.eyebrowTable')}
               </div>
               <h2 id="edge-create-title" className="mt-0.5 text-[14px] font-semibold text-ink">
-                新增血缘
+                {t('edgeCreate.title')}
               </h2>
             </div>
           </div>
@@ -125,7 +127,7 @@ export function EdgeCreateModal({
             onClick={onClose}
             disabled={submitting}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-transparent text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
-            aria-label="关闭新增血缘弹窗"
+            aria-label={t('edgeCreate.close')}
           >
             <Icon name="close" size={16} />
           </button>
@@ -144,14 +146,14 @@ export function EdgeCreateModal({
                 htmlFor="edge-transform"
                 className="mb-1.5 block text-[12px] font-medium text-ink-soft"
               >
-                转换说明
+                {t('edgeCreate.transformLabel')}
               </label>
               <input
                 id="edge-transform"
                 type="text"
                 value={transform}
                 onChange={(event) => setTransform(event.target.value)}
-                placeholder="如 trim/cast、lookup、金额汇总"
+                placeholder={t('edgeCreate.transformPlaceholder')}
                 className="field-input h-9 text-[13px]"
                 disabled={submitting}
                 maxLength={200}
@@ -164,7 +166,7 @@ export function EdgeCreateModal({
                   htmlFor="edge-confidence"
                   className="mb-1.5 block text-[12px] font-medium text-ink-soft"
                 >
-                  置信度（0~1）
+                  {t('edgeCreate.confidenceLabel')}
                 </label>
                 <input
                   id="edge-confidence"
@@ -183,14 +185,14 @@ export function EdgeCreateModal({
                   htmlFor="edge-note"
                   className="mb-1.5 block text-[12px] font-medium text-ink-soft"
                 >
-                  备注
+                  {t('edgeCreate.noteLabel')}
                 </label>
                 <input
                   id="edge-note"
                   type="text"
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
-                  placeholder="为什么补这条边（可选）"
+                  placeholder={t('edgeCreate.notePlaceholder')}
                   className="field-input h-9 text-[13px]"
                   disabled={submitting}
                   maxLength={500}
@@ -201,7 +203,7 @@ export function EdgeCreateModal({
             <div className="flex items-start gap-2 rounded-lg border border-brand-100 bg-brand-50 px-3 py-2 text-[12px] leading-4 text-brand-800">
               <Icon name="info" size={12} className="mt-0.5 shrink-0" />
               <span>
-                人工边来源记为 manual，会写入变更日志；同一上下游已存在血缘时后端返回 409。
+                {t('edgeCreate.hint')}
               </span>
             </div>
 
@@ -223,7 +225,7 @@ export function EdgeCreateModal({
               disabled={submitting}
               className="h-8 rounded-lg border border-line-strong bg-card px-3 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
             >
-              取消
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -233,12 +235,12 @@ export function EdgeCreateModal({
               {submitting ? (
                 <>
                   <span className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-white/40 border-t-white" />
-                  创建中…
+                  {t('edgeCreate.creating')}
                 </>
               ) : (
                 <>
                   <Icon name="plus" size={12} />
-                  创建血缘边
+                  {t('edgeCreate.submit')}
                 </>
               )}
             </button>

@@ -9,6 +9,7 @@ import {
 } from '../lib/handles';
 import { Icon } from './Icon';
 import { FIELD_PREVIEW_LIMIT } from '../lib/layout';
+import { useI18n } from '../i18n';
 
 export interface DatasetNodeData extends Record<string, unknown> {
   dataset: LineageDataset;
@@ -45,6 +46,7 @@ export function DatasetNode({ data }: NodeProps) {
     onToggleFields,
     onSelectField,
   } = nodeData;
+  const { t } = useI18n();
   const fieldCount = dataset.fields.length;
   const visibleFields = fieldsExpanded
     ? dataset.fields
@@ -58,7 +60,7 @@ export function DatasetNode({ data }: NodeProps) {
           ? 'shadow-node-active'
           : 'shadow-node hover:shadow-card'
       }`}
-      aria-label={`数据集 ${dataset.name || dataset.id}，${fieldCount} 个字段`}
+      aria-label={t('datasetNode.aria', { name: dataset.name || dataset.id, count: fieldCount })}
     >
       <span
         className={`pointer-events-none absolute inset-x-5 top-0 z-10 h-[2px] rounded-b-full ${
@@ -99,10 +101,14 @@ export function DatasetNode({ data }: NodeProps) {
           className="nodrag nopan flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-ink-faint transition-colors duration-150 hover:bg-card hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1"
           aria-label={
             collapsed
-              ? `展开 ${dataset.id} 的字段列表`
-              : `收起 ${dataset.id} 的字段列表`
+              ? t('datasetNode.expandFields', { id: dataset.id })
+              : t('datasetNode.collapseFields', { id: dataset.id })
           }
-          title={collapsed ? '展开字段列表' : '收起字段列表'}
+          title={
+            collapsed
+              ? t('datasetNode.expandFieldsTitle')
+              : t('datasetNode.collapseFieldsTitle')
+          }
         >
           <Icon
             name={collapsed ? 'chevron-right' : 'chevron-down'}
@@ -120,7 +126,7 @@ export function DatasetNode({ data }: NodeProps) {
             </h3>
             {isSeed && (
               <span className="shrink-0 rounded-full border border-brand-200 bg-card px-1.5 py-px font-mono text-[11px] uppercase text-brand-800">
-                种子
+                {t('datasetNode.seed')}
               </span>
             )}
           </div>
@@ -133,7 +139,7 @@ export function DatasetNode({ data }: NodeProps) {
             </span>
             <span className="h-[2px] w-[2px] shrink-0 rounded-full bg-line-strong" />
             <span className="shrink-0 font-mono text-[11px] text-ink-faint">
-              {fieldCount} 个字段
+              {t('datasetNode.fieldCount', { count: fieldCount })}
             </span>
           </div>
         </div>
@@ -161,7 +167,7 @@ export function DatasetNode({ data }: NodeProps) {
             className="nodrag nopan flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-line text-[12px] text-ink-muted transition-colors duration-150 hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60"
           >
             <Icon name="unfold-all" size={12} />
-            展开 {fieldCount} 个字段
+            {t('datasetNode.expandAll', { count: fieldCount })}
           </button>
         </div>
       ) : (
@@ -169,7 +175,7 @@ export function DatasetNode({ data }: NodeProps) {
           {fieldCount === 0 ? (
             <div className="flex h-[42px] items-center justify-center gap-1.5 rounded-md border border-dashed border-line-soft text-[12px] text-ink-faint">
               <Icon name="info" size={12} />
-              暂无字段
+              {t('datasetNode.noFields')}
             </div>
           ) : (
             <>
@@ -204,8 +210,8 @@ export function DatasetNode({ data }: NodeProps) {
                         onSelectField(dataset, field);
                       }}
                       className="nodrag nopan flex h-full w-full min-w-0 items-center justify-between gap-2 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-card"
-                      aria-label={`查看字段 ${dataset.id}.${field.name}`}
-                      title={`${field.description || field.name} · 点击查看定位与回源预览`}
+                      aria-label={t('datasetNode.viewField', { id: `${dataset.id}.${field.name}` })}
+                      title={t('datasetNode.fieldTitle', { desc: field.description || field.name })}
                     >
                       <span className="flex min-w-0 items-center gap-1.5">
                         {isFocused && (
@@ -233,7 +239,7 @@ export function DatasetNode({ data }: NodeProps) {
                         {aiEndpointFields?.includes(field.name) && (
                           <span
                             className="text-ai"
-                            title="存在待确认的 AI 候选血缘"
+                            title={t('datasetNode.aiCandidate')}
                             aria-hidden="true"
                           >
                             <Icon name="sparkles" size={12} />
@@ -263,8 +269,8 @@ export function DatasetNode({ data }: NodeProps) {
                   aria-expanded={fieldsExpanded}
                   title={
                     fieldsExpanded
-                      ? `收起至前 ${FIELD_PREVIEW_LIMIT} 个字段`
-                      : `展开其余 ${hiddenCount} 个字段`
+                      ? t('datasetNode.foldToLimit', { count: FIELD_PREVIEW_LIMIT })
+                      : t('datasetNode.expandRest', { count: hiddenCount })
                   }
                 >
                   <Icon
@@ -272,8 +278,8 @@ export function DatasetNode({ data }: NodeProps) {
                     size={11}
                   />
                   {fieldsExpanded
-                    ? `收起至前 ${FIELD_PREVIEW_LIMIT} 个字段`
-                    : `其余 ${hiddenCount} 个字段已折叠`}
+                    ? t('datasetNode.foldToLimit', { count: FIELD_PREVIEW_LIMIT })
+                    : t('datasetNode.restFolded', { count: hiddenCount })}
                 </button>
               )}
             </>

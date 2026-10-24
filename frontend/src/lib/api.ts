@@ -29,6 +29,8 @@ import type {
   VersionTagDiff,
 } from '../types';
 
+import { tStatic } from '../i18n';
+
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 
 export const SESSION_STORAGE_KEY = 'clew.session';
@@ -60,12 +62,13 @@ function readErrorDetail(payload: unknown, status: number): string {
       if (messages.length) return messages.join('；');
     }
   }
-  if (status === 401) return '登录已过期，请重新登录';
-  if (status === 403) return '当前账号无权执行此操作';
-  if (status === 404) return '请求的资源不存在';
-  if (status === 409) return '操作冲突，请检查当前状态后重试';
-  if (status === 422) return '请求参数不合法';
-  return `请求失败（HTTP ${status}）`;
+  // 前端兜底文案走 i18n（后端 detail 在上方原样透传，不翻译）
+  if (status === 401) return tStatic('api.e401');
+  if (status === 403) return tStatic('api.e403');
+  if (status === 404) return tStatic('api.e404');
+  if (status === 409) return tStatic('api.e409');
+  if (status === 422) return tStatic('api.e422');
+  return tStatic('api.eDefault', { status });
 }
 
 async function request<T>(

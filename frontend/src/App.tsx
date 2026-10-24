@@ -6,9 +6,11 @@ import {
   loadSession,
 } from './lib/api';
 import { LoginPage } from './components/LoginPage';
+import { useI18n } from './i18n';
 import { Workspace } from './components/Workspace';
 
 export default function App() {
+  const { t } = useI18n();
   const [session, setSession] = useState<Session | null>(() => loadSession());
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -16,7 +18,7 @@ export default function App() {
     function handleAuthExpired() {
       clearSession();
       setSession(null);
-      setNotice('登录已过期，请重新登录后继续。');
+      setNotice(t('app.sessionExpired'));
     }
 
     window.addEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);

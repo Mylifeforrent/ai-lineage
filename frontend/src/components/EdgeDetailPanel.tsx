@@ -5,6 +5,7 @@ import { ApiError, confirmAiSuggestion, patchEdge } from '../lib/api';
 import { edgeEntityKey } from '../lib/entities';
 import { formatConfidence } from '../lib/format';
 import { Icon } from './Icon';
+import { useI18n, type TranslateFn } from '../i18n';
 import { SourceBadge } from './SourceBadge';
 import { AnnotationSection } from './AnnotationSection';
 import { HistoryDrawer } from './HistoryDrawer';
@@ -21,8 +22,10 @@ interface EdgeDetailPanelProps {
   onNotify: (message: string, tone?: ToastTone) => void;
 }
 
-const KIND_LABEL = (edge: LineageEdge) =>
-  edge.from_field === null || edge.to_field === null ? '表级血缘' : '字段级血缘';
+const kindLabel = (edge: LineageEdge, t: TranslateFn) =>
+  edge.from_field === null || edge.to_field === null
+    ? t('edgeDetail.kindTable')
+    : t('edgeDetail.kindField');
 
 const endpointLabel = (
   dataset: string,
@@ -37,6 +40,7 @@ interface EdgeEditorProps {
 }
 
 function EdgeEditor({ token, edge, onCancel, onSaved }: EdgeEditorProps) {
+  const { t } = useI18n();
   const [transform, setTransform] = useState(edge.transform ?? '');
   const [note, setNote] = useState(edge.note ?? '');
   const [confidence, setConfidence] = useState(
@@ -57,7 +61,7 @@ function EdgeEditor({ token, edge, onCancel, onSaved }: EdgeEditorProps) {
       parsedConfidence < 0 ||
       parsedConfidence > 1
     ) {
-      setError('置信度必须是 0 到 1 之间的数字。');
+      setError(t('edgeDetail.confidenceInvalid'));
       return;
     }
 
@@ -83,7 +87,7 @@ function EdgeEditor({ token, edge, onCancel, onSaved }: EdgeEditorProps) {
       setError(
         reason instanceof ApiError
           ? reason.message
-          : '血缘边保存失败，请稍后重试。',
+          : t('edgeDetail.saveFailed'),
       );
     } finally {
       if (!controller.signal.aborted) setSaving(false);
@@ -95,16 +99,16 @@ function EdgeEditor({ token, edge, onCancel, onSaved }: EdgeEditorProps) {
       <div className="rounded-lg border border-brand-100 bg-brand-50 px-3 py-2.5">
         <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-brand-700">
           <Icon name="edit" size={11} />
-          编辑转换与备注
+          {t('edgeDetail.editBanner')}
         </div>
         <p className="mt-1 text-[12px] leading-4 text-brand-800">
-          来源与上下游端点不可修改；保存后会写入变更日志。
+          {t('edgeDetail.editBannerNote')}
         </p>
       </div>
 
       <div>
         <label htmlFor="edge-detail-transform" className="mb-1.5 block text-[12px] font-medium text-ink-soft">
-          转换说明
+          {t('edgeDetail.transformLabel')}
         </label>
         <textarea
           id="edge-detail-transform"
@@ -112,7 +116,7 @@ function EdgeEditor({ token, edge, onCancel, onSaved }: EdgeEditorProps) {
           onChange={(event) => setTransform(event.target.value)}
           rows={2}
           maxLength={200}
-          placeholder="如 trim/cast、lookup"
+          placeholder={t('edgeDetail.transformPlaceholder')}
           className="field-input resize-y py-2 font-mono text-[13px] leading-5"
           disabled={saving}
         />
@@ -120,7 +124,7 @@ function EdgeEditor({ token, edge, onCancel, onSaved }: EdgeEditorProps) {
 
       <div>
         <label htmlFor="edge-detail-confidence" className="mb-1.5 block text-[12px] font-medium text-ink-soft">
-          置信度（0~1）
+          {t('edgeDetail.confidenceLabel')}
         </label>
         <input
           id="edge-detail-confidence"
@@ -137,7 +141,7 @@ function EdgeEditor({ token, edge, onCancel, onSaved }: EdgeEditorProps) {
 
       <div>
         <label htmlFor="edge-detail-note" className="mb-1.5 block text-[12px] font-medium text-ink-soft">
-          备注
+          {t('edgeDetail.noteLabel')}
         </label>
         <textarea
           id="edge-detail-note"
@@ -145,7 +149,7 @@ function EdgeEditor({ token, edge, onCancel, onSaved }: EdgeEditorProps) {
           onChange={(event) => setNote(event.target.value)}
           rows={2}
           maxLength={500}
-          placeholder="补充人工判断依据（可选）"
+          placeholder={t('edgeDetail.notePlaceholder')}
           className="field-input resize-y py-2 text-[13px] leading-5"
           disabled={saving}
         />
@@ -170,12 +174,12 @@ function EdgeEditor({ token, edge, onCancel, onSaved }: EdgeEditorProps) {
           {saving ? (
             <>
               <span className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-white/40 border-t-white" />
-              保存中…
+              {t('edgeDetail.saving')}
             </>
           ) : (
             <>
               <Icon name="check" size={12} />
-              保存
+              {t('edgeDetail.save')}
             </>
           )}
         </button>
@@ -185,7 +189,7 @@ function EdgeEditor({ token, edge, onCancel, onSaved }: EdgeEditorProps) {
           disabled={saving}
           className="h-8 rounded-lg border border-line-strong bg-card px-3 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
         >
-          取消
+          {t('common.cancel')}
         </button>
       </div>
     </form>
@@ -202,6 +206,7 @@ export function EdgeDetailPanel({
   onRefresh,
   onNotify,
 }: EdgeDetailPanelProps) {
+  const { t } = useI18n();
   const [editing, setEditing] = useState(startEditing);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -238,14 +243,14 @@ export function EdgeDetailPanel({
         controller.signal,
       );
       if (controller.signal.aborted) return;
-      onNotify(`AI 候选 #${confirmed.id} 已确认转为人工边`, 'success');
+      onNotify(t('edgeDetail.aiConfirmed', { id: confirmed.id }), 'success');
       onRefresh();
     } catch (reason) {
       if (reason instanceof DOMException && reason.name === 'AbortError') return;
       setConfirmError(
         reason instanceof ApiError
           ? reason.message
-          : '确认 AI 候选失败，请稍后重试。',
+          : t('edgeDetail.confirmFailed'),
       );
     } finally {
       if (!controller.signal.aborted) setConfirming(false);
@@ -255,18 +260,18 @@ export function EdgeDetailPanel({
   return (
     <aside
       className="relative flex w-full shrink-0 flex-col border-t border-line bg-card xl:h-full xl:w-[320px] xl:border-l xl:border-t-0"
-      aria-label="血缘边详情"
+      aria-label={t('edgeDetail.asideLabel')}
     >
       <div className="flex h-12 shrink-0 items-center justify-between border-b border-line-soft px-4">
         <div className="min-w-0">
           <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
-            血缘边检查
+            {t('edgeDetail.inspectorTitle')}
           </div>
           <div className="mt-1 flex min-w-0 items-center gap-1.5 font-mono text-[12px] text-ink-muted">
             <Icon name="link" size={12} className="shrink-0" />
             <span className="truncate">#{edge.id}</span>
             <Icon name="chevron-right" size={12} className="shrink-0" />
-            <span className="truncate text-brand-700">{KIND_LABEL(edge)}</span>
+            <span className="truncate text-brand-700">{kindLabel(edge, t)}</span>
           </div>
         </div>
         <div className="ml-2 flex shrink-0 items-center gap-0.5">
@@ -274,8 +279,8 @@ export function EdgeDetailPanel({
             type="button"
             onClick={() => setHistoryOpen(true)}
             className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-faint transition-colors duration-150 hover:border-line hover:bg-card hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-            aria-label="查看血缘边变更历史"
-            title="变更历史"
+            aria-label={t('edgeDetail.viewHistory')}
+            title={t('edgeDetail.historyShort')}
           >
             <Icon name="history" size={14} />
           </button>
@@ -284,8 +289,8 @@ export function EdgeDetailPanel({
               type="button"
               onClick={() => setEditing((value) => !value)}
               className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-faint transition-colors duration-150 hover:border-line hover:bg-card hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-              aria-label={editing ? '退出边编辑' : '编辑血缘边'}
-              title={editing ? '退出编辑' : '编辑'}
+              aria-label={editing ? t('edgeDetail.exitEdit') : t('edgeDetail.editEdge')}
+              title={editing ? t('edgeDetail.exitEditShort') : t('edgeDetail.editShort')}
             >
               <Icon name="edit" size={14} />
             </button>
@@ -294,8 +299,8 @@ export function EdgeDetailPanel({
             type="button"
             onClick={onClose}
             className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-faint transition-colors duration-150 hover:border-line hover:bg-card hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-            aria-label="关闭血缘边详情"
-            title="关闭详情"
+            aria-label={t('edgeDetail.close')}
+            title={t('edgeDetail.closeShort')}
           >
             <Icon name="close" size={14} />
           </button>
@@ -306,28 +311,28 @@ export function EdgeDetailPanel({
         <div className="animate-fade-in">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="rounded border border-line bg-card px-1.5 py-0.5 font-mono text-[11px] uppercase text-ink-muted">
-              {KIND_LABEL(edge)}
+              {kindLabel(edge, t)}
             </span>
             <SourceBadge source={edge.source} />
             <span className="rounded border border-line bg-page px-1.5 py-0.5 font-mono text-[11px] text-ink-muted">
-              置信度 {formatConfidence(edge.confidence)}
+              {t('edgeDetail.confidenceBadge', { value: formatConfidence(edge.confidence) })}
             </span>
           </div>
           <h2 className="mt-2.5 text-lg font-semibold text-ink">
-            血缘边 #{edge.id}
+            {t('edgeDetail.edgeTitle', { id: edge.id })}
           </h2>
         </div>
 
         <div className="mt-4 rounded-xl border border-line bg-card">
           <div className="border-b border-line-soft px-3 py-2">
             <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-faint">
-              上下游端点
+              {t('edgeDetail.endpoints')}
             </span>
           </div>
           <div className="divide-y divide-line-soft">
             <div className="flex items-start gap-2 px-3 py-2">
               <span className="mt-0.5 shrink-0 rounded bg-subtle px-1.5 py-px font-mono text-[11px] text-ink-muted">
-                上游
+                {t('edgeDetail.upstream')}
               </span>
               <span className="break-all font-mono text-[13px] leading-5 text-ink-soft">
                 {endpointLabel(edge.from_dataset, edge.from_field)}
@@ -335,7 +340,7 @@ export function EdgeDetailPanel({
             </div>
             <div className="flex items-start gap-2 px-3 py-2">
               <span className="mt-0.5 shrink-0 rounded bg-subtle px-1.5 py-px font-mono text-[11px] text-ink-muted">
-                下游
+                {t('edgeDetail.downstream')}
               </span>
               <span className="break-all font-mono text-[13px] leading-5 text-brand-800">
                 {endpointLabel(edge.to_dataset, edge.to_field)}
@@ -348,11 +353,10 @@ export function EdgeDetailPanel({
           <div className="mt-4 rounded-xl border border-ai/25 bg-ai-soft/40 p-3">
             <div className="flex items-center gap-1.5 text-[13px] font-semibold text-ai-deep">
               <Icon name="sparkles" size={12} className="text-ai" />
-              AI 候选血缘
+              {t('edgeDetail.aiCandidate')}
             </div>
             <p className="mt-1 text-[12px] leading-4 text-ink-muted">
-              该边由启发式建议生成（source=ai），尚未生效。确认后转为人工边
-              （source=manual）并写入变更日志；拒绝可直接删除该边。
+              {t('edgeDetail.aiCandidateNote')}
             </p>
             {canEdit ? (
               <button
@@ -364,19 +368,19 @@ export function EdgeDetailPanel({
                 {confirming ? (
                   <>
                     <span className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-white/40 border-t-white" />
-                    确认中…
+                    {t('edgeDetail.confirming')}
                   </>
                 ) : (
                   <>
                     <Icon name="check" size={12} />
-                    确认转为人工边
+                    {t('edgeDetail.confirmToManual')}
                   </>
                 )}
               </button>
             ) : (
               <p className="mt-2 flex items-center gap-1.5 text-[11px] text-ink-faint">
                 <Icon name="lock" size={12} />
-                只读角色不能确认 AI 候选。
+                {t('edgeDetail.confirmReadonly')}
               </p>
             )}
             {confirmError && (
@@ -398,7 +402,7 @@ export function EdgeDetailPanel({
             onCancel={() => setEditing(false)}
             onSaved={() => {
               setEditing(false);
-              onNotify(`血缘边 #${edge.id} 已更新`, 'success');
+              onNotify(t('edgeDetail.edgeUpdated', { id: edge.id }), 'success');
               onRefresh();
             }}
           />
@@ -407,18 +411,18 @@ export function EdgeDetailPanel({
             <div className="mt-4 grid gap-2">
               <div className="rounded-xl border border-line-soft bg-card px-3 py-2.5">
                 <div className="font-mono text-[11px] uppercase text-ink-faint">
-                  转换说明
+                  {t('edgeDetail.transformLabel')}
                 </div>
                 <p className="mt-1 break-words font-mono text-[13px] leading-5 text-ink-soft">
-                  {edge.transform || '未填写'}
+                  {edge.transform || t('edgeDetail.notFilled')}
                 </p>
               </div>
               <div className="rounded-xl border border-line-soft bg-card px-3 py-2.5">
                 <div className="font-mono text-[11px] uppercase text-ink-faint">
-                  备注
+                  {t('edgeDetail.noteLabel')}
                 </div>
                 <p className="mt-1 whitespace-pre-wrap break-words text-[13px] leading-5 text-ink-soft">
-                  {edge.note || '未填写'}
+                  {edge.note || t('edgeDetail.notFilled')}
                 </p>
               </div>
             </div>
@@ -431,7 +435,7 @@ export function EdgeDetailPanel({
                   className="flex h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-line-strong bg-card text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                 >
                   <Icon name="edit" size={13} />
-                  编辑转换与备注
+                  {t('edgeDetail.editTransformNote')}
                 </button>
                 <button
                   type="button"
@@ -439,7 +443,7 @@ export function EdgeDetailPanel({
                   className="flex h-9 items-center justify-center gap-1.5 rounded-lg border border-danger/25 bg-danger-soft px-3 text-[13px] font-medium text-danger-deep transition-colors duration-150 hover:border-danger/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                 >
                   <Icon name="trash" size={13} />
-                  删除
+                  {t('edgeDetail.delete')}
                 </button>
               </div>
             )}
@@ -447,9 +451,9 @@ export function EdgeDetailPanel({
               <Icon name={canEdit ? 'edit' : 'lock'} size={12} />
               {canEdit
                 ? edge.source === 'ai'
-                  ? 'AI 候选确认后才会生效；删除等价于拒绝该候选'
-                  : '编辑会写入变更日志；删除可通过版本标签回滚恢复'
-                : '只读角色 · 可查看标注与变更历史'}
+                  ? t('edgeDetail.tipEditAi')
+                  : t('edgeDetail.tipEdit')
+                : t('edgeDetail.tipReadonly')}
             </div>
 
             <AnnotationSection
@@ -467,7 +471,7 @@ export function EdgeDetailPanel({
               >
                 <span className="flex items-center gap-1.5">
                   <Icon name="history" size={12} />
-                  变更历史
+                  {t('edgeDetail.historyShort')}
                 </span>
                 <Icon name="chevron-right" size={12} className="text-ink-faint" />
               </button>
@@ -481,7 +485,7 @@ export function EdgeDetailPanel({
           token={token}
           entityKind="edge"
           entityKey={targetId}
-          title={`血缘边 #${edge.id}`}
+          title={t('edgeDetail.edgeTitle', { id: edge.id })}
           onClose={() => setHistoryOpen(false)}
         />
       )}

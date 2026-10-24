@@ -10,6 +10,7 @@ import { formatConfidence } from '../lib/format';
 import { EDGE_COLORS } from '../lib/edgeColors';
 import { SourceBadge } from './SourceBadge';
 import { Icon } from './Icon';
+import { useI18n } from '../i18n';
 
 export type EdgeKind = 'field' | 'table';
 
@@ -79,6 +80,7 @@ export function LineageEdgeView({
   selected,
 }: EdgeProps) {
   const edgeData = data as unknown as LineageEdgeData | undefined;
+  const { t } = useI18n();
   const [hovered, setHovered] = useState(false);
   const hideTimer = useRef<number | null>(null);
 
@@ -179,7 +181,7 @@ export function LineageEdgeView({
               <div className="edge-tooltip animate-fade-in rounded-lg border border-line bg-card p-3 text-left shadow-float">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
-                    同名字段匹配 · 推断
+                    {t('lineageEdge.derivedTitle')}
                   </span>
                   <span className="rounded border border-line-soft bg-subtle px-1.5 py-px font-mono text-[11px] uppercase text-ink-faint">
                     derived
@@ -199,7 +201,7 @@ export function LineageEdgeView({
                   </span>
                 </div>
                 <p className="mt-2 border-t border-line-soft pt-2 text-[11px] leading-4 text-ink-muted">
-                  由两端数据集的表级血缘按同名字段匹配推断，仅用于上下游追踪演示，不是库内血缘边。
+                  {t('lineageEdge.derivedNote')}
                 </p>
               </div>
             ) : edge ? (
@@ -207,8 +209,10 @@ export function LineageEdgeView({
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
                     {isAggregate
-                      ? `跨组聚合 · ${aggregateCount} 条边`
-                      : `${kind === 'field' ? '字段级血缘' : '表级血缘'} · #${edge.id}`}
+                      ? t('lineageEdge.aggregateTitle', { count: aggregateCount })
+                      : kind === 'field'
+                        ? t('lineageEdge.fieldLevelTitle', { id: edge.id })
+                        : t('lineageEdge.tableLevelTitle', { id: edge.id })}
                   </span>
                   <SourceBadge source={edge.source} withDescription={false} />
                 </div>
@@ -226,17 +230,17 @@ export function LineageEdgeView({
                 </span>
               </div>
               <div className="mt-2.5 grid grid-cols-[48px_1fr] gap-x-2 gap-y-1.5 border-t border-line-soft pt-2.5 text-[11px]">
-                <span className="text-ink-faint">转换</span>
+                <span className="text-ink-faint">{t('lineageEdge.transform')}</span>
                 <span className="break-words font-mono text-[13px] leading-4 text-ink-soft">
-                  {edge.transform || '未填写'}
+                  {edge.transform || t('lineageEdge.transformEmpty')}
                 </span>
-                <span className="text-ink-faint">置信度</span>
+                <span className="text-ink-faint">{t('lineageEdge.confidence')}</span>
                 <span className="font-mono text-[13px] tabular-nums text-ink-soft">
                   {formatConfidence(edge.confidence)}
                 </span>
-                <span className="text-ink-faint">来源</span>
+                <span className="text-ink-faint">{t('lineageEdge.source')}</span>
                 <span className="font-mono text-[13px] text-ink-soft">
-                  {edge.source || '未登记'}
+                  {edge.source || t('lineageEdge.sourceEmpty')}
                 </span>
               </div>
               {edge.note && (
@@ -246,7 +250,7 @@ export function LineageEdgeView({
               )}
               {isAggregate ? (
                 <p className="mt-2 border-t border-line-soft pt-2 text-[11px] leading-4 text-ink-faint">
-                  展开分组后可查看并编辑其中每一条具体血缘。
+                  {t('lineageEdge.aggregateNote')}
                 </p>
               ) : (
                 <div className="mt-2 flex items-center gap-1.5 border-t border-line-soft pt-2">
@@ -258,7 +262,7 @@ export function LineageEdgeView({
                     }}
                     className="inline-flex h-7 items-center rounded-md border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60"
                   >
-                    查看详情
+                    {t('lineageEdge.viewDetail')}
                   </button>
                   {canEdit && (
                     <>
@@ -271,7 +275,7 @@ export function LineageEdgeView({
                         className="inline-flex h-7 items-center gap-1 rounded-md border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60"
                       >
                         <Icon name="edit" size={12} />
-                        编辑
+                        {t('lineageEdge.edit')}
                       </button>
                       <button
                         type="button"
@@ -282,7 +286,7 @@ export function LineageEdgeView({
                         className="ml-auto inline-flex h-7 items-center gap-1 rounded-md border border-danger/25 bg-danger-soft px-2.5 text-[12px] font-medium text-danger-deep transition-colors duration-150 hover:border-danger/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/30"
                       >
                         <Icon name="trash" size={12} />
-                        删除
+                        {t('lineageEdge.delete')}
                       </button>
                     </>
                   )}
