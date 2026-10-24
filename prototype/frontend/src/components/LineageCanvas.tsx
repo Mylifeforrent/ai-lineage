@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Background,
-  BackgroundVariant,
   Controls,
   MarkerType,
   MiniMap,
@@ -350,10 +348,28 @@ export function LineageCanvas({
       return { x: position?.x ?? 0, y: position?.y ?? 0 };
     };
 
+    // 02 §七#32：纯展示派生——字段是任一 AI 候选边端点时，字段行渲染 sparkles 徽标。
+    // 不改变任何边构建/选择逻辑。
+    const aiEndpointFields = new Map<string, Set<string>>();
+    graph.edges.forEach((edge) => {
+      if (edge.source !== 'ai') return;
+      if (edge.from_field) {
+        const names = aiEndpointFields.get(edge.from_dataset) ?? new Set<string>();
+        names.add(edge.from_field);
+        aiEndpointFields.set(edge.from_dataset, names);
+      }
+      if (edge.to_field) {
+        const names = aiEndpointFields.get(edge.to_dataset) ?? new Set<string>();
+        names.add(edge.to_field);
+        aiEndpointFields.set(edge.to_dataset, names);
+      }
+    });
+
     const nextNodes: FlowNode[] = [];
     graph.datasets.forEach((dataset) => {
       if (hiddenIds.has(dataset.id)) return;
       const position = positionOf(dataset.id);
+      const aiFields = aiEndpointFields.get(dataset.id);
       nextNodes.push({
         id: dataset.id,
         type: 'dataset',
@@ -365,6 +381,7 @@ export function LineageCanvas({
           isSeed: dataset.id === seedDatasetId,
           fieldsExpanded: fieldsExpandedIds.has(dataset.id),
           connectable: canEdit,
+          aiEndpointFields: aiFields ? Array.from(aiFields) : [],
           onToggleCollapse,
           onToggleFields,
           onSelectField: handleSelectField,
@@ -621,7 +638,7 @@ export function LineageCanvas({
     const timer = window.setTimeout(() => {
       void flowInstance.fitView({
         padding: 0.18,
-        duration: 380,
+        duration: 300,
         minZoom: 0.28,
         maxZoom: 0.95,
       });
@@ -639,19 +656,15 @@ export function LineageCanvas({
 
   if (!graph && !loading && !error) {
     return (
-      <div className="relative flex h-full min-h-[520px] items-center justify-center overflow-hidden">
-        <div
-          className="pointer-events-none absolute inset-0 bg-fine-grid bg-grid-28 opacity-60"
-          aria-hidden="true"
-        />
-        <div className="relative mx-6 max-w-sm rounded-2xl border border-dashed border-line-strong bg-surface/75 px-8 py-9 text-center backdrop-blur-sm">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-pine-200 bg-pine-50 text-pine-600">
+      <div className="relative flex h-full min-h-[560px] items-center justify-center overflow-hidden bg-page bg-dot-grid bg-grid-24">
+        <div className="relative mx-6 max-w-sm rounded-2xl border border-dashed border-line-strong bg-card/75 px-8 py-9 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-blue-600">
             <Icon name="network" size={22} />
           </div>
-          <h2 className="mt-4 font-display text-[24px] font-medium tracking-[-0.02em] text-ink">
+          <h2 className="mt-4 text-xl font-medium text-ink">
             选择一个数据集
           </h2>
-          <p className="mt-2 text-[11.5px] leading-5 text-ink-muted">
+          <p className="mt-2 text-[13px] leading-5 text-ink-muted">
             从左侧数据集栏选择种子，画布会展示字段级与表级上下游血缘。
           </p>
         </div>
@@ -663,7 +676,7 @@ export function LineageCanvas({
   const hasGroupControls = groupableCount >= 2 || groups.length > 0;
 
   return (
-    <div className="relative h-full min-h-[560px] bg-canvas bg-fine-grid bg-grid-28">
+    <div className="relative h-full min-h-[560px] bg-page bg-dot-grid bg-grid-24">
       {graph && (
         <ReactFlow
           nodes={nodes}
@@ -693,12 +706,6 @@ export function LineageCanvas({
           className="lineage-flow"
           aria-label="字段级血缘画布"
         >
-          <Background
-            variant={BackgroundVariant.Dots}
-            gap={23}
-            size={1.05}
-            color="#c9c2b3"
-          />
           <Controls
             position="bottom-left"
             showInteractive={false}
@@ -708,25 +715,25 @@ export function LineageCanvas({
             position="bottom-right"
             pannable
             zoomable
-            nodeColor={(node) => (node.id === seedDatasetId ? '#2f8268' : '#b7c9c0')}
-            nodeStrokeColor="#fffdf8"
+            nodeColor={(node) => (node.id === seedDatasetId ? '#2563EB' : '#CBD5E1')}
+            nodeStrokeColor="#FFFFFF"
             nodeBorderRadius={4}
-            maskColor="rgba(243, 240, 231, 0.7)"
+            maskColor="rgba(248, 250, 252, 0.65)"
             className="lineage-minimap"
             ariaLabel="血缘画布缩略图"
           />
 
           <Panel position="top-left" className="!m-3">
             <div className="flex flex-col gap-1.5">
-              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface/92 p-1.5 pr-2 shadow-sm backdrop-blur-md">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-pine-800 text-pine-100">
+              <div className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-card p-1.5 pr-2 shadow-float">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white">
                   <Icon name="network" size={14} />
                 </span>
                 <div className="px-0.5">
-                  <div className="max-w-[140px] truncate text-[10.5px] font-semibold text-ink">
+                  <div className="max-w-[140px] truncate text-[13px] font-medium text-ink">
                     {seedName || '血缘子图'}
                   </div>
-                  <div className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-ink-faint">
+                  <div className="mt-0.5 font-mono text-[11px] tabular-nums text-ink-faint">
                     {graph.datasets.length} 个数据集 · {graph.edges.length} 条连线
                   </div>
                 </div>
@@ -734,7 +741,7 @@ export function LineageCanvas({
                 <button
                   type="button"
                   onClick={onToggleAll}
-                  className="flex h-7 items-center gap-1.5 rounded-md border border-line bg-surface px-2 text-[9.5px] font-medium text-ink-muted transition-colors hover:border-pine-300 hover:text-pine-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+                  className="flex h-7 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1"
                   title={allCollapsed ? '展开全部字段' : '收起全部字段'}
                 >
                   <Icon
@@ -746,15 +753,15 @@ export function LineageCanvas({
               </div>
 
               {hasGroupControls && (
-                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface/92 p-1.5 pr-2 shadow-sm backdrop-blur-md">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-line-soft bg-canvas/70 text-ink-muted">
+                <div className="flex animate-fade-in flex-wrap items-center gap-2 rounded-lg border border-line bg-card p-1.5 pr-2 shadow-float">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-line-soft bg-subtle text-ink-muted">
                     <Icon name="group" size={14} />
                   </span>
                   {groupableCount >= 2 && (
                     <button
                       type="button"
                       onClick={handleCollapseSelected}
-                      className="flex h-7 items-center gap-1.5 rounded-md border border-pine-300 bg-pine-50 px-2 text-[9.5px] font-medium text-pine-700 transition-colors hover:bg-pine-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+                      className="flex h-7 items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 text-[12px] font-medium text-blue-800 transition-colors duration-150 hover:border-blue-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1"
                       title="把框选的节点折叠成一个组占位节点"
                     >
                       <Icon name="fold-all" size={12} />
@@ -770,7 +777,7 @@ export function LineageCanvas({
                         );
                         setGroups([]);
                       }}
-                      className="flex h-7 items-center gap-1.5 rounded-md border border-line bg-surface px-2 text-[9.5px] font-medium text-ink-muted transition-colors hover:border-pine-300 hover:text-pine-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+                      className="flex h-7 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1"
                     >
                       <Icon name="unfold-all" size={12} />
                       展开全部组（{groups.length}）
@@ -782,7 +789,7 @@ export function LineageCanvas({
           </Panel>
 
           <Panel position="bottom-center" className="!mb-2 hidden md:block">
-            <div className="flex items-center gap-2.5 rounded-full border border-line/85 bg-surface/80 px-3 py-1.5 font-mono text-[8px] uppercase tracking-[0.1em] text-ink-faint backdrop-blur-sm">
+            <div className="flex items-center gap-2.5 rounded-full border border-line bg-card/90 px-3 py-1.5 font-mono text-[11px] text-ink-muted shadow-float">
               <span>拖拽平移</span>
               <span className="h-2 w-px bg-line" />
               <span>Shift + 拖拽框选</span>
@@ -801,15 +808,15 @@ export function LineageCanvas({
 
       {loading && (
         <div
-          className="absolute inset-0 z-20 flex items-center justify-center bg-canvas/55 backdrop-blur-[1px]"
+          className="absolute inset-0 z-20 flex items-center justify-center bg-page/60"
           role="status"
           aria-live="polite"
         >
-          <div className="flex items-center gap-2.5 rounded-xl border border-line bg-surface px-4 py-3 shadow-float">
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-pine-200 border-t-pine-700" />
+          <div className="flex items-center gap-2.5 rounded-lg border border-line bg-card px-4 py-3 shadow-float">
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600" />
             <div>
-              <div className="text-[11px] font-medium text-ink">正在加载血缘子图</div>
-              <div className="mt-0.5 font-mono text-[8.5px] uppercase tracking-[0.1em] text-ink-faint">
+              <div className="text-[13px] font-medium text-ink">正在加载血缘子图</div>
+              <div className="mt-0.5 font-mono text-[11px] text-ink-faint">
                 展开 {seedDatasetId} · {hops} 跳邻域
               </div>
             </div>
@@ -818,26 +825,26 @@ export function LineageCanvas({
       )}
 
       {error && !loading && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-canvas/70 p-5 backdrop-blur-[2px]">
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-page/60 p-5">
           <div
-            className="w-full max-w-sm rounded-2xl border border-line bg-surface p-5 shadow-float"
+            className="w-full max-w-sm rounded-xl border border-line bg-card p-5 shadow-float"
             role="alert"
           >
             <div className="flex items-start gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-rosewood-soft text-rosewood">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-danger-soft text-danger-deep">
                 <Icon name="warning" size={17} />
               </span>
               <div className="min-w-0">
-                <h2 className="text-[12.5px] font-semibold text-ink">
+                <h2 className="text-[13px] font-semibold text-ink">
                   无法加载当前子图
                 </h2>
-                <p className="mt-1.5 break-words text-[11px] leading-5 text-ink-muted">
+                <p className="mt-1.5 break-words text-[12px] leading-5 text-ink-muted">
                   {error}
                 </p>
                 <button
                   type="button"
                   onClick={onRetry}
-                  className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-pine-800 px-3 py-1.5 text-[10.5px] font-medium text-white transition-colors hover:bg-pine-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/40"
+                  className="mt-3 inline-flex h-7 items-center gap-1.5 rounded-lg bg-blue-600 px-2.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1"
                 >
                   <Icon name="refresh" size={12} />
                   重新加载

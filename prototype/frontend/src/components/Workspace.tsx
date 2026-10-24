@@ -445,7 +445,7 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
     : '';
 
   return (
-    <div className="flex min-h-dvh flex-col bg-canvas xl:h-dvh xl:overflow-hidden">
+    <div className="flex min-h-dvh flex-col bg-page xl:h-dvh xl:overflow-hidden">
       <TopBar
         session={session}
         search={search}
@@ -486,7 +486,6 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
         />
 
         <main className="relative flex min-h-[560px] flex-1 flex-col overflow-hidden xl:min-h-0">
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-px bg-gradient-to-r from-transparent via-line-strong/60 to-transparent" />
           <div className="relative min-h-0 flex-1">
             <LineageCanvas
               graph={filteredGraph}
@@ -562,7 +561,7 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
         confirmLabel="确认删除"
         message={
           <div className="space-y-1.5">
-            <p className="break-all font-mono text-[9.5px] text-ink-soft">
+            <p className="break-all font-mono text-[11px] text-ink-soft">
               {deleteDescription}
             </p>
             <p>删除会写入变更日志；如需恢复，可由管理员回滚到之前的版本标签。</p>

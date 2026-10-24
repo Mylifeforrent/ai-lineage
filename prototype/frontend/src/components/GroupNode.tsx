@@ -30,7 +30,7 @@ export function GroupNode({ id, data }: NodeProps) {
 
   return (
     <article
-      className="group relative w-[248px] rounded-[14px] border border-dashed border-pine-400/70 bg-pine-50/85 p-3 shadow-node transition-shadow hover:shadow-card"
+      className="group relative w-[248px] rounded-xl border border-dashed border-blue-600/65 bg-blue-50/85 p-3 shadow-node transition-shadow duration-150 hover:shadow-card"
       aria-label={`折叠分组 ${label}，包含 ${count} 个数据集，点击展开`}
     >
       <Handle
@@ -55,21 +55,21 @@ export function GroupNode({ id, data }: NodeProps) {
           event.stopPropagation();
           onExpand(id);
         }}
-        className="nodrag nopan block w-full text-left focus-visible:outline-none"
+        className="nodrag nopan block w-full rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-card"
         title="展开该分组"
       >
         <div className="flex items-center justify-between gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-pine-200 bg-surface text-pine-700">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-blue-200 bg-card text-blue-700">
             <Icon name="group" size={14} />
           </span>
-          <span className="rounded-full border border-pine-200 bg-surface px-1.5 py-[1px] font-mono text-[8.5px] text-pine-700">
+          <span className="rounded-full border border-blue-200 bg-card px-1.5 py-px font-mono text-[11px] text-blue-800">
             {count} 个数据集
           </span>
         </div>
-        <h3 className="mt-2 truncate text-[11.5px] font-semibold text-pine-900">
+        <h3 className="mt-2 truncate text-[13px] font-medium text-ink">
           {label}
         </h3>
-        <div className="mt-1 flex items-center gap-1.5 font-mono text-[8.5px] text-pine-700/75">
+        <div className="mt-1 flex items-center gap-1.5 font-mono text-[11px] text-blue-700">
           <Icon name="unfold-all" size={10} />
           点击展开
         </div>

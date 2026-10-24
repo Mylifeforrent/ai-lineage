@@ -42,9 +42,15 @@ const OP_LABELS: Record<ChangeOp, string> = {
 };
 
 const OP_STYLES: Record<ChangeOp, string> = {
-  added: 'border-pine-200 bg-pine-50 text-pine-700',
-  updated: 'border-ochre/20 bg-ochre-soft text-ochre-deep',
-  deleted: 'border-rosewood/20 bg-rosewood-soft text-rosewood-deep',
+  added: 'border-transparent bg-success-soft text-success-deep',
+  updated: 'border-transparent bg-warning-soft text-warning-deep',
+  deleted: 'border-transparent bg-danger-soft text-danger-deep',
+};
+
+const OP_DOT_STYLES: Record<ChangeOp, string> = {
+  added: 'bg-success',
+  updated: 'bg-warning',
+  deleted: 'bg-danger',
 };
 
 function valueText(value: unknown): string {
@@ -85,7 +91,7 @@ function ChangeSummary({ entry }: { entry: ChangeEntry }) {
   if (entry.op === 'updated') {
     if (keys.length === 0) {
       return (
-        <p className="text-[9px] leading-4 text-ink-faint">
+        <p className="text-[11px] leading-4 text-ink-faint">
           内容与上一版本一致（未产生实质变更）。
         </p>
       );
@@ -95,15 +101,15 @@ function ChangeSummary({ entry }: { entry: ChangeEntry }) {
         {keys.map((key) => (
           <li
             key={key}
-            className="grid grid-cols-[58px_minmax(0,1fr)] gap-1.5 text-[9px] leading-4"
+            className="grid grid-cols-[64px_minmax(0,1fr)] gap-x-1.5 gap-y-1 text-[11px] leading-4"
           >
             <span className="text-ink-faint">{FIELD_LABELS[key] ?? key}</span>
-            <span className="min-w-0 break-words font-mono text-[8.5px] text-ink-soft">
-              <span className="text-ink-faint line-through decoration-line-strong">
+            <span className="min-w-0 break-words font-mono text-[11px] leading-4">
+              <span className="line-through decoration-line-strong text-ink-faint">
                 {valueText(entry.before?.[key])}
               </span>
               <span className="mx-1 text-ink-faint">→</span>
-              <span className="text-pine-800">{valueText(entry.after?.[key])}</span>
+              <span className="text-blue-800">{valueText(entry.after?.[key])}</span>
             </span>
           </li>
         ))}
@@ -117,9 +123,9 @@ function ChangeSummary({ entry }: { entry: ChangeEntry }) {
     return null;
   }
   return (
-    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[9px] leading-4">
+    <div className="flex flex-wrap gap-x-3 gap-y-1">
       {summaryKeys.map((key) => (
-        <span key={key} className="min-w-0 break-words font-mono text-[8.5px] text-ink-muted">
+        <span key={key} className="min-w-0 break-words font-mono text-[11px] leading-4 text-ink-muted">
           <span className="text-ink-faint">{FIELD_LABELS[key] ?? key} </span>
           {valueText(snapshot[key])}
         </span>
@@ -184,38 +190,39 @@ export function HistoryDrawer({
 
   return (
     <div
-      className="fixed inset-0 z-[75] flex justify-end bg-ink/40 backdrop-blur-[2px]"
+      className="fixed inset-0 z-40 flex justify-end bg-slate-900/25 animate-fade-in"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
       <aside
-        className="flex h-full w-full max-w-[520px] flex-col overflow-hidden border-l border-line bg-surface shadow-float animate-fade-in"
+        className="relative z-[41] flex h-full w-full flex-col overflow-hidden border-l border-line bg-card shadow-float animate-drawer-in sm:w-[360px]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="history-drawer-title"
       >
-        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-line px-4 py-3.5">
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5 font-mono text-[8.5px] uppercase tracking-[0.18em] text-ink-faint">
-              <Icon name="history" size={12} />
-              变更历史 · {KIND_LABELS[entityKind]}
+        <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-line-soft px-4">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
+              <Icon name="history" size={16} />
+            </span>
+            <div className="min-w-0">
+              <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
+                变更历史 · {KIND_LABELS[entityKind]}
+              </div>
+              <h2
+                id="history-drawer-title"
+                className="mt-0.5 truncate font-mono text-[13px] font-semibold text-ink"
+              >
+                {title}
+              </h2>
             </div>
-            <h2
-              id="history-drawer-title"
-              className="mt-1 break-all font-mono text-[12.5px] font-semibold text-ink"
-            >
-              {title}
-            </h2>
-            <p className="mt-0.5 break-all font-mono text-[8.5px] text-ink-faint">
-              {entityKey}
-            </p>
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <button
               type="button"
               onClick={() => setReloadKey((value) => value + 1)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-ink-faint transition-colors hover:border-line hover:bg-canvas hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               aria-label="刷新变更历史"
               title="刷新"
             >
@@ -225,21 +232,26 @@ export function HistoryDrawer({
               ref={closeButtonRef}
               type="button"
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-ink-faint transition-colors hover:border-line hover:bg-canvas hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               aria-label="关闭变更历史"
             >
-              <Icon name="close" size={15} />
+              <Icon name="close" size={16} />
             </button>
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-[#fbf9f3] px-4 py-4">
-          <div className="mb-3 flex items-start gap-2 rounded-xl border border-line-soft bg-surface px-3 py-2.5 text-[9px] leading-4 text-ink-faint">
-            <Icon name="info" size={12} className="mt-0.5 shrink-0" />
-            <span>
-              变更日志按时间倒序展示（最多 50 条）。导入与人工编辑都会留痕，
-              标注不写入变更日志。
-            </span>
+        <div className="min-h-0 flex-1 overflow-y-auto bg-page px-4 py-4">
+          <div className="mb-3 rounded-lg border border-line bg-card px-3 py-2.5">
+            <p className="break-all font-mono text-[12px] leading-4 text-ink-soft">
+              {entityKey}
+            </p>
+            <p className="mt-1.5 flex items-start gap-1.5 text-[11px] leading-4 text-ink-muted">
+              <Icon name="info" size={11} className="mt-0.5 shrink-0 text-ink-faint" />
+              <span>
+                变更日志按时间倒序展示（最多 50 条）。导入与人工编辑都会留痕，
+                标注不写入变更日志。
+              </span>
+            </p>
           </div>
 
           {loading && (
@@ -247,30 +259,30 @@ export function HistoryDrawer({
               {[0, 1, 2].map((item) => (
                 <div
                   key={item}
-                  className="h-[86px] animate-soft-pulse rounded-xl border border-line bg-surface"
+                  className="h-[86px] animate-soft-pulse rounded-xl border border-line bg-subtle"
                 />
               ))}
             </div>
           )}
 
           {!loading && error && (
-            <div className="rounded-xl border border-rosewood/20 bg-rosewood-soft px-3.5 py-3" role="alert">
-              <p className="text-[10.5px] leading-5 text-rosewood-deep">{error}</p>
+            <div className="rounded-xl border border-danger/25 bg-danger-soft px-3.5 py-3" role="alert">
+              <p className="text-[13px] leading-5 text-danger-deep">{error}</p>
               <button
                 type="button"
                 onClick={() => setReloadKey((value) => value + 1)}
-                className="mt-2 inline-flex items-center gap-1 rounded-md border border-rosewood/25 bg-surface px-2 py-1 text-[9.5px] text-rosewood-deep"
+                className="mt-2 inline-flex h-7 items-center gap-1 rounded-lg border border-line-strong bg-card px-2 text-[11px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               >
-                <Icon name="refresh" size={10} />
+                <Icon name="refresh" size={11} />
                 重新加载
               </button>
             </div>
           )}
 
           {!loading && !error && entries?.length === 0 && (
-            <div className="rounded-xl border border-dashed border-line bg-surface/60 px-4 py-8 text-center">
-              <div className="font-mono text-[10px] text-ink-muted">暂无变更记录</div>
-              <p className="mt-1 text-[9px] text-ink-faint">
+            <div className="rounded-xl border border-dashed border-line px-4 py-8 text-center">
+              <div className="text-[12px] text-ink-muted">暂无变更记录</div>
+              <p className="mt-1 text-[11px] text-ink-muted">
                 该实体的创建与修改尚未写入变更日志。
               </p>
             </div>
@@ -281,28 +293,28 @@ export function HistoryDrawer({
               {(entries ?? []).map((entry) => (
                 <li key={entry.id} className="relative">
                   <span
-                    className="absolute -left-[21px] top-3 h-2 w-2 rounded-full border border-surface bg-pine-500"
+                    className={`absolute -left-[21px] top-3 h-2 w-2 rounded-full ring-2 ring-card ${OP_DOT_STYLES[entry.op]}`}
                     aria-hidden="true"
                   />
-                  <article className="rounded-xl border border-line-soft bg-surface/85 px-3 py-2.5">
+                  <article className="rounded-xl border border-line-soft bg-card px-3 py-2.5">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <span
-                        className={`rounded border px-1.5 py-[1px] font-mono text-[8px] ${OP_STYLES[entry.op]}`}
+                        className={`rounded border px-1.5 py-px font-mono text-[11px] ${OP_STYLES[entry.op]}`}
                       >
                         {OP_LABELS[entry.op]}
                       </span>
-                      <span className="font-mono text-[8.5px] text-ink-faint">
+                      <span className="font-mono text-[11px] tabular-nums text-ink-faint">
                         #{entry.id}
                       </span>
-                      <span className="ml-auto font-mono text-[8px] text-ink-faint">
+                      <span className="ml-auto font-mono text-[11px] text-ink-faint">
                         {formatDateTime(entry.created_at)}
                       </span>
                     </div>
                     <div className="mt-1.5">
                       <ChangeSummary entry={entry} />
                     </div>
-                    <div className="mt-1.5 flex items-center gap-1 font-mono text-[8px] text-ink-faint">
-                      <Icon name="user" size={9} />
+                    <div className="mt-1.5 flex items-center gap-1 font-mono text-[11px] text-ink-faint">
+                      <Icon name="user" size={10} />
                       操作者 {entry.actor}
                     </div>
                   </article>

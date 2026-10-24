@@ -59,11 +59,11 @@ function PreviewShell({
   children: ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-line bg-surface">
+    <div className="overflow-hidden rounded-xl border border-line bg-card">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line-soft px-3.5 py-2.5">
         <div>
-          <div className="text-[10.5px] font-semibold text-ink">{title}</div>
-          <div className="mt-0.5 font-mono text-[8.5px] text-ink-faint">
+          <div className="text-[13px] font-semibold text-ink">{title}</div>
+          <div className="mt-0.5 font-mono text-[11px] text-ink-faint">
             {subtitle}
           </div>
         </div>
@@ -76,8 +76,8 @@ function PreviewShell({
 
 function TargetColumnBadge({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-pine-200 bg-pine-50 px-2 py-0.5 font-mono text-[8.5px] text-pine-700">
-      <span className="h-1 w-1 rounded-full bg-pine-500" />
+    <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 font-mono text-[11px] text-blue-800">
+      <span className="h-1 w-1 rounded-full bg-blue-600" />
       高亮列 {label}
     </span>
   );
@@ -94,13 +94,13 @@ function CsvPreviewTable({ preview }: { preview: CsvPreview }) {
       right={<TargetColumnBadge label={`${columnIndexToLabel(preview.column_index)} · ${targetHeader}`} />}
     >
       <div className="max-h-[46vh] overflow-auto">
-        <table className="w-full min-w-[680px] border-collapse text-left text-[10.5px]">
+        <table className="w-full min-w-[680px] border-collapse text-left text-[13px]">
           <caption className="sr-only">
             CSV 源文件数据预览，高亮字段所在列 {targetHeader}
           </caption>
           <thead className="sticky top-0 z-10">
-            <tr className="bg-[#f3f0e7]">
-              <th className="w-12 border-b border-r border-line px-2 py-2 text-center font-mono text-[8.5px] font-normal text-ink-faint">
+            <tr className="bg-subtle">
+              <th className="w-12 border-b border-r border-line px-2 py-2 text-center font-mono text-[11px] font-normal text-ink-faint">
                 #
               </th>
               {preview.header.map((header, index) => {
@@ -110,16 +110,16 @@ function CsvPreviewTable({ preview }: { preview: CsvPreview }) {
                     key={`${header}-${index}`}
                     scope="col"
                     className={`min-w-[118px] border-b border-r border-line px-2.5 py-2 last:border-r-0 ${
-                      target ? 'bg-pine-100/90 text-pine-900' : 'text-ink-soft'
+                      target ? 'bg-blue-100 text-blue-800' : 'text-ink-soft'
                     }`}
                   >
                     <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-[8px] font-normal text-ink-faint">
+                      <span className="font-mono text-[11px] font-normal text-ink-faint">
                         {columnIndexToLabel(index + 1)}
                       </span>
-                      <span className="text-[10px] font-medium">{header || '—'}</span>
+                      <span className="text-[12px] font-medium">{header || '—'}</span>
                       {target && (
-                        <span className="ml-auto rounded bg-pine-600 px-1 py-[0.5px] font-mono text-[7px] text-white">
+                        <span className="ml-auto rounded bg-blue-600 px-1 py-px font-mono text-[11px] text-white">
                           字段
                         </span>
                       )}
@@ -133,11 +133,11 @@ function CsvPreviewTable({ preview }: { preview: CsvPreview }) {
             {preview.rows.map((row, rowIndex) => (
               <tr
                 key={rowIndex}
-                className="group border-b border-line-soft last:border-b-0 hover:bg-[#fbf8f0]"
+                className="group border-b border-line-soft last:border-b-0 hover:bg-subtle/60"
               >
                 <th
                   scope="row"
-                  className="border-r border-line-soft bg-[#faf7ef] px-2 py-1.5 text-center font-mono text-[8.5px] font-normal text-ink-faint"
+                  className="border-r border-line-soft bg-page px-2 py-1.5 text-center font-mono text-[11px] font-normal text-ink-faint"
                 >
                   {rowIndex + 1}
                 </th>
@@ -147,9 +147,9 @@ function CsvPreviewTable({ preview }: { preview: CsvPreview }) {
                   return (
                     <td
                       key={columnIndex}
-                      className={`max-w-[260px] truncate border-r border-line-soft px-2.5 py-1.5 font-mono text-[9.5px] last:border-r-0 ${
+                      className={`max-w-[260px] truncate border-r border-line-soft px-2.5 py-1.5 font-mono text-[12px] last:border-r-0 ${
                         target
-                          ? 'bg-pine-50/80 font-medium text-pine-900'
+                          ? 'bg-blue-50/80 font-medium text-ink'
                           : 'text-ink-soft'
                       }`}
                       title={displayCell(value)}
@@ -163,7 +163,7 @@ function CsvPreviewTable({ preview }: { preview: CsvPreview }) {
           </tbody>
         </table>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line-soft bg-[#faf7ef] px-3.5 py-2 text-[9px] text-ink-faint">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line-soft bg-page px-3.5 py-2 text-[11px] text-ink-muted">
         <span>
           高亮列为字段定位列 · 第 {preview.column_index} 列（
           {columnIndexToLabel(preview.column_index)}）
@@ -290,13 +290,13 @@ function XlsxPreviewTable({ preview }: { preview: XlsxPreview }) {
       right={<TargetColumnBadge label={`${targetLabel} · 第 ${preview.column_index} 列`} />}
     >
       <div className="max-h-[46vh] overflow-auto">
-        <table className="w-full min-w-[720px] border-collapse text-left text-[10.5px]">
+        <table className="w-full min-w-[720px] border-collapse text-left text-[13px]">
           <caption className="sr-only">
             XLSX 源文件预览，工作表 {preview.sheet}，高亮字段所在列 {targetLabel}
           </caption>
           <thead className="sticky top-0 z-10">
-            <tr className="bg-[#eae5d9]">
-              <th className="sticky left-0 z-20 w-12 border-b border-r border-line bg-[#eae5d9] px-2 py-1.5 text-center font-mono text-[8px] font-normal text-ink-faint">
+            <tr className="bg-subtle">
+              <th className="sticky left-0 z-20 w-12 border-b border-r border-line bg-subtle px-2 py-1.5 text-center font-mono text-[11px] font-normal text-ink-muted">
                 行
               </th>
               {Array.from({ length: totalCols }, (_, index) => {
@@ -306,8 +306,8 @@ function XlsxPreviewTable({ preview }: { preview: XlsxPreview }) {
                   <th
                     key={column}
                     scope="col"
-                    className={`min-w-[120px] border-b border-r border-line px-2 py-1.5 text-center font-mono text-[8.5px] font-medium last:border-r-0 ${
-                      target ? 'bg-pine-100 text-pine-800' : 'text-ink-faint'
+                    className={`min-w-[120px] border-b border-r border-line px-2 py-1.5 text-center font-mono text-[11px] font-medium last:border-r-0 ${
+                      target ? 'bg-blue-100 text-blue-800' : 'text-ink-muted'
                     }`}
                   >
                     {columnIndexToLabel(column)}
@@ -322,18 +322,18 @@ function XlsxPreviewTable({ preview }: { preview: XlsxPreview }) {
                 key={entry.row}
                 className={
                   entry.isHeader
-                    ? 'bg-[#f5f1e7]'
+                    ? 'bg-warning-soft'
                     : entry.row === preview.row_start
-                      ? 'border-t-2 border-pine-200'
-                      : ''
+                      ? 'border-t-2 border-blue-200'
+                      : 'bg-card'
                 }
               >
                 <th
                   scope="row"
-                  className={`sticky left-0 z-[1] border-b border-r border-line-soft px-2 py-1.5 text-center font-mono text-[8.5px] font-normal ${
+                  className={`sticky left-0 z-[1] border-b border-r border-line-soft px-2 py-1.5 text-center font-mono text-[11px] font-normal ${
                     entry.isHeader
-                      ? 'bg-[#f1ecdf] text-ochre-deep'
-                      : 'bg-[#faf7ef] text-ink-faint'
+                      ? 'bg-warning-soft text-warning-deep'
+                      : 'bg-page text-ink-faint'
                   }`}
                   title={entry.isHeader ? '表头行' : `源文件第 ${entry.row} 行`}
                 >
@@ -356,9 +356,9 @@ function XlsxPreviewTable({ preview }: { preview: XlsxPreview }) {
                       key={column}
                       rowSpan={rowSpan > 1 ? rowSpan : undefined}
                       colSpan={colSpan > 1 ? colSpan : undefined}
-                      className={`max-w-[240px] truncate border-b border-r border-line-soft px-2.5 py-1.5 font-mono text-[9.5px] last:border-r-0 ${
+                      className={`max-w-[240px] truncate border-b border-r border-line-soft px-2.5 py-1.5 font-mono text-[12px] last:border-r-0 ${
                         target
-                          ? 'bg-pine-50/85 font-medium text-pine-900'
+                          ? 'bg-blue-100 font-medium text-blue-800'
                           : entry.isHeader
                             ? 'font-medium text-ink-soft'
                             : 'text-ink-muted'
@@ -366,7 +366,7 @@ function XlsxPreviewTable({ preview }: { preview: XlsxPreview }) {
                       title={displayCell(value)}
                     >
                       {merge && displayCell(value) === '—' ? (
-                        <span className="text-ink-faint/60">合并单元格</span>
+                        <span className="text-ink-faint">合并单元格</span>
                       ) : (
                         displayCell(value)
                       )}
@@ -378,8 +378,8 @@ function XlsxPreviewTable({ preview }: { preview: XlsxPreview }) {
           </tbody>
         </table>
       </div>
-      <div className="border-t border-line-soft bg-[#faf7ef] px-3.5 py-2">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[9px] text-ink-faint">
+      <div className="border-t border-line-soft bg-page px-3.5 py-2">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-ink-muted">
           <span>
             高亮列 {targetLabel}（第 {preview.column_index} 列） · {rowEndLabel}
           </span>
@@ -391,13 +391,13 @@ function XlsxPreviewTable({ preview }: { preview: XlsxPreview }) {
                 {mergedPreview.map((range) => (
                   <span
                     key={range}
-                    className="rounded border border-line bg-surface px-1.5 py-[1px] font-mono text-[8px] text-ink-muted"
+                    className="rounded border border-line bg-card px-1.5 py-px font-mono text-[11px] text-ink-muted"
                   >
                     {range}
                   </span>
                 ))}
                 {preview.merged_ranges.length > mergedPreview.length && (
-                  <span className="font-mono text-[8px] text-ink-faint">
+                  <span className="font-mono text-[11px] text-ink-faint">
                     +{preview.merged_ranges.length - mergedPreview.length}
                   </span>
                 )}
@@ -417,23 +417,23 @@ function JsonPreviewPanel({ preview }: { preview: JsonPreview }) {
       title="JSON 命中样本"
       subtitle="JSONPath 实时求值 · 仅展示前 10 个命中值"
       right={
-        <span className="inline-flex items-center gap-1 rounded-full border border-ai/20 bg-ai-soft px-2 py-0.5 font-mono text-[8.5px] text-ai-deep">
+        <span className="inline-flex items-center gap-1 rounded-full border border-transparent bg-info-soft px-2 py-0.5 font-mono text-[11px] text-info-deep">
           {preview.hits} 个命中
         </span>
       }
     >
       <div className="p-3.5">
-        <div className="flex items-center gap-2 rounded-lg border border-line bg-canvas/55 px-3 py-2">
+        <div className="flex items-center gap-2 rounded-lg border border-line bg-page px-3 py-2">
           <Icon name="code" size={13} className="shrink-0 text-ink-faint" />
-          <span className="font-mono text-[10px] text-ink-soft">
+          <span className="font-mono text-[13px] text-ink-soft">
             {preview.json_path}
           </span>
-          <span className="ml-auto shrink-0 rounded bg-surface px-1.5 py-0.5 font-mono text-[8px] text-ink-faint">
+          <span className="ml-auto shrink-0 rounded bg-card px-1.5 py-0.5 font-mono text-[11px] text-ink-faint">
             jsonpath
           </span>
         </div>
 
-        <div className="mt-3 divide-y divide-line-soft overflow-hidden rounded-xl border border-line bg-[#faf8f1]">
+        <div className="mt-3 divide-y divide-line-soft overflow-hidden rounded-xl border border-line bg-page">
           {preview.samples.map((sample, index) => {
             const structured = sample !== null && typeof sample === 'object';
             const text = formatJsonValue(sample);
@@ -442,15 +442,15 @@ function JsonPreviewPanel({ preview }: { preview: JsonPreview }) {
                 key={index}
                 className="grid grid-cols-[34px_minmax(0,1fr)] gap-2 px-3 py-2.5"
               >
-                <span className="pt-0.5 font-mono text-[8.5px] text-ink-faint">
+                <span className="pt-0.5 font-mono text-[11px] text-ink-faint">
                   #{String(index + 1).padStart(2, '0')}
                 </span>
                 {structured ? (
-                  <pre className="overflow-auto whitespace-pre-wrap break-words font-mono text-[9.5px] leading-5 text-pine-900">
+                  <pre className="overflow-auto whitespace-pre-wrap break-words font-mono text-[12px] leading-5 text-ink-soft">
                     {text}
                   </pre>
                 ) : (
-                  <code className="break-words font-mono text-[10px] leading-5 text-ink-soft">
+                  <code className="break-words font-mono text-[13px] leading-5 text-ink-soft">
                     {text}
                   </code>
                 )}
@@ -459,7 +459,7 @@ function JsonPreviewPanel({ preview }: { preview: JsonPreview }) {
           })}
         </div>
 
-        <div className="mt-2.5 flex items-center justify-between text-[9px] text-ink-faint">
+        <div className="mt-2.5 flex items-center justify-between text-[11px] text-ink-muted">
           <span>命中样本保持源文件中的原始类型。</span>
           <span className="font-mono">
             显示 {preview.samples.length}/{Math.min(preview.hits, 10)}
@@ -476,7 +476,7 @@ function PreviewBody({ data }: { data: PreviewResponse }) {
   if (isXlsxPreview(preview)) return <XlsxPreviewTable preview={preview} />;
   if (isJsonPreview(preview)) return <JsonPreviewPanel preview={preview} />;
   return (
-    <div className="rounded-xl border border-dashed border-line px-4 py-8 text-center text-[11px] text-ink-muted">
+    <div className="rounded-xl border border-dashed border-line px-4 py-8 text-center text-[13px] text-ink-muted">
       不支持的预览数据类型
     </div>
   );
@@ -485,8 +485,8 @@ function PreviewBody({ data }: { data: PreviewResponse }) {
 function LoadingPreview() {
   return (
     <div className="space-y-3" aria-hidden="true">
-      <div className="h-[86px] animate-soft-pulse rounded-xl border border-line bg-surface" />
-      <div className="h-[260px] animate-soft-pulse rounded-xl border border-line bg-surface" />
+      <div className="h-[86px] animate-soft-pulse rounded-xl border border-line bg-subtle" />
+      <div className="h-[260px] animate-soft-pulse rounded-xl border border-line bg-subtle" />
     </div>
   );
 }
@@ -516,13 +516,13 @@ function ErrorPreview({
         : '请确认字段与源文件仍存在，或稍后重试。';
 
   return (
-    <div className="rounded-xl border border-line bg-surface p-6">
+    <div className="rounded-xl border border-line bg-card p-6">
       <div className="mx-auto max-w-md text-center">
         <span
           className={`mx-auto flex h-12 w-12 items-center justify-center rounded-2xl ${
             error.status === 409
-              ? 'bg-ochre-soft text-ochre-deep'
-              : 'bg-rosewood-soft text-rosewood'
+              ? 'bg-warning-soft text-warning-deep'
+              : 'bg-danger-soft text-danger-deep'
           }`}
         >
           <Icon
@@ -530,18 +530,18 @@ function ErrorPreview({
             size={22}
           />
         </span>
-        <h3 className="mt-3.5 font-display text-[24px] font-medium tracking-[-0.02em] text-ink">
+        <h3 className="mt-3.5 text-xl font-medium text-ink">
           {title}
         </h3>
-        <p className="mt-2 text-[11.5px] leading-5 text-ink-soft">
+        <p className="mt-2 text-[13px] leading-5 text-ink-soft">
           {error.message}
         </p>
-        <p className="mt-2 text-[10px] leading-5 text-ink-faint">{hint}</p>
+        <p className="mt-2 text-[12px] leading-5 text-ink-muted">{hint}</p>
         {error.status !== 409 && error.status !== 401 && (
           <button
             type="button"
             onClick={onRetry}
-            className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-[10.5px] font-medium text-ink-soft transition-colors hover:border-pine-300 hover:text-pine-700"
+            className="mt-4 inline-flex h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-3 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
           >
             <Icon name="refresh" size={12} />
             重新尝试
@@ -673,40 +673,38 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-ink/45 p-3 backdrop-blur-[3px] sm:p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-3 animate-fade-in sm:p-6"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
       <div
         ref={dialogRef}
-        className="flex max-h-[92vh] w-full max-w-[980px] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-float animate-modal-in"
+        className="relative z-[51] flex max-h-[85vh] w-full max-w-[880px] flex-col overflow-hidden rounded-xl border border-line bg-card shadow-modal animate-modal-in"
         role="dialog"
         aria-modal="true"
         aria-labelledby="preview-title"
       >
-        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-line px-4 py-3.5 sm:px-5">
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-pine-200 bg-pine-50 text-pine-700">
-              <Icon name="file-search" size={17} />
+        <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-line-soft px-4">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
+              <Icon name="file-search" size={16} />
             </span>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <div className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-ink-faint">
+                <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
                   源文件回源 / 只读
-                </div>
-                <span className="rounded border border-line bg-canvas/60 px-1.5 py-[1px] font-mono text-[8px] uppercase text-ink-muted">
+                </span>
+                <span className="rounded border border-line bg-card px-1.5 py-px font-mono text-[11px] uppercase text-ink-muted">
                   {typeLabel}
                 </span>
               </div>
               <h2
                 id="preview-title"
-                className="mt-1 flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-[15px] font-semibold tracking-tight text-ink"
+                className="mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-[14px] font-semibold text-ink"
               >
-                <span className="font-display text-[22px] font-medium">
-                  回源预览
-                </span>
-                <span className="truncate font-mono text-[10.5px] font-normal text-ink-muted">
+                <span>回源预览</span>
+                <span className="truncate font-mono text-[12px] font-normal text-ink-muted">
                   {selection.dataset.id}.{selection.field.name}
                 </span>
               </h2>
@@ -716,7 +714,7 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
             <button
               type="button"
               onClick={copyLocator}
-              className="hidden h-8 items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 text-[10px] font-medium text-ink-muted transition-colors hover:border-pine-300 hover:text-pine-700 sm:flex"
+              className="hidden h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white sm:flex"
             >
               <Icon name="copy" size={12} />
               {copied ? '已复制' : '复制定位'}
@@ -725,7 +723,7 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
               ref={closeButtonRef}
               type="button"
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-ink-faint transition-colors hover:border-line hover:bg-canvas hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               aria-label="关闭回源预览"
             >
               <Icon name="close" size={16} />
@@ -733,24 +731,24 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-[#fbf9f3] px-4 py-4 sm:px-5">
-          <section className="mb-3.5 grid gap-2 rounded-xl border border-line bg-surface p-3.5 sm:grid-cols-[1.05fr_1fr]">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-page px-4 py-4 sm:px-5">
+          <section className="mb-3.5 grid gap-3 rounded-xl border border-line bg-card p-3.5 sm:grid-cols-2">
             <div>
-              <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-ink-faint">
+              <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
                 源文件
               </div>
               <div className="mt-1 flex items-center gap-1.5">
-                <Icon name="file" size={13} className="text-pine-600" />
-                <span className="min-w-0 truncate font-mono text-[10.5px] font-medium text-ink">
+                <Icon name="file" size={13} className="text-blue-600" />
+                <span className="min-w-0 truncate font-mono text-[13px] font-medium text-ink">
                   {resolvedFile.original_name}
                 </span>
               </div>
-              <div className="mt-1 font-mono text-[8.5px] text-ink-faint">
+              <div className="mt-1 font-mono text-[11px] text-ink-faint">
                 托管文件 · 源文件 #{resolvedFile.id}
               </div>
               {data?.file.sha256 && (
                 <div
-                  className="mt-0.5 font-mono text-[8.5px] text-ink-faint"
+                  className="mt-0.5 font-mono text-[11px] text-ink-faint"
                   title={`sha256 ${data.file.sha256}`}
                 >
                   sha256 {data.file.sha256.slice(0, 12)}… · 已去重
@@ -758,32 +756,32 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
               )}
             </div>
             <div className="border-t border-line-soft pt-2 sm:border-l sm:border-t-0 sm:pl-3.5 sm:pt-0">
-              <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-ink-faint">
+              <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
                 定位器
               </div>
-              <p className="mt-1 text-[10.5px] leading-[1.7] text-ink-soft">
+              <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
                 {locatorText}
               </p>
             </div>
             <div className="border-t border-line-soft pt-2 sm:col-span-2">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="font-mono text-[8px] uppercase tracking-[0.14em] text-ink-faint">
+                <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
                   实文件核查
                 </span>
                 {data?.verification?.status === 'passed' ? (
                   <>
-                    <span className="inline-flex items-center gap-1 rounded-full border border-pine-200 bg-pine-50 px-1.5 py-[1px] font-mono text-[8px] text-pine-700">
-                      <Icon name="check" size={9} />
+                    <span className="inline-flex items-center gap-1 rounded-full border border-transparent bg-success-soft px-1.5 py-px font-mono text-[11px] text-success-deep">
+                      <Icon name="check" size={12} />
                       通过
                     </span>
-                    <span className="text-[9.5px] text-ink-faint">
+                    <span className="text-[12px] text-ink-muted">
                       v{data.verification.version_no} 导入时校验 ·{' '}
                       {data.verification.checked_at.slice(0, 10)} ·{' '}
                       {data.verification.checked_by}
                     </span>
                   </>
                 ) : (
-                  <span className="text-[9.5px] text-ink-faint">
+                  <span className="text-[12px] text-ink-muted">
                     {data
                       ? data.verification?.status || '无导入核查记录'
                       : '读取中…'}
@@ -807,9 +805,9 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
           </div>
         </div>
 
-        <footer className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-t border-line bg-surface px-4 py-2.5 text-[9px] text-ink-faint sm:px-5">
+        <footer className="flex h-12 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-t border-line-soft bg-card px-4 text-[11px] text-ink-muted">
           <span className="flex items-center gap-1.5">
-            <Icon name="lock" size={10} />
+            <Icon name="lock" size={12} />
             只读 · 存储路径不对外暴露
           </span>
           <span className="hidden h-3 w-px bg-line sm:block" />
@@ -820,21 +818,21 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
             type="button"
             onClick={handleDownload}
             disabled={downloading}
-            className="ml-auto flex items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1 text-[9.5px] font-medium text-ink-muted transition-colors hover:border-pine-300 hover:text-pine-700 disabled:cursor-wait disabled:opacity-60"
+            className="ml-auto inline-flex h-7 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
             title="经 GET /files/{id}/download 受控下载，存储路径不暴露"
           >
-            <Icon name="download" size={11} />
+            <Icon name="download" size={12} />
             {downloading ? '下载中…' : '下载源文件（权限受控）'}
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-line bg-surface px-2.5 py-1 text-[9.5px] font-medium text-ink-muted transition-colors hover:border-pine-300 hover:text-pine-700"
+            className="inline-flex h-7 items-center rounded-lg px-2.5 text-[12px] font-medium text-ink-muted transition-colors duration-150 hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
           >
             关闭
           </button>
           {downloadError && (
-            <span className="w-full text-rosewood" role="alert">
+            <span className="w-full text-danger-deep" role="alert">
               {downloadError}
             </span>
           )}

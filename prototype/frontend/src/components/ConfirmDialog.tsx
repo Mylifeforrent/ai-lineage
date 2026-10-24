@@ -51,23 +51,23 @@ export function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-center justify-center bg-ink/45 p-4 backdrop-blur-[2px]"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 animate-fade-in"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !busy) onCancel();
       }}
     >
       <div
-        className="w-full max-w-[400px] overflow-hidden rounded-2xl border border-line bg-surface shadow-float animate-modal-in"
+        className="relative z-[51] mx-auto w-full max-w-[400px] overflow-hidden rounded-xl border border-line bg-card shadow-modal animate-modal-in"
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
       >
-        <div className="flex items-start gap-3 px-5 py-4">
+        <div className="flex items-start gap-3 px-4 py-4">
           <span
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
               danger
-                ? 'bg-rosewood-soft text-rosewood'
-                : 'bg-ochre-soft text-ochre-deep'
+                ? 'bg-danger-soft text-danger-deep'
+                : 'bg-warning-soft text-warning-deep'
             }`}
           >
             <Icon name={danger ? 'trash' : 'warning'} size={17} />
@@ -75,22 +75,22 @@ export function ConfirmDialog({
           <div className="min-w-0">
             <h2
               id="confirm-dialog-title"
-              className="text-[13px] font-semibold text-ink"
+              className="text-[14px] font-semibold text-ink"
             >
               {title}
             </h2>
-            <div className="mt-1.5 text-[10.5px] leading-5 text-ink-muted">
+            <div className="mt-1.5 text-[13px] leading-5 text-ink-muted">
               {message}
             </div>
           </div>
         </div>
-        <div className="flex items-center justify-end gap-2 border-t border-line-soft bg-canvas/45 px-5 py-3">
+        <div className="flex h-12 items-center justify-end gap-2 border-t border-line-soft px-4">
           <button
             ref={cancelRef}
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="h-8 rounded-lg border border-line bg-surface px-3 text-[10.5px] font-medium text-ink-muted transition-colors hover:border-line-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-8 items-center justify-center rounded-lg border border-line-strong bg-card px-3 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 active:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-line-strong"
           >
             {cancelLabel}
           </button>
@@ -98,10 +98,10 @@ export function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className={`flex h-8 items-center gap-1.5 rounded-lg px-3 text-[10.5px] font-semibold text-white transition-colors disabled:cursor-wait disabled:opacity-70 ${
+            className={`flex h-8 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium text-white transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-wait disabled:opacity-70 ${
               danger
-                ? 'bg-rosewood hover:bg-rosewood-deep'
-                : 'bg-pine-800 hover:bg-pine-900'
+                ? 'bg-danger hover:bg-danger-deep active:bg-danger-deep focus-visible:ring-white/60'
+                : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 focus-visible:ring-blue-600/60'
             }`}
           >
             {busy && (

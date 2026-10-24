@@ -43,9 +43,9 @@ const OP_LABELS: Record<ChangeOp, string> = {
 };
 
 const OP_STYLES: Record<ChangeOp, string> = {
-  added: 'border-pine-200 bg-pine-50 text-pine-700',
-  updated: 'border-ochre/20 bg-ochre-soft text-ochre-deep',
-  deleted: 'border-rosewood/20 bg-rosewood-soft text-rosewood-deep',
+  added: 'border-transparent bg-success-soft text-success-deep',
+  updated: 'border-transparent bg-warning-soft text-warning-deep',
+  deleted: 'border-transparent bg-danger-soft text-danger-deep',
 };
 
 export function VersionDrawer({
@@ -219,7 +219,7 @@ export function VersionDrawer({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex justify-end bg-ink/40 backdrop-blur-[2px]"
+      className="fixed inset-0 z-40 flex justify-end bg-slate-900/25 animate-fade-in"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !pendingRollback) {
           onClose();
@@ -227,32 +227,28 @@ export function VersionDrawer({
       }}
     >
       <aside
-        className="flex h-full w-full max-w-[620px] flex-col overflow-hidden border-l border-line bg-surface shadow-float animate-fade-in"
+        className="relative z-[41] flex h-full w-full flex-col overflow-hidden border-l border-line bg-card shadow-float animate-drawer-in sm:w-[480px]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="version-drawer-title"
       >
-        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-line px-4 py-3.5 sm:px-5">
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5 font-mono text-[8.5px] uppercase tracking-[0.18em] text-ink-faint">
-              <Icon name="tag" size={12} />
-              导入批次 · 业务标签
-            </div>
+        <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-line-soft px-4">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
+              <Icon name="tag" size={16} />
+            </span>
             <h2
               id="version-drawer-title"
-              className="mt-1 font-display text-[22px] font-medium tracking-[-0.02em] text-ink"
+              className="min-w-0 text-[14px] font-semibold text-ink"
             >
               版本
             </h2>
-            <p className="mt-0.5 text-[9.5px] leading-4 text-ink-faint">
-              回滚只反做变更日志；标注为追加式，不受回滚影响。
-            </p>
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <button
               type="button"
               onClick={() => setReloadKey((value) => value + 1)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-ink-faint transition-colors hover:border-line hover:bg-canvas hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               aria-label="刷新版本信息"
               title="刷新"
             >
@@ -262,35 +258,35 @@ export function VersionDrawer({
               ref={closeButtonRef}
               type="button"
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-ink-faint transition-colors hover:border-line hover:bg-canvas hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               aria-label="关闭版本抽屉"
             >
-              <Icon name="close" size={15} />
+              <Icon name="close" size={16} />
             </button>
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-[#fbf9f3] px-4 py-4 sm:px-5">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-page px-4 py-4">
           {loading && (
             <div className="space-y-2" aria-hidden="true">
               {[0, 1, 2, 3].map((item) => (
                 <div
                   key={item}
-                  className="h-14 animate-soft-pulse rounded-xl border border-line bg-surface"
+                  className="h-14 animate-soft-pulse rounded-xl border border-line bg-subtle"
                 />
               ))}
             </div>
           )}
 
           {!loading && loadError && (
-            <div className="rounded-xl border border-rosewood/20 bg-rosewood-soft px-3.5 py-3" role="alert">
-              <p className="text-[10.5px] leading-5 text-rosewood-deep">{loadError}</p>
+            <div className="rounded-xl border border-danger/25 bg-danger-soft px-3.5 py-3" role="alert">
+              <p className="text-[13px] leading-5 text-danger-deep">{loadError}</p>
               <button
                 type="button"
                 onClick={() => setReloadKey((value) => value + 1)}
-                className="mt-2 inline-flex items-center gap-1 rounded-md border border-rosewood/25 bg-surface px-2 py-1 text-[9.5px] text-rosewood-deep"
+                className="mt-2 inline-flex h-7 items-center gap-1 rounded-lg border border-line-strong bg-card px-2 text-[11px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               >
-                <Icon name="refresh" size={10} />
+                <Icon name="refresh" size={11} />
                 重新加载
               </button>
             </div>
@@ -298,8 +294,13 @@ export function VersionDrawer({
 
           {!loading && !loadError && (
             <div className="space-y-5">
+              <div className="flex items-start gap-2 rounded-lg border border-line bg-card px-3 py-2.5 text-[12px] leading-5 text-ink-muted">
+                <Icon name="info" size={12} className="mt-0.5 shrink-0 text-ink-faint" />
+                <span>回滚只反做变更日志；标注为追加式，不受回滚影响。</span>
+              </div>
+
               {rollbackNotice && (
-                <div className="flex items-start gap-2 rounded-xl border border-pine-200 bg-pine-50 px-3 py-2.5 text-[10px] leading-4 text-pine-800">
+                <div className="flex items-start gap-2 rounded-lg border border-success/25 bg-success-soft px-3 py-2.5 text-[12px] leading-4 text-success-deep">
                   <Icon name="check" size={12} className="mt-0.5 shrink-0" />
                   <span>{rollbackNotice}</span>
                 </div>
@@ -307,39 +308,39 @@ export function VersionDrawer({
 
               <section>
                 <div className="mb-2 flex items-center justify-between">
-                  <h3 className="flex items-center gap-1.5 font-mono text-[8.5px] uppercase tracking-[0.16em] text-ink-faint">
+                  <h3 className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
                     <Icon name="layers" size={11} />
                     导入批次
                   </h3>
-                  <span className="font-mono text-[8px] text-ink-faint">
+                  <span className="font-mono text-[11px] tabular-nums text-ink-faint">
                     {batches?.length ?? 0} 个批次
                   </span>
                 </div>
                 {batches?.length ? (
-                  <div className="divide-y divide-line-soft overflow-hidden rounded-xl border border-line bg-surface">
+                  <div className="divide-y divide-line-soft overflow-hidden rounded-xl border border-line bg-card">
                     {batches.map((batch) => (
                       <div
                         key={batch.id}
-                        className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5"
+                        className="flex flex-wrap items-center gap-x-2.5 gap-y-1 px-3 py-2.5"
                       >
-                        <span className="font-mono text-[10.5px] font-semibold text-ink">
+                        <span className="font-mono text-[13px] font-semibold tabular-nums text-ink">
                           v{batch.version_no}
                         </span>
-                        <span className="rounded border border-line bg-canvas/55 px-1.5 py-[1px] font-mono text-[8px] uppercase text-ink-faint">
+                        <span className="rounded border border-line bg-page px-1.5 py-px font-mono text-[11px] uppercase text-ink-faint">
                           {batch.format}
                         </span>
-                        <span className="min-w-0 flex-1 truncate font-mono text-[8.5px] text-ink-faint" title={batch.file_names.join('、')}>
+                        <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-ink-faint" title={batch.file_names.join('、')}>
                           {batch.file_names.join('、') || '—'}
                         </span>
-                        <span className="font-mono text-[8.5px] text-ink-faint">
+                        <span className="shrink-0 font-mono text-[11px] text-ink-faint">
                           {formatDateTime(batch.created_at)} · {batch.created_by}
                         </span>
                         {batch.rolled_back_at ? (
-                          <span className="rounded-full border border-rosewood/20 bg-rosewood-soft px-1.5 py-[1px] font-mono text-[8px] text-rosewood-deep">
+                          <span className="rounded-full border border-line bg-subtle px-1.5 py-px font-mono text-[11px] text-ink-muted">
                             已回滚
                           </span>
                         ) : (
-                          <span className="rounded-full border border-pine-200 bg-pine-50 px-1.5 py-[1px] font-mono text-[8px] text-pine-700">
+                          <span className="rounded-full border border-transparent bg-success-soft px-1.5 py-px font-mono text-[11px] text-success-deep">
                             有效
                           </span>
                         )}
@@ -347,7 +348,7 @@ export function VersionDrawer({
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-dashed border-line bg-surface/60 px-3 py-4 text-center text-[9.5px] text-ink-faint">
+                  <div className="rounded-xl border border-dashed border-line px-3 py-4 text-center text-[12px] text-ink-muted">
                     暂无导入批次
                   </div>
                 )}
@@ -355,27 +356,27 @@ export function VersionDrawer({
 
               <section>
                 <div className="mb-2 flex items-center justify-between">
-                  <h3 className="flex items-center gap-1.5 font-mono text-[8.5px] uppercase tracking-[0.16em] text-ink-faint">
+                  <h3 className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
                     <Icon name="tag" size={11} />
                     业务标签
                   </h3>
-                  <span className="font-mono text-[8px] text-ink-faint">
+                  <span className="font-mono text-[11px] tabular-nums text-ink-faint">
                     {tags?.length ?? 0} 个标签
                   </span>
                 </div>
 
                 {tags?.length ? (
-                  <div className="divide-y divide-line-soft overflow-hidden rounded-xl border border-line bg-surface">
+                  <div className="divide-y divide-line-soft overflow-hidden rounded-xl border border-line bg-card">
                     {tags.map((tag) => (
                       <div key={tag.id} className="px-3 py-2.5">
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                          <span className="font-mono text-[10.5px] font-semibold text-pine-800">
+                          <span className="font-mono text-[13px] font-semibold text-blue-800">
                             {tag.name}
                           </span>
-                          <span className="rounded border border-line bg-canvas/55 px-1.5 py-[1px] font-mono text-[8px] text-ink-faint">
+                          <span className="rounded border border-line bg-page px-1.5 py-px font-mono text-[11px] tabular-nums text-ink-faint">
                             变更序号 #{tag.change_seq}
                           </span>
-                          <span className="font-mono text-[8px] text-ink-faint">
+                          <span className="font-mono text-[11px] text-ink-faint">
                             {formatDateTime(tag.created_at)} · {tag.created_by}
                           </span>
                           {canRollback && (
@@ -385,15 +386,15 @@ export function VersionDrawer({
                                 setRollbackNotice(null);
                                 setPendingRollback(tag);
                               }}
-                              className="ml-auto flex items-center gap-1 rounded-md border border-rosewood/20 bg-rosewood-soft px-2 py-1 text-[9px] font-medium text-rosewood transition-colors hover:border-rosewood/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rosewood/30"
+                              className="ml-auto inline-flex h-7 items-center gap-1 rounded-md border border-danger/25 bg-danger-soft px-2 text-[11px] font-medium text-danger-deep transition-colors duration-150 hover:border-danger/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                             >
-                              <Icon name="rollback" size={10} />
+                              <Icon name="rollback" size={11} />
                               回滚到此标签
                             </button>
                           )}
                         </div>
                         {tag.note && (
-                          <p className="mt-1 break-words text-[9.5px] leading-4 text-ink-muted">
+                          <p className="mt-1 break-words text-[12px] leading-4 text-ink-muted">
                             {tag.note}
                           </p>
                         )}
@@ -401,55 +402,61 @@ export function VersionDrawer({
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-dashed border-line bg-surface/60 px-3 py-4 text-center text-[9.5px] text-ink-faint">
+                  <div className="rounded-xl border border-dashed border-line px-3 py-4 text-center text-[12px] text-ink-muted">
                     还没有业务标签。标签会锚定当前变更序号，供版本差异与回滚使用。
                   </div>
                 )}
 
                 {canWrite ? (
-                  <form onSubmit={handleCreateTag} className="mt-2.5 rounded-xl border border-line bg-surface/70 p-3">
-                    <div className="flex items-center gap-2">
+                  <form onSubmit={handleCreateTag} className="mt-2.5 rounded-xl border border-line bg-card p-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label htmlFor="version-tag-name" className="sr-only">
+                        版本标签名
+                      </label>
                       <input
+                        id="version-tag-name"
                         type="text"
                         value={tagName}
                         onChange={(event) => setTagName(event.target.value)}
                         placeholder="标签名，如 v3.0-r1"
-                        aria-label="版本标签名"
                         maxLength={64}
-                        className="field-input h-8 max-w-[170px] font-mono text-[10px]"
+                        className="field-input h-8 w-[150px] font-mono text-[12px]"
                         disabled={creating}
                       />
+                      <label htmlFor="version-tag-note" className="sr-only">
+                        版本标签说明
+                      </label>
                       <input
+                        id="version-tag-note"
                         type="text"
                         value={tagNote}
                         onChange={(event) => setTagNote(event.target.value)}
                         placeholder="标签说明（可选）"
-                        aria-label="版本标签说明"
                         maxLength={200}
-                        className="field-input h-8 flex-1 text-[10px]"
+                        className="field-input h-8 min-w-[160px] flex-1 text-[13px]"
                         disabled={creating}
                       />
                       <button
                         type="submit"
                         disabled={creating || !tagName.trim()}
-                        className="flex h-8 shrink-0 items-center gap-1 rounded-md bg-pine-800 px-2.5 text-[9.5px] font-medium text-white transition-colors hover:bg-pine-900 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex h-8 shrink-0 items-center gap-1 rounded-lg bg-blue-600 px-2.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                       >
-                        <Icon name="plus" size={10} />
+                        <Icon name="plus" size={11} />
                         {creating ? '创建中…' : '打标签'}
                       </button>
                     </div>
-                    <p className="mt-1.5 font-mono text-[8px] text-ink-faint">
+                    <p className="mt-1.5 font-mono text-[11px] text-ink-faint">
                       编辑及以上角色可创建；重名会返回 409。
                     </p>
                     {createError && (
-                      <p className="mt-1.5 rounded-md border border-rosewood/20 bg-rosewood-soft px-2 py-1.5 text-[9px] leading-4 text-rosewood-deep" role="alert">
+                      <p className="mt-1.5 rounded-md border border-danger/25 bg-danger-soft px-2 py-1.5 text-[11px] leading-4 text-danger-deep" role="alert">
                         {createError}
                       </p>
                     )}
                   </form>
                 ) : (
-                  <p className="mt-2 flex items-center gap-1.5 text-[8.5px] text-ink-faint">
-                    <Icon name="lock" size={10} />
+                  <p className="mt-2 flex items-center gap-1.5 text-[11px] text-ink-faint">
+                    <Icon name="lock" size={11} />
                     只读角色不能创建标签或回滚版本。
                   </p>
                 )}
@@ -457,52 +464,66 @@ export function VersionDrawer({
 
               <section>
                 <div className="mb-2 flex items-center justify-between">
-                  <h3 className="flex items-center gap-1.5 font-mono text-[8.5px] uppercase tracking-[0.16em] text-ink-faint">
+                  <h3 className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
                     <Icon name="diff" size={11} />
                     标签间差异
                   </h3>
-                  <span className="font-mono text-[8px] text-ink-faint">
+                  <span className="font-mono text-[11px] text-ink-faint">
                     净变更摘要
                   </span>
                 </div>
 
                 {tags && tags.length >= 2 ? (
-                  <div className="rounded-xl border border-line bg-surface/75 p-3">
+                  <div className="rounded-xl border border-line bg-card p-3">
                     <div className="flex flex-wrap items-end gap-2">
                       <label className="block">
-                        <span className="mb-1 block font-mono text-[8px] text-ink-faint">起始标签</span>
-                        <select
-                          value={diffFrom}
-                          onChange={(event) => setDiffFrom(event.target.value)}
-                          className="h-8 min-w-[130px] rounded-lg border border-line bg-surface px-2 font-mono text-[10px] text-ink-soft outline-none focus:border-pine-500"
-                        >
-                          {tags.map((tag) => (
-                            <option key={tag.id} value={tag.name}>
-                              {tag.name}
-                            </option>
-                          ))}
-                        </select>
+                        <span className="mb-1.5 block text-[12px] font-medium text-ink-soft">起始标签</span>
+                        <span className="relative block">
+                          <select
+                            value={diffFrom}
+                            onChange={(event) => setDiffFrom(event.target.value)}
+                            className="field-input h-8 min-w-[130px] appearance-none pr-8 font-mono text-[12px] text-ink-soft"
+                          >
+                            {tags.map((tag) => (
+                              <option key={tag.id} value={tag.name}>
+                                {tag.name}
+                              </option>
+                            ))}
+                          </select>
+                          <Icon
+                            name="chevron-down"
+                            size={14}
+                            className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-ink-faint"
+                          />
+                        </span>
                       </label>
-                      <span className="pb-2 text-ink-faint" aria-hidden="true">→</span>
+                      <Icon name="arrow-right" size={12} className="pb-2 text-ink-faint" aria-hidden="true" />
                       <label className="block">
-                        <span className="mb-1 block font-mono text-[8px] text-ink-faint">结束标签</span>
-                        <select
-                          value={diffTo}
-                          onChange={(event) => setDiffTo(event.target.value)}
-                          className="h-8 min-w-[130px] rounded-lg border border-line bg-surface px-2 font-mono text-[10px] text-ink-soft outline-none focus:border-pine-500"
-                        >
-                          {tags.map((tag) => (
-                            <option key={tag.id} value={tag.name}>
-                              {tag.name}
-                            </option>
-                          ))}
-                        </select>
+                        <span className="mb-1.5 block text-[12px] font-medium text-ink-soft">结束标签</span>
+                        <span className="relative block">
+                          <select
+                            value={diffTo}
+                            onChange={(event) => setDiffTo(event.target.value)}
+                            className="field-input h-8 min-w-[130px] appearance-none pr-8 font-mono text-[12px] text-ink-soft"
+                          >
+                            {tags.map((tag) => (
+                              <option key={tag.id} value={tag.name}>
+                                {tag.name}
+                              </option>
+                            ))}
+                          </select>
+                          <Icon
+                            name="chevron-down"
+                            size={14}
+                            className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-ink-faint"
+                          />
+                        </span>
                       </label>
                       <button
                         type="button"
                         onClick={handleDiff}
                         disabled={diffLoading || !diffFrom || !diffTo}
-                        className="flex h-8 items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-[9.5px] font-medium text-ink-muted transition-colors hover:border-pine-300 hover:text-pine-700 disabled:cursor-wait disabled:opacity-60"
+                        className="flex h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-3 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-wait disabled:opacity-50"
                       >
                         <Icon name="diff" size={11} />
                         {diffLoading ? '计算中…' : '计算差异'}
@@ -510,61 +531,61 @@ export function VersionDrawer({
                     </div>
 
                     {diffError && (
-                      <p className="mt-2 rounded-md border border-rosewood/20 bg-rosewood-soft px-2 py-1.5 text-[9px] leading-4 text-rosewood-deep" role="alert">
+                      <p className="mt-2 rounded-md border border-danger/25 bg-danger-soft px-2 py-1.5 text-[11px] leading-4 text-danger-deep" role="alert">
                         {diffError}
                       </p>
                     )}
 
                     {diff && (
-                      <div className="mt-3 border-t border-line-soft pt-3">
+                      <div className="mt-3 border-t border-line-soft pt-3 animate-fade-in">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-[9.5px] font-medium text-ink-soft">
+                          <span className="font-mono text-[12px] font-medium text-ink-soft">
                             {diffFrom} → {diffTo}
                           </span>
-                          <span className="rounded-full border border-pine-200 bg-pine-50 px-1.5 py-[1px] font-mono text-[8px] text-pine-700">
+                          <span className="rounded-full border border-transparent bg-success-soft px-2 py-px font-mono text-[11px] tabular-nums text-success-deep">
                             +{diff.summary.added} 新增
                           </span>
-                          <span className="rounded-full border border-ochre/20 bg-ochre-soft px-1.5 py-[1px] font-mono text-[8px] text-ochre-deep">
+                          <span className="rounded-full border border-transparent bg-warning-soft px-2 py-px font-mono text-[11px] tabular-nums text-warning-deep">
                             ~{diff.summary.updated} 修改
                           </span>
-                          <span className="rounded-full border border-rosewood/20 bg-rosewood-soft px-1.5 py-[1px] font-mono text-[8px] text-rosewood-deep">
+                          <span className="rounded-full border border-transparent bg-danger-soft px-2 py-px font-mono text-[11px] tabular-nums text-danger-deep">
                             −{diff.summary.deleted} 删除
                           </span>
                         </div>
 
                         {diff.items.length === 0 ? (
-                          <p className="mt-2 text-[9px] text-ink-faint">
+                          <p className="mt-2 text-[12px] text-ink-muted">
                             两个标签之间没有净变更。
                           </p>
                         ) : (
-                          <ul className="mt-2 max-h-[220px] space-y-1.5 overflow-y-auto pr-1">
+                          <ul className="mt-2 max-h-[240px] divide-y divide-line-soft overflow-y-auto overflow-hidden rounded-lg border border-line-soft">
                             {diff.items.map((item) => (
                               <li
                                 key={`${item.entity_kind}-${item.entity_key}`}
-                                className="flex items-start gap-2 rounded-lg border border-line-soft bg-canvas/35 px-2 py-1.5"
+                                className="flex items-start gap-2 bg-card px-2.5 py-1.5"
                               >
-                                <span className={`shrink-0 rounded border px-1.5 py-[1px] font-mono text-[8px] ${OP_STYLES[item.op]}`}>
+                                <span className={`shrink-0 rounded border px-1.5 py-px font-mono text-[11px] ${OP_STYLES[item.op]}`}>
                                   {OP_LABELS[item.op]}
                                 </span>
-                                <span className="shrink-0 font-mono text-[8px] text-ink-faint">
+                                <span className="shrink-0 text-[11px] text-ink-faint">
                                   {KIND_LABELS[item.entity_kind]}
                                 </span>
-                                <span className="min-w-0 break-all font-mono text-[8.5px] text-ink-soft">
+                                <span className="min-w-0 break-all font-mono text-[12px] text-ink-soft">
                                   {item.entity_key}
                                 </span>
                               </li>
                             ))}
                           </ul>
                         )}
-                        <p className="mt-2 flex items-center gap-1 text-[8px] text-ink-faint">
-                          <Icon name="info" size={9} />
+                        <p className="mt-2 flex items-center gap-1 text-[11px] text-ink-faint">
+                          <Icon name="info" size={10} />
                           差异按实体自然键归并，统计净变化；标注不参与差异统计。
                         </p>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-dashed border-line bg-surface/60 px-3 py-4 text-center text-[9.5px] text-ink-faint">
+                  <div className="rounded-xl border border-dashed border-line px-3 py-4 text-center text-[12px] text-ink-muted">
                     至少创建两个标签后，才能对比标签之间的净变更。
                   </div>
                 )}
@@ -587,7 +608,7 @@ export function VersionDrawer({
               将反做标签「{pendingRollback?.name}」之后的所有变更（含人工编辑与导入批次），
               并立即刷新画布。
             </p>
-            <p className="font-mono text-[9px] text-ink-faint">
+            <p className="font-mono text-[11px] leading-4 text-ink-faint">
               回滚可重复执行（幂等）；标注不会被删除。
             </p>
           </div>

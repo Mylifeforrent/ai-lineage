@@ -92,18 +92,18 @@ function EdgeEditor({ token, edge, onCancel, onSaved }: EdgeEditorProps) {
 
   return (
     <form onSubmit={handleSubmit} className="mt-4 space-y-3" noValidate>
-      <div className="rounded-xl border border-pine-200 bg-pine-50/45 px-3 py-2.5">
-        <div className="flex items-center gap-1.5 font-mono text-[8.5px] uppercase tracking-[0.14em] text-pine-700">
+      <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2.5">
+        <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-blue-700">
           <Icon name="edit" size={11} />
           编辑转换与备注
         </div>
-        <p className="mt-1 text-[9px] leading-4 text-pine-800/80">
+        <p className="mt-1 text-[12px] leading-4 text-blue-800">
           来源与上下游端点不可修改；保存后会写入变更日志。
         </p>
       </div>
 
       <div>
-        <label htmlFor="edge-detail-transform" className="mb-1 block text-[10.5px] font-medium text-ink-soft">
+        <label htmlFor="edge-detail-transform" className="mb-1.5 block text-[12px] font-medium text-ink-soft">
           转换说明
         </label>
         <textarea
@@ -113,13 +113,13 @@ function EdgeEditor({ token, edge, onCancel, onSaved }: EdgeEditorProps) {
           rows={2}
           maxLength={200}
           placeholder="如 trim/cast、lookup"
-          className="field-input resize-y py-2 font-mono text-[10.5px] leading-5"
+          className="field-input resize-y py-2 font-mono text-[13px] leading-5"
           disabled={saving}
         />
       </div>
 
       <div>
-        <label htmlFor="edge-detail-confidence" className="mb-1 block text-[10.5px] font-medium text-ink-soft">
+        <label htmlFor="edge-detail-confidence" className="mb-1.5 block text-[12px] font-medium text-ink-soft">
           置信度（0~1）
         </label>
         <input
@@ -130,13 +130,13 @@ function EdgeEditor({ token, edge, onCancel, onSaved }: EdgeEditorProps) {
           step={0.05}
           value={confidence}
           onChange={(event) => setConfidence(event.target.value)}
-          className="field-input h-9 font-mono text-[10.5px]"
+          className="field-input h-8 font-mono text-[13px]"
           disabled={saving}
         />
       </div>
 
       <div>
-        <label htmlFor="edge-detail-note" className="mb-1 block text-[10.5px] font-medium text-ink-soft">
+        <label htmlFor="edge-detail-note" className="mb-1.5 block text-[12px] font-medium text-ink-soft">
           备注
         </label>
         <textarea
@@ -146,14 +146,14 @@ function EdgeEditor({ token, edge, onCancel, onSaved }: EdgeEditorProps) {
           rows={2}
           maxLength={500}
           placeholder="补充人工判断依据（可选）"
-          className="field-input resize-y py-2 text-[10.5px] leading-5"
+          className="field-input resize-y py-2 text-[13px] leading-5"
           disabled={saving}
         />
       </div>
 
       {error && (
         <div
-          className="flex gap-2 rounded-lg border border-rosewood/20 bg-rosewood-soft px-3 py-2 text-[10px] leading-4 text-rosewood-deep"
+          className="flex gap-2 rounded-lg border border-danger/25 bg-danger-soft px-3 py-2 text-[12px] leading-4 text-danger-deep"
           role="alert"
         >
           <Icon name="warning" size={12} className="mt-0.5 shrink-0" />
@@ -165,7 +165,7 @@ function EdgeEditor({ token, edge, onCancel, onSaved }: EdgeEditorProps) {
         <button
           type="submit"
           disabled={saving}
-          className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-pine-800 text-[10.5px] font-semibold text-white transition-colors hover:bg-pine-900 disabled:cursor-wait disabled:opacity-65"
+          className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-600 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
         >
           {saving ? (
             <>
@@ -183,7 +183,7 @@ function EdgeEditor({ token, edge, onCancel, onSaved }: EdgeEditorProps) {
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="h-9 rounded-lg border border-line bg-surface px-3 text-[10.5px] font-medium text-ink-muted transition-colors hover:border-line-strong hover:text-ink disabled:opacity-60"
+          className="h-8 rounded-lg border border-line-strong bg-card px-3 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           取消
         </button>
@@ -254,26 +254,26 @@ export function EdgeDetailPanel({
 
   return (
     <aside
-      className="relative z-10 flex w-full shrink-0 flex-col border-t border-line bg-[#f8f5ed]/80 xl:h-full xl:w-[340px] xl:border-l xl:border-t-0"
+      className="relative flex w-full shrink-0 flex-col border-t border-line bg-card xl:h-full xl:w-[320px] xl:border-l xl:border-t-0"
       aria-label="血缘边详情"
     >
-      <div className="flex shrink-0 items-start justify-between border-b border-line-soft px-4 py-3.5">
+      <div className="flex h-12 shrink-0 items-center justify-between border-b border-line-soft px-4">
         <div className="min-w-0">
-          <div className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-ink-faint">
+          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
             血缘边检查
           </div>
-          <div className="mt-1 flex min-w-0 items-center gap-1.5 font-mono text-[9px] text-ink-muted">
-            <Icon name="link" size={10} className="shrink-0" />
+          <div className="mt-1 flex min-w-0 items-center gap-1.5 font-mono text-[12px] text-ink-muted">
+            <Icon name="link" size={12} className="shrink-0" />
             <span className="truncate">#{edge.id}</span>
-            <Icon name="chevron-right" size={9} className="shrink-0" />
-            <span className="truncate text-pine-700">{KIND_LABEL(edge)}</span>
+            <Icon name="chevron-right" size={12} className="shrink-0" />
+            <span className="truncate text-blue-700">{KIND_LABEL(edge)}</span>
           </div>
         </div>
         <div className="ml-2 flex shrink-0 items-center gap-0.5">
           <button
             type="button"
             onClick={() => setHistoryOpen(true)}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-faint transition-colors hover:border-line hover:bg-surface hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-faint transition-colors duration-150 hover:border-line hover:bg-card hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
             aria-label="查看血缘边变更历史"
             title="变更历史"
           >
@@ -283,7 +283,7 @@ export function EdgeDetailPanel({
             <button
               type="button"
               onClick={() => setEditing((value) => !value)}
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-faint transition-colors hover:border-line hover:bg-surface hover:text-pine-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-faint transition-colors duration-150 hover:border-line hover:bg-card hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               aria-label={editing ? '退出边编辑' : '编辑血缘边'}
               title={editing ? '退出编辑' : '编辑'}
             >
@@ -293,7 +293,7 @@ export function EdgeDetailPanel({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-faint transition-colors hover:border-line hover:bg-surface hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-faint transition-colors duration-150 hover:border-line hover:bg-card hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
             aria-label="关闭血缘边详情"
             title="关闭详情"
           >
@@ -305,39 +305,39 @@ export function EdgeDetailPanel({
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 pb-7">
         <div className="animate-fade-in">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="rounded border border-line bg-surface/80 px-1.5 py-[2px] font-mono text-[8.5px] uppercase tracking-[0.08em] text-ink-muted">
+            <span className="rounded border border-line bg-card px-1.5 py-0.5 font-mono text-[11px] uppercase text-ink-muted">
               {KIND_LABEL(edge)}
             </span>
             <SourceBadge source={edge.source} />
-            <span className="rounded border border-line bg-canvas/65 px-1.5 py-[2px] font-mono text-[8.5px] text-ink-muted">
+            <span className="rounded border border-line bg-page px-1.5 py-0.5 font-mono text-[11px] text-ink-muted">
               置信度 {formatConfidence(edge.confidence)}
             </span>
           </div>
-          <h2 className="mt-2.5 font-display text-[22px] font-medium tracking-[-0.025em] text-ink">
+          <h2 className="mt-2.5 text-lg font-semibold text-ink">
             血缘边 #{edge.id}
           </h2>
         </div>
 
-        <div className="mt-4 rounded-xl border border-line bg-surface/75">
+        <div className="mt-4 rounded-xl border border-line bg-card">
           <div className="border-b border-line-soft px-3 py-2">
-            <span className="text-[9px] font-medium uppercase tracking-[0.12em] text-ink-faint">
+            <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-faint">
               上下游端点
             </span>
           </div>
           <div className="divide-y divide-line-soft">
             <div className="flex items-start gap-2 px-3 py-2">
-              <span className="mt-0.5 shrink-0 rounded bg-canvas/70 px-1.5 py-[1px] font-mono text-[7.5px] text-ink-faint">
+              <span className="mt-0.5 shrink-0 rounded bg-subtle px-1.5 py-px font-mono text-[11px] text-ink-muted">
                 上游
               </span>
-              <span className="break-all font-mono text-[10px] leading-4 text-ink-soft">
+              <span className="break-all font-mono text-[13px] leading-5 text-ink-soft">
                 {endpointLabel(edge.from_dataset, edge.from_field)}
               </span>
             </div>
             <div className="flex items-start gap-2 px-3 py-2">
-              <span className="mt-0.5 shrink-0 rounded bg-canvas/70 px-1.5 py-[1px] font-mono text-[7.5px] text-ink-faint">
+              <span className="mt-0.5 shrink-0 rounded bg-subtle px-1.5 py-px font-mono text-[11px] text-ink-muted">
                 下游
               </span>
-              <span className="break-all font-mono text-[10px] leading-4 text-pine-800">
+              <span className="break-all font-mono text-[13px] leading-5 text-blue-800">
                 {endpointLabel(edge.to_dataset, edge.to_field)}
               </span>
             </div>
@@ -346,11 +346,11 @@ export function EdgeDetailPanel({
 
         {edge.source === 'ai' && (
           <div className="mt-4 rounded-xl border border-ai/25 bg-ai-soft/40 p-3">
-            <div className="flex items-center gap-1.5 text-[10px] font-semibold text-ai-deep">
-              <Icon name="sparkles" size={12} />
+            <div className="flex items-center gap-1.5 text-[13px] font-semibold text-ai-deep">
+              <Icon name="sparkles" size={12} className="text-ai" />
               AI 候选血缘
             </div>
-            <p className="mt-1 text-[9px] leading-4 text-ink-muted">
+            <p className="mt-1 text-[12px] leading-4 text-ink-muted">
               该边由启发式建议生成（source=ai），尚未生效。确认后转为人工边
               （source=manual）并写入变更日志；拒绝可直接删除该边。
             </p>
@@ -359,7 +359,7 @@ export function EdgeDetailPanel({
                 type="button"
                 onClick={handleConfirmAi}
                 disabled={confirming}
-                className="mt-2 flex h-8 w-full items-center justify-center gap-1.5 rounded-lg bg-pine-800 text-[10px] font-semibold text-white transition-colors hover:bg-pine-900 disabled:cursor-wait disabled:opacity-65"
+                className="mt-2 flex h-8 w-full items-center justify-center gap-1.5 rounded-lg bg-blue-600 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
               >
                 {confirming ? (
                   <>
@@ -368,20 +368,20 @@ export function EdgeDetailPanel({
                   </>
                 ) : (
                   <>
-                    <Icon name="check" size={11} />
+                    <Icon name="check" size={12} />
                     确认转为人工边
                   </>
                 )}
               </button>
             ) : (
-              <p className="mt-2 flex items-center gap-1.5 text-[9px] text-ink-faint">
-                <Icon name="lock" size={10} />
+              <p className="mt-2 flex items-center gap-1.5 text-[11px] text-ink-faint">
+                <Icon name="lock" size={12} />
                 只读角色不能确认 AI 候选。
               </p>
             )}
             {confirmError && (
               <p
-                className="mt-2 rounded-md border border-rosewood/20 bg-rosewood-soft px-2 py-1.5 text-[9px] leading-4 text-rosewood-deep"
+                className="mt-2 rounded-md border border-danger/25 bg-danger-soft px-2 py-1.5 text-[12px] leading-4 text-danger-deep"
                 role="alert"
               >
                 {confirmError}
@@ -405,19 +405,19 @@ export function EdgeDetailPanel({
         ) : (
           <>
             <div className="mt-4 grid gap-2">
-              <div className="rounded-xl border border-line-soft bg-surface/70 px-3 py-2.5">
-                <div className="font-mono text-[8.5px] uppercase tracking-[0.12em] text-ink-faint">
+              <div className="rounded-xl border border-line-soft bg-card px-3 py-2.5">
+                <div className="font-mono text-[11px] uppercase text-ink-faint">
                   转换说明
                 </div>
-                <p className="mt-1 break-words font-mono text-[10px] leading-4 text-ink-soft">
+                <p className="mt-1 break-words font-mono text-[13px] leading-5 text-ink-soft">
                   {edge.transform || '未填写'}
                 </p>
               </div>
-              <div className="rounded-xl border border-line-soft bg-surface/70 px-3 py-2.5">
-                <div className="font-mono text-[8.5px] uppercase tracking-[0.12em] text-ink-faint">
+              <div className="rounded-xl border border-line-soft bg-card px-3 py-2.5">
+                <div className="font-mono text-[11px] uppercase text-ink-faint">
                   备注
                 </div>
-                <p className="mt-1 whitespace-pre-wrap break-words text-[10px] leading-[1.7] text-ink-soft">
+                <p className="mt-1 whitespace-pre-wrap break-words text-[13px] leading-5 text-ink-soft">
                   {edge.note || '未填写'}
                 </p>
               </div>
@@ -428,7 +428,7 @@ export function EdgeDetailPanel({
                 <button
                   type="button"
                   onClick={() => setEditing(true)}
-                  className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-line bg-surface text-[10.5px] font-medium text-ink-muted transition-colors hover:border-pine-300 hover:text-pine-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+                  className="flex h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-line-strong bg-card text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                 >
                   <Icon name="edit" size={13} />
                   编辑转换与备注
@@ -436,15 +436,15 @@ export function EdgeDetailPanel({
                 <button
                   type="button"
                   onClick={() => onRequestDelete(edge)}
-                  className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-rosewood/20 bg-rosewood-soft px-3 text-[10.5px] font-medium text-rosewood transition-colors hover:border-rosewood/40 hover:bg-[#f4dfe1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rosewood/30"
+                  className="flex h-9 items-center justify-center gap-1.5 rounded-lg border border-danger/25 bg-danger-soft px-3 text-[13px] font-medium text-danger-deep transition-colors duration-150 hover:border-danger/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                 >
                   <Icon name="trash" size={13} />
                   删除
                 </button>
               </div>
             )}
-            <div className="mt-2 flex items-center justify-center gap-1.5 text-[9px] text-ink-faint">
-              <Icon name={canEdit ? 'edit' : 'lock'} size={10} />
+            <div className="mt-2 flex items-center justify-center gap-1.5 text-[11px] text-ink-faint">
+              <Icon name={canEdit ? 'edit' : 'lock'} size={12} />
               {canEdit
                 ? edge.source === 'ai'
                   ? 'AI 候选确认后才会生效；删除等价于拒绝该候选'
@@ -463,7 +463,7 @@ export function EdgeDetailPanel({
               <button
                 type="button"
                 onClick={() => setHistoryOpen(true)}
-                className="flex w-full items-center justify-between rounded-xl border border-line bg-surface/70 px-3 py-2.5 text-[9.5px] font-medium text-ink-muted transition-colors hover:border-pine-300 hover:text-pine-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/30"
+                className="flex w-full items-center justify-between rounded-xl border border-line bg-card px-3 py-2.5 text-[13px] font-medium text-ink-muted transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               >
                 <span className="flex items-center gap-1.5">
                   <Icon name="history" size={12} />

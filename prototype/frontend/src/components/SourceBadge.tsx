@@ -9,19 +9,19 @@ const SOURCE_META: Record<string, SourceMeta> = {
   imported: {
     label: 'imported',
     description: '文件导入',
-    classes: 'border-pine-200 bg-pine-50 text-pine-700',
-    dot: 'bg-pine-500',
+    classes: 'border-blue-200 bg-blue-50 text-blue-800',
+    dot: 'bg-blue-600',
   },
   manual: {
     label: 'manual',
     description: '人工确认',
-    classes: 'border-ochre/25 bg-ochre-soft text-ochre-deep',
-    dot: 'bg-ochre',
+    classes: 'border-warning/25 bg-warning-soft text-warning-deep',
+    dot: 'bg-warning',
   },
   ai: {
     label: 'ai',
     description: 'AI 建议',
-    classes: 'border-ai/20 bg-ai-soft text-ai-deep',
+    classes: 'border-ai/25 bg-ai-soft text-ai-deep',
     dot: 'bg-ai',
   },
 };
@@ -29,7 +29,7 @@ const SOURCE_META: Record<string, SourceMeta> = {
 const UNKNOWN_META: SourceMeta = {
   label: '未知',
   description: '来源未登记',
-  classes: 'border-line bg-white/70 text-ink-muted',
+  classes: 'border-line bg-card/70 text-ink-muted',
   dot: 'bg-ink-faint',
 };
 
@@ -55,13 +55,13 @@ export function SourceBadge({
   const meta = sourceMeta(source);
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-[2px] text-[10.5px] leading-4 ${meta.classes} ${className}`}
+      className={`inline-flex h-5 items-center gap-1.5 rounded-full border px-2 text-[11px] leading-none ${meta.classes} ${className}`}
       title={`来源 ${meta.label}：${meta.description}`}
     >
       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${meta.dot}`} />
       <span className="font-mono font-medium">{meta.label}</span>
       {withDescription && (
-        <span className="font-medium opacity-80">· {meta.description}</span>
+        <span className="font-medium">· {meta.description}</span>
       )}
     </span>
   );

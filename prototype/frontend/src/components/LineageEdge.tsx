@@ -7,6 +7,7 @@ import {
 import type { Edge, EdgeProps } from '@xyflow/react';
 import type { LineageEdge } from '../types';
 import { formatConfidence } from '../lib/format';
+import { EDGE_COLORS } from '../lib/edgeColors';
 import { SourceBadge } from './SourceBadge';
 import { Icon } from './Icon';
 
@@ -41,18 +42,18 @@ export function getEdgeVisual(edge: LineageEdge): EdgeVisual {
     edge.from_field === null || edge.to_field === null;
 
   if (isAi) {
-    return { color: '#2f64d8', dash: '6 5', width: 1.8, isAi };
+    return { color: EDGE_COLORS.ai, dash: '6 5', width: 1.8, isAi };
   }
   if (isManual) {
     return {
-      color: '#a36b11',
+      color: EDGE_COLORS.manual,
       dash: isTable ? '4 5' : undefined,
       width: 1.7,
       isAi,
     };
   }
   return {
-    color: isTable ? '#8b958f' : '#52645c',
+    color: isTable ? EDGE_COLORS.importedWeak : EDGE_COLORS.imported,
     dash: isTable ? '4 5' : undefined,
     width: isTable ? 1.4 : 1.55,
     isAi,
@@ -132,7 +133,7 @@ export function LineageEdgeView({
         fill="none"
         stroke="transparent"
         strokeWidth={18}
-        style={{ pointerEvents: 'stroke', cursor: 'default' }}
+        style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
         onMouseEnter={show}
         onMouseLeave={hide}
       />
@@ -145,7 +146,7 @@ export function LineageEdgeView({
           ...style,
           strokeWidth: active ? (edge.source === 'ai' ? 2.8 : 2.4) : undefined,
           filter: active
-            ? 'drop-shadow(0 1px 1px rgba(27,42,37,0.14))'
+            ? 'drop-shadow(0 1px 1px rgba(15,23,42,0.18))'
             : undefined,
           transition: 'stroke-width 150ms ease, opacity 150ms ease',
         }}
@@ -153,7 +154,7 @@ export function LineageEdgeView({
       {active && (
         <EdgeLabelRenderer>
           <div
-            className="nodrag nopan pointer-events-auto absolute z-50 w-[268px]"
+            className="nodrag nopan pointer-events-auto absolute z-20 w-[268px]"
             style={{
               transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
             }}
@@ -161,16 +162,16 @@ export function LineageEdgeView({
             onMouseLeave={hide}
             role="tooltip"
           >
-            <div className="edge-tooltip animate-fade-in rounded-xl border border-line bg-surface/98 p-3 text-left shadow-float backdrop-blur-sm">
+            <div className="edge-tooltip animate-fade-in rounded-lg border border-line bg-card p-3 text-left shadow-float">
               <div className="flex items-center justify-between gap-2">
-                <span className="font-mono text-[8px] uppercase tracking-[0.16em] text-ink-faint">
+                <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
                   {isAggregate
                     ? `跨组聚合 · ${aggregateCount} 条边`
                     : `${kind === 'field' ? '字段级血缘' : '表级血缘'} · #${edge.id}`}
                 </span>
                 <SourceBadge source={edge.source} withDescription={false} />
               </div>
-              <div className="mt-2 flex items-center gap-1.5 font-mono text-[10px] leading-4 text-ink">
+              <div className="mt-2 flex items-center gap-1.5 font-mono text-[12px] leading-4 text-ink">
                 <span className="min-w-0 truncate" title={fromLabel}>
                   {fromLabel}
                 </span>
@@ -183,27 +184,27 @@ export function LineageEdgeView({
                   {toLabel}
                 </span>
               </div>
-              <div className="mt-2.5 grid grid-cols-[48px_1fr] gap-x-2 gap-y-1.5 border-t border-line-soft pt-2.5 text-[10px]">
+              <div className="mt-2.5 grid grid-cols-[48px_1fr] gap-x-2 gap-y-1.5 border-t border-line-soft pt-2.5 text-[11px]">
                 <span className="text-ink-faint">转换</span>
-                <span className="break-words font-mono text-[9.5px] leading-4 text-ink-soft">
+                <span className="break-words font-mono text-[13px] leading-4 text-ink-soft">
                   {edge.transform || '未填写'}
                 </span>
                 <span className="text-ink-faint">置信度</span>
-                <span className="font-mono text-[9.5px] tabular-nums text-ink-soft">
+                <span className="font-mono text-[13px] tabular-nums text-ink-soft">
                   {formatConfidence(edge.confidence)}
                 </span>
                 <span className="text-ink-faint">来源</span>
-                <span className="font-mono text-[9.5px] text-ink-soft">
+                <span className="font-mono text-[13px] text-ink-soft">
                   {edge.source || '未登记'}
                 </span>
               </div>
               {edge.note && (
-                <p className="mt-2 border-t border-line-soft pt-2 text-[9.5px] leading-4 text-ink-muted">
+                <p className="mt-2 border-t border-line-soft pt-2 text-[12px] leading-4 text-ink-muted">
                   {edge.note}
                 </p>
               )}
               {isAggregate ? (
-                <p className="mt-2 border-t border-line-soft pt-2 text-[9px] leading-4 text-ink-faint">
+                <p className="mt-2 border-t border-line-soft pt-2 text-[11px] leading-4 text-ink-faint">
                   展开分组后可查看并编辑其中每一条具体血缘。
                 </p>
               ) : (
@@ -214,7 +215,7 @@ export function LineageEdgeView({
                       event.stopPropagation();
                       onSelect?.();
                     }}
-                    className="rounded-md border border-line bg-surface px-2 py-1 text-[9.5px] font-medium text-ink-muted transition-colors hover:border-pine-300 hover:text-pine-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+                    className="inline-flex h-7 items-center rounded-md border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60"
                   >
                     查看详情
                   </button>
@@ -226,9 +227,9 @@ export function LineageEdgeView({
                           event.stopPropagation();
                           onEdit?.();
                         }}
-                        className="flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-[9.5px] font-medium text-ink-muted transition-colors hover:border-pine-300 hover:text-pine-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+                        className="inline-flex h-7 items-center gap-1 rounded-md border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60"
                       >
-                        <Icon name="edit" size={10} />
+                        <Icon name="edit" size={12} />
                         编辑
                       </button>
                       <button
@@ -237,9 +238,9 @@ export function LineageEdgeView({
                           event.stopPropagation();
                           onDelete?.();
                         }}
-                        className="ml-auto flex items-center gap-1 rounded-md border border-transparent px-2 py-1 text-[9.5px] font-medium text-rosewood transition-colors hover:border-rosewood/25 hover:bg-rosewood-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rosewood/30"
+                        className="ml-auto inline-flex h-7 items-center gap-1 rounded-md border border-danger/25 bg-danger-soft px-2.5 text-[12px] font-medium text-danger-deep transition-colors duration-150 hover:border-danger/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/30"
                       >
-                        <Icon name="trash" size={10} />
+                        <Icon name="trash" size={12} />
                         删除
                       </button>
                     </>

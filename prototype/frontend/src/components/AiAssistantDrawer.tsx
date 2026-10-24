@@ -55,46 +55,82 @@ function focusLabel(focus: AiFocus | null): string {
   return focus.field ? `${focus.dataset}.${focus.field}` : focus.dataset;
 }
 
-function compactArgs(args: Record<string, unknown>): string {
-  let text: string;
-  try {
-    text = JSON.stringify(args);
-  } catch {
-    text = '';
-  }
-  if (!text || text === '{}') return '()';
-  const body = text.slice(1, -1);
-  return body.length > 64 ? `(${body.slice(0, 64)}…)` : `(${body})`;
-}
-
-function ToolChips({ trace }: { trace: AiToolTrace[] }) {
+function ToolTraceCard({ trace }: { trace: AiToolTrace[] }) {
+  // 纯 UI 折叠态：默认折叠，含失败调用的消息默认展开
+  const [open, setOpen] = useState(() => trace.some((item) => !item.ok));
   if (trace.length === 0) return null;
   return (
-    <div className="mb-1.5 flex flex-wrap gap-1">
-      {trace.map((item, index) => (
-        <span
-          key={`${item.tool}-${index}`}
-          className={`inline-flex max-w-full items-center gap-1 rounded border px-1.5 py-[2px] font-mono text-[8.5px] leading-4 ${
-            item.ok
-              ? 'border-line bg-canvas/70 text-ink-muted'
-              : 'border-rosewood/25 bg-rosewood-soft text-rosewood-deep'
-          }`}
-          title={`${TOOL_LABELS[item.tool] ?? '工具调用'} ${JSON.stringify(item.args)}`}
-        >
-          <span className="shrink-0 font-medium">{item.tool}</span>
-          <span className="min-w-0 truncate opacity-75">
-            {compactArgs(item.args)}
-          </span>
-          <span
-            className={`shrink-0 font-semibold ${
-              item.ok ? 'text-pine-600' : 'text-rosewood'
-            }`}
-            aria-label={item.ok ? '调用成功' : '调用失败'}
-          >
-            {item.ok ? '✓' : '✗'}
-          </span>
+    <div className="mb-2 overflow-hidden rounded-lg border border-line bg-page">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-center gap-2 px-2.5 py-2 text-left transition-colors duration-150 hover:bg-subtle/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+      >
+        <Icon name="code" size={12} className="shrink-0 text-ink-faint" />
+        <span className="shrink-0 text-[11px] font-medium text-ink-muted">
+          工具调用 · {trace.length} 次
         </span>
-      ))}
+        <span className="flex min-w-0 flex-1 flex-wrap gap-1">
+          {trace.map((item, index) => (
+            <span
+              key={`${item.tool}-${index}`}
+              className="inline-flex max-w-full items-center gap-1 rounded border border-line bg-card px-1.5 py-px font-mono text-[11px] text-ink-muted"
+              title={`${TOOL_LABELS[item.tool] ?? '工具调用'} ${JSON.stringify(item.args)}`}
+            >
+              <span className="shrink-0">{TOOL_LABELS[item.tool] ?? '工具调用'}</span>
+              <span
+                className={`shrink-0 font-semibold ${
+                  item.ok ? 'text-success' : 'text-danger'
+                }`}
+                aria-label={item.ok ? '调用成功' : '调用失败'}
+              >
+                {item.ok ? '✓' : '✗'}
+              </span>
+            </span>
+          ))}
+        </span>
+        <Icon
+          name="chevron-down"
+          size={12}
+          className={`shrink-0 text-ink-faint transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+      {open && (
+        <div className="space-y-1.5 border-t border-line-soft px-2.5 py-1.5">
+          {trace.map((item, index) => (
+            <div
+              key={`${item.tool}-detail-${index}`}
+              className={`flex items-start gap-2 rounded-md px-1 py-1.5 ${
+                item.ok ? '' : 'bg-danger-soft'
+              }`}
+            >
+              <Icon
+                name={item.ok ? 'check' : 'close'}
+                size={12}
+                className={`mt-0.5 shrink-0 ${item.ok ? 'text-success' : 'text-danger'}`}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span
+                    className={`text-[12px] font-medium ${
+                      item.ok ? 'text-ink-soft' : 'text-danger-deep'
+                    }`}
+                  >
+                    {TOOL_LABELS[item.tool] ?? '工具调用'}
+                  </span>
+                  <span className="rounded bg-subtle px-1.5 py-px font-mono text-[11px] text-ink-muted">
+                    {item.tool}
+                  </span>
+                </div>
+                <p className="mt-1 whitespace-pre-wrap break-all rounded-md bg-subtle px-2 py-1.5 font-mono text-[11px] leading-4 text-ink-muted">
+                  {JSON.stringify(item.args)}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -252,57 +288,51 @@ export function AiAssistantDrawer({
 
   return (
     <div
-      className="fixed inset-0 z-[72] flex justify-end bg-ink/40 backdrop-blur-[2px]"
+      className="fixed inset-0 z-40 flex justify-end bg-slate-900/25 animate-fade-in"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
       <aside
-        className="flex h-full w-full max-w-[460px] flex-col overflow-hidden border-l border-line bg-surface shadow-float animate-fade-in"
+        className="relative z-[41] flex h-full w-full flex-col overflow-hidden border-l border-line bg-card shadow-float animate-drawer-in sm:w-[480px]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="ai-drawer-title"
       >
-        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-line px-4 py-3.5">
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5 font-mono text-[8.5px] uppercase tracking-[0.18em] text-ink-faint">
-              <Icon name="sparkles" size={12} className="text-ai" />
-              Function calling · 只读工具
-            </div>
-            <div className="mt-1 flex items-center gap-2">
-              <h2
-                id="ai-drawer-title"
-                className="font-display text-[22px] font-medium tracking-[-0.02em] text-ink"
+        <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-line-soft px-4">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-ai/25 bg-ai-soft text-ai">
+              <Icon name="sparkles" size={16} />
+            </span>
+            <h2
+              id="ai-drawer-title"
+              className="min-w-0 text-[14px] font-semibold text-ink"
+            >
+              AI 助手
+            </h2>
+            {statusLoading ? (
+              <span
+                className="h-3 w-3 shrink-0 animate-spin rounded-full border-[1.5px] border-ai/25 border-t-ai"
+                aria-label="正在读取 AI 状态"
+              />
+            ) : configured && status?.model ? (
+              <span
+                className="max-w-[180px] truncate rounded-full border border-ai/25 bg-ai-soft px-2 py-px font-mono text-[11px] text-ai-deep"
+                title={status.model}
               >
-                AI 助手
-              </h2>
-              {statusLoading ? (
-                <span
-                  className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-ai/25 border-t-ai"
-                  aria-label="正在读取 AI 状态"
-                />
-              ) : configured && status?.model ? (
-                <span
-                  className="max-w-[170px] truncate rounded-full border border-ai/20 bg-ai-soft px-2 py-[2px] font-mono text-[8.5px] text-ai-deep"
-                  title={status.model}
-                >
-                  {status.model}
-                </span>
-              ) : (
-                <span className="rounded-full border border-line bg-canvas/70 px-2 py-[2px] font-mono text-[8.5px] text-ink-faint">
-                  {statusError ? '状态未知' : '未配置'}
-                </span>
-              )}
-            </div>
-            <p className="mt-0.5 text-[9.5px] leading-4 text-ink-faint">
-              工具调用只读；涉及出图时会自动切换画布子图。
-            </p>
+                {status.model}
+              </span>
+            ) : (
+              <span className="shrink-0 rounded-full border border-line bg-subtle px-2 py-px font-mono text-[11px] text-ink-muted">
+                {statusError ? '状态未知' : '未配置'}
+              </span>
+            )}
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <button
               type="button"
               onClick={() => setStatusReloadKey((value) => value + 1)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-ink-faint transition-colors hover:border-line hover:bg-canvas hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               aria-label="重新检查 LLM 配置"
               title="重新检查配置"
             >
@@ -311,51 +341,66 @@ export function AiAssistantDrawer({
             <button
               type="button"
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-ink-faint transition-colors hover:border-line hover:bg-canvas hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               aria-label="关闭 AI 助手"
             >
-              <Icon name="close" size={15} />
+              <Icon name="close" size={16} />
             </button>
           </div>
         </header>
 
-        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-line-soft bg-canvas/45 px-4 py-2">
-          <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-ink-faint">
+        <div className="flex h-9 shrink-0 items-center justify-between gap-2 border-b border-line-soft bg-page px-4">
+          <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
             当前聚焦
           </span>
           <span
-            className="min-w-0 truncate font-mono text-[9.5px] text-pine-700"
+            className={`min-w-0 truncate font-mono text-[12px] ${
+              focus ? 'font-medium text-blue-700' : 'text-ink-faint'
+            }`}
             title={focusLabel(focus)}
           >
             {focusLabel(focus)}
+          </span>
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-line bg-card px-1.5 py-px font-mono text-[11px] text-ink-muted">
+            <Icon name="lock" size={10} />
+            只读工具
           </span>
         </div>
 
         {(statusError || (!statusLoading && status && !status.configured)) && (
           <div className="shrink-0 border-b border-line-soft px-4 py-2.5">
             <div
-              className={`flex items-start gap-2 rounded-xl border px-3 py-2.5 text-[9.5px] leading-4 ${
+              className={`flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-[12px] leading-5 ${
                 statusError
-                  ? 'border-rosewood/25 bg-rosewood-soft text-rosewood-deep'
-                  : 'border-ochre/25 bg-ochre-soft text-ochre-deep'
-              }`}
+                  ? 'border-danger/25 bg-danger-soft text-danger-deep'
+                  : 'border-warning/25 bg-warning-soft text-warning-deep'
+              } animate-fade-in`}
               role="status"
             >
-              <Icon name="warning" size={12} className="mt-0.5 shrink-0" />
+              <Icon
+                name="warning"
+                size={12}
+                className={`mt-0.5 shrink-0 ${statusError ? 'text-danger' : 'text-warning'}`}
+              />
               <div className="min-w-0">
                 <div className="font-medium">
                   {statusError ? '无法读取 AI 状态' : 'AI 助手暂不可用'}
                 </div>
-                <p className="mt-0.5 break-words opacity-90">
+                <p className="mt-0.5 break-words">
                   {statusError ?? NOT_CONFIGURED_TEXT}
                 </p>
+                {!statusError && (
+                  <p className="mt-0.5 break-words">
+                    配置后点右上角刷新重新检测。
+                  </p>
+                )}
                 {statusError && (
                   <button
                     type="button"
                     onClick={() => setStatusReloadKey((value) => value + 1)}
-                    className="mt-1.5 inline-flex items-center gap-1 rounded border border-rosewood/25 bg-surface/70 px-1.5 py-0.5 font-mono text-[8.5px] transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/30"
+                    className="mt-1.5 inline-flex h-7 items-center gap-1 rounded-md border border-danger/25 bg-card px-2 font-mono text-[11px] text-danger-deep transition-colors duration-150 hover:border-danger/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                   >
-                    <Icon name="refresh" size={10} />
+                    <Icon name="refresh" size={11} />
                     重试
                   </button>
                 )}
@@ -366,20 +411,20 @@ export function AiAssistantDrawer({
 
         <div
           ref={listRef}
-          className="min-h-0 flex-1 overflow-y-auto bg-[#fbf9f3] px-4 py-4"
+          className="min-h-0 flex-1 overflow-y-auto bg-page px-4 py-4 pb-6"
           role="log"
           aria-live="polite"
           aria-label="AI 对话消息"
         >
           {entries.length === 0 && !sending ? (
             <div className="flex min-h-full flex-col items-center justify-center px-3 py-8 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-ai/20 bg-ai-soft text-ai">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-ai/25 bg-ai-soft text-ai">
                 <Icon name="sparkles" size={24} />
               </div>
-              <h3 className="mt-4 font-display text-[21px] font-medium tracking-[-0.02em] text-ink">
+              <h3 className="mt-4 text-xl font-medium text-ink">
                 用自然语言查血缘
               </h3>
-              <p className="mt-2 max-w-[280px] text-[10px] leading-5 text-ink-muted">
+              <p className="mt-2 max-w-[300px] text-[13px] leading-6 text-ink-muted">
                 AI 会调用只读工具查询字段、上下游子图与变更历史；
                 返回子图时画布会自动切换并高亮。
               </p>
@@ -393,7 +438,7 @@ export function AiAssistantDrawer({
                       inputRef.current?.focus();
                     }}
                     disabled={inputDisabled}
-                    className="rounded-lg border border-line-soft bg-surface/75 px-2.5 py-2 text-left text-[9.5px] text-ink-muted transition-colors hover:border-pine-300 hover:text-pine-700 disabled:cursor-not-allowed disabled:opacity-55"
+                    className="w-full rounded-lg border border-line bg-card px-3 py-2 text-left text-[12px] text-ink-muted transition-colors duration-150 hover:border-blue-300 hover:bg-blue-50/60 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {prompt}
                   </button>
@@ -404,51 +449,58 @@ export function AiAssistantDrawer({
             <div className="space-y-3">
               {entries.map((entry) =>
                 entry.role === 'user' ? (
-                  <div key={entry.id} className="ml-8 flex flex-col items-end">
-                    <div className="mb-1 font-mono text-[8.5px] uppercase tracking-[0.12em] text-ink-faint">
+                  <div key={entry.id} className="flex flex-col items-end">
+                    <div className="mb-1 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-faint">
                       你
                     </div>
-                    <div className="max-w-full whitespace-pre-wrap break-words rounded-2xl rounded-tr-md border border-pine-200 bg-pine-50/80 px-3 py-2 text-[11px] leading-5 text-pine-900">
+                    <div className="max-w-[88%] whitespace-pre-wrap break-words rounded-xl rounded-tr-md border border-blue-100 bg-blue-50 px-3 py-2 text-[13px] leading-5 text-ink">
                       {entry.content}
                     </div>
                   </div>
                 ) : (
-                  <div key={entry.id} className="mr-2">
-                    <div className="mb-1 flex items-center gap-1.5 font-mono text-[8.5px] uppercase tracking-[0.12em] text-ink-faint">
+                  <div key={entry.id}>
+                    <div className="mb-1 flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-faint">
                       <Icon name="sparkles" size={10} className="text-ai" />
                       AI 助手
                     </div>
                     <div
-                      className={`rounded-2xl rounded-tl-md border px-3 py-2.5 ${
+                      className={`rounded-xl rounded-tl-md border px-3 py-2.5 ${
                         entry.error
-                          ? 'border-rosewood/25 bg-rosewood-soft/70'
-                          : 'border-line bg-surface'
+                          ? 'border-danger/25 bg-danger-soft/70'
+                          : 'border-line bg-card'
                       }`}
                     >
                       {entry.toolTrace && entry.toolTrace.length > 0 && (
-                        <ToolChips trace={entry.toolTrace} />
+                        <ToolTraceCard trace={entry.toolTrace} />
                       )}
                       {entry.content.trim() ? (
                         <p
-                          className={`whitespace-pre-wrap break-words text-[11px] leading-5 ${
-                            entry.error ? 'text-rosewood-deep' : 'text-ink-soft'
+                          className={`whitespace-pre-wrap break-words text-[13px] leading-6 ${
+                            entry.error ? 'text-danger-deep' : 'text-ink-soft'
                           }`}
                         >
                           {entry.content}
                         </p>
                       ) : (
-                        <p className="text-[10px] italic leading-5 text-ink-faint">
+                        <p className="text-[12px] italic leading-5 text-ink-faint">
                           模型未返回文字回答。
                         </p>
                       )}
                       {entry.graph && (
-                        <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-pine-200 bg-pine-50/80 px-2 py-1.5 text-[9px] text-pine-700">
-                          <Icon name="network" size={11} className="shrink-0" />
+                        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-success/25 bg-success-soft px-2.5 py-2 text-[12px] text-success-deep">
+                          <Icon name="network" size={12} className="shrink-0" />
                           <span className="font-medium">画布已更新</span>
-                          <span className="font-mono text-[8.5px] text-pine-700/75">
+                          <span className="font-mono text-[11px] tabular-nums">
                             {entry.graph.datasets.length} 个数据集 ·{' '}
                             {entry.graph.edges.length} 条连线
                           </span>
+                          <button
+                            type="button"
+                            onClick={onClose}
+                            className="ml-auto rounded px-1.5 py-0.5 font-medium text-success-deep transition-colors duration-150 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+                          >
+                            关闭并查看
+                          </button>
                         </div>
                       )}
                     </div>
@@ -457,17 +509,17 @@ export function AiAssistantDrawer({
               )}
 
               {sending && (
-                <div className="mr-2">
-                  <div className="mb-1 flex items-center gap-1.5 font-mono text-[8.5px] uppercase tracking-[0.12em] text-ink-faint">
+                <div>
+                  <div className="mb-1 flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-faint">
                     <Icon name="sparkles" size={10} className="text-ai" />
                     AI 助手
                   </div>
-                  <div className="inline-flex items-center gap-2 rounded-2xl rounded-tl-md border border-dashed border-line bg-surface/70 px-3 py-2.5">
+                  <div className="inline-flex items-center gap-2 rounded-xl rounded-tl-md border border-dashed border-line bg-card/70 px-3 py-2.5">
                     <span
                       className="h-3.5 w-3.5 animate-spin rounded-full border-[1.5px] border-ai/25 border-t-ai"
                       aria-hidden="true"
                     />
-                    <span className="text-[9.5px] text-ink-muted">
+                    <span className="text-[12px] text-ink-muted">
                       正在调用工具并组织回答…
                     </span>
                   </div>
@@ -479,7 +531,7 @@ export function AiAssistantDrawer({
 
         <form
           onSubmit={handleSubmit}
-          className="shrink-0 border-t border-line bg-surface/95 px-3 py-3"
+          className="shrink-0 border-t border-line-soft bg-card p-3"
         >
           <div className="flex items-end gap-2">
             <label htmlFor="ai-chat-input" className="sr-only">
@@ -508,24 +560,30 @@ export function AiAssistantDrawer({
                       ? '问点什么…（工具调用仅只读，AI 建议需人工确认）'
                       : '配置 LLM 后即可提问'
               }
-              className="field-input min-h-[54px] resize-none py-2 text-[11px] leading-5 disabled:cursor-not-allowed"
+              className="field-input min-h-[56px] flex-1 resize-none py-2 text-[13px] leading-5 disabled:cursor-not-allowed"
             />
             <button
               type="submit"
               disabled={inputDisabled || !input.trim()}
-              className="flex h-[42px] shrink-0 items-center justify-center gap-1.5 rounded-xl bg-pine-800 px-3.5 text-[10.5px] font-semibold text-white transition-colors hover:bg-pine-900 disabled:cursor-not-allowed disabled:opacity-55"
+              className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
             >
               {sending ? (
                 <span className="h-3.5 w-3.5 animate-spin rounded-full border-[1.5px] border-white/40 border-t-white" />
               ) : (
-                <Icon name="send" size={13} />
+                <Icon name="send" size={14} />
               )}
               {sending ? '发送中' : '发送'}
             </button>
           </div>
-          <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 font-mono text-[8px] text-ink-faint">
-            <span>Enter 发送 · Shift + Enter 换行</span>
-            <span>graph 结果自动联动画布</span>
+          <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 font-mono text-[11px] text-ink-faint">
+            <span>Enter 发送 · Shift + Enter 换行 · 仅回传最近 50 条</span>
+            <span className="tabular-nums">
+              {input.length >= 8000 ? (
+                <span className="text-danger-deep">{input.length}/8000</span>
+              ) : (
+                `${input.length}/8000`
+              )}
+            </span>
           </div>
         </form>
       </aside>

@@ -97,28 +97,28 @@ export function AnnotationSection({
   return (
     <section className="mt-5">
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="flex items-center gap-1.5 font-mono text-[8.5px] uppercase tracking-[0.16em] text-ink-faint">
-          <Icon name="message-square" size={11} />
+        <h3 className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
+          <Icon name="message-square" size={12} />
           标注（{count}）
         </h3>
-        <span className="rounded-full border border-line bg-canvas/55 px-1.5 py-[1px] font-mono text-[8px] text-ink-faint">
+        <span className="rounded-full border border-line bg-page px-1.5 py-px font-mono text-[11px] text-ink-faint">
           追加式
         </span>
       </div>
 
       <div className="space-y-2">
         {loading && (
-          <div className="animate-soft-pulse rounded-xl border border-line-soft bg-surface/60 px-3 py-3 text-[9.5px] text-ink-faint">
+          <div className="animate-soft-pulse rounded-lg border border-line-soft bg-subtle px-3 py-3 text-[12px] text-ink-muted">
             正在读取标注…
           </div>
         )}
         {!loading && loadError && (
-          <div className="rounded-xl border border-rosewood/20 bg-rosewood-soft px-3 py-2.5 text-[9.5px] leading-4 text-rosewood-deep">
+          <div className="rounded-lg border border-danger/25 bg-danger-soft px-3 py-2.5 text-[12px] leading-4 text-danger-deep">
             {loadError}
           </div>
         )}
         {!loading && !loadError && count === 0 && (
-          <div className="rounded-xl border border-dashed border-line px-3 py-3 text-center text-[9.5px] text-ink-faint">
+          <div className="rounded-lg border border-dashed border-line px-3 py-3 text-center text-[12px] text-ink-muted">
             暂无标注
           </div>
         )}
@@ -127,12 +127,12 @@ export function AnnotationSection({
           (items ?? []).map((item) => (
             <article
               key={item.id}
-              className="rounded-xl border border-line-soft bg-surface/75 px-3 py-2.5"
+              className="rounded-lg border border-line-soft bg-card px-3 py-2.5"
             >
-              <p className="whitespace-pre-wrap break-words text-[10px] leading-[1.7] text-ink-soft">
+              <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-ink-soft">
                 {item.body}
               </p>
-              <div className="mt-1.5 flex flex-wrap items-center gap-1.5 font-mono text-[8px] text-ink-faint">
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5 font-mono text-[11px] text-ink-faint">
                 <span>{item.author}</span>
                 <span className="h-2 w-px bg-line" />
                 <span>{formatDateTime(item.created_at)}</span>
@@ -153,30 +153,30 @@ export function AnnotationSection({
             rows={2}
             maxLength={4000}
             placeholder="添加标注（追加式，不覆盖原值）"
-            className="field-input min-h-[62px] resize-y py-2 text-[10.5px] leading-5"
+            className="field-input min-h-[62px] resize-y py-2 text-[13px] leading-5"
             disabled={submitting}
           />
           <div className="mt-1.5 flex items-center justify-between gap-2">
-            <span className="font-mono text-[8px] text-ink-faint">
+            <span className="font-mono text-[11px] text-ink-faint">
               {body.length}/4000 · 标注不随版本回滚删除
             </span>
             <button
               type="submit"
               disabled={submitting || !body.trim()}
-              className="flex h-7 items-center gap-1 rounded-md bg-pine-800 px-2.5 text-[9.5px] font-medium text-white transition-colors hover:bg-pine-900 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-7 items-center gap-1 rounded-lg bg-blue-600 px-2.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
             >
-              <Icon name="plus" size={10} />
+              <Icon name="plus" size={12} />
               {submitting ? '提交中…' : '提交标注'}
             </button>
           </div>
           {submitError && (
-            <p className="mt-1.5 rounded-md border border-rosewood/20 bg-rosewood-soft px-2 py-1.5 text-[9px] leading-4 text-rosewood-deep" role="alert">
+            <p className="mt-1.5 rounded-md border border-danger/25 bg-danger-soft px-2 py-1.5 text-[11px] leading-4 text-danger-deep" role="alert">
               {submitError}
             </p>
           )}
         </form>
       ) : (
-        <p className="mt-2 flex items-center gap-1.5 text-[8.5px] text-ink-faint">
+        <p className="mt-2 flex items-center gap-1.5 text-[11px] text-ink-faint">
           <Icon name="lock" size={10} />
           当前角色为只读，不能追加标注。
         </p>

@@ -46,8 +46,8 @@ const DETAIL_HINTS: Array<[string, string, IconName]> = [
 
 function FileTypeBadge({ type }: { type: string | null | undefined }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded border border-line bg-canvas/65 px-1.5 py-[2px] font-mono text-[8.5px] uppercase tracking-[0.08em] text-ink-muted">
-      <Icon name="file" size={10} />
+    <span className="inline-flex items-center gap-1 rounded border border-line bg-card px-1.5 py-0.5 font-mono text-[11px] uppercase text-ink-muted">
+      <Icon name="file" size={12} />
       {locatorTypeLabel(type)}
     </span>
   );
@@ -57,16 +57,14 @@ function EmptyDetail() {
   return (
     <div className="flex min-h-0 flex-1 flex-col justify-center px-5 py-8">
       <div className="mx-auto w-full max-w-[248px] text-center">
-        <div className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-line bg-canvas/65 text-pine-600">
-          <Icon name="file-search" size={25} />
-          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-line bg-surface font-mono text-[8px] text-ink-faint">
+        <div className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-line bg-page text-blue-600">
+          <Icon name="file-search" size={24} />
+          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-line bg-card font-mono text-[11px] text-ink-faint">
             1
           </span>
         </div>
-        <h2 className="mt-4 font-display text-[25px] font-medium tracking-[-0.025em] text-ink">
-          核对字段的来源
-        </h2>
-        <p className="mt-2 text-[11px] leading-5 text-ink-muted">
+        <h2 className="mt-4 text-xl font-medium text-ink">核对字段的来源</h2>
+        <p className="mt-2 text-[13px] leading-5 text-ink-muted">
           点击画布节点中的任意字段，查看字段属性、人类可读定位与上游血缘，
           并直接打开源文件区域预览。
         </p>
@@ -76,15 +74,15 @@ function EmptyDetail() {
         {DETAIL_HINTS.map(([title, detail, icon], index) => (
           <div
             key={title}
-            className="flex items-center gap-2.5 rounded-xl border border-line-soft bg-surface/55 px-3 py-2.5"
+            className="flex items-center gap-2.5 rounded-lg border border-line-soft bg-card px-3 py-2.5"
             style={{ animationDelay: `${index * 50}ms` }}
           >
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-line-soft bg-canvas/55 text-ink-faint">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-line-soft bg-page text-ink-faint">
               <Icon name={icon} size={13} />
             </span>
             <div className="min-w-0">
-              <div className="text-[10.5px] font-medium text-ink-soft">{title}</div>
-              <div className="mt-0.5 font-mono text-[8.5px] text-ink-faint">
+              <div className="text-[13px] font-medium text-ink-soft">{title}</div>
+              <div className="mt-0.5 font-mono text-[11px] text-ink-faint">
                 {detail}
               </div>
             </div>
@@ -92,7 +90,7 @@ function EmptyDetail() {
         ))}
       </div>
 
-      <div className="mx-auto mt-7 flex max-w-[262px] items-start gap-2 rounded-lg border border-dashed border-line px-3 py-2.5 text-[9.5px] leading-4 text-ink-faint">
+      <div className="mx-auto mt-7 flex max-w-[262px] items-start gap-2 rounded-lg border border-dashed border-line px-3 py-2.5 text-[11px] leading-4 text-ink-muted">
         <Icon name="info" size={12} className="mt-0.5 shrink-0" />
         悬停或点击画布上的连线可查看转换说明，并在右侧面板追加标注。
       </div>
@@ -102,14 +100,14 @@ function EmptyDetail() {
 
 function IncomingEdgeCard({ edge }: { edge: LineageEdge }) {
   return (
-    <div className="rounded-xl border border-line-soft bg-surface/75 p-3">
+    <div className="rounded-xl border border-line-soft bg-card p-3">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="font-mono text-[9.5px] leading-4 text-ink-soft">
+          <div className="font-mono text-[12px] leading-4 text-ink-soft">
             <span className="text-ink-faint">{edge.from_dataset}.</span>
-            <span className="font-medium text-pine-800">{edge.from_field}</span>
+            <span className="font-medium text-ink">{edge.from_field}</span>
           </div>
-          <div className="mt-1 flex items-center gap-1 font-mono text-[8.5px] text-ink-faint">
+          <div className="mt-1 flex items-center gap-1 font-mono text-[11px] text-ink-faint">
             <span>置信度</span>
             <span className="tabular-nums text-ink-soft">
               {formatConfidence(edge.confidence)}
@@ -121,12 +119,12 @@ function IncomingEdgeCard({ edge }: { edge: LineageEdge }) {
         <SourceBadge source={edge.source} withDescription={false} />
       </div>
       <div className="mt-2 border-t border-line-soft pt-2">
-        <div className="font-mono text-[9px] leading-4 text-ink-muted">
+        <div className="font-mono text-[11px] leading-4 text-ink-muted">
           <span className="text-ink-faint">转换 · </span>
           {edge.transform || '未填写'}
         </div>
         {edge.note && (
-          <p className="mt-1 text-[9.5px] leading-4 text-ink-faint">{edge.note}</p>
+          <p className="mt-1 text-[11px] leading-4 text-ink-faint">{edge.note}</p>
         )}
       </div>
     </div>
@@ -356,18 +354,18 @@ function FieldEditor({
 
   return (
     <form onSubmit={handleSubmit} className="mt-4 space-y-3" noValidate>
-      <div className="rounded-xl border border-pine-200 bg-pine-50/45 px-3 py-2.5">
-        <div className="flex items-center gap-1.5 font-mono text-[8.5px] uppercase tracking-[0.14em] text-pine-700">
+      <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2.5">
+        <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-blue-700">
           <Icon name="edit" size={11} />
           编辑字段属性
         </div>
-        <p className="mt-1 text-[9px] leading-4 text-pine-800/80">
+        <p className="mt-1 text-[12px] leading-4 text-blue-800">
           保存定位器时后端会重新做结构校验与实文件核查，失败返回 409 并保留原值。
         </p>
       </div>
 
       <div>
-        <label htmlFor="field-description" className="mb-1 block text-[10.5px] font-medium text-ink-soft">
+        <label htmlFor="field-description" className="mb-1.5 block text-[12px] font-medium text-ink-soft">
           描述
         </label>
         <textarea
@@ -377,13 +375,13 @@ function FieldEditor({
           rows={2}
           maxLength={1000}
           placeholder="字段业务含义（留空表示未登记）"
-          className="field-input resize-y py-2 text-[11px] leading-5"
+          className="field-input resize-y py-2 text-[13px] leading-5"
           disabled={saving}
         />
       </div>
 
       <div>
-        <label htmlFor="field-type" className="mb-1 block text-[10.5px] font-medium text-ink-soft">
+        <label htmlFor="field-type" className="mb-1.5 block text-[12px] font-medium text-ink-soft">
           字段类型
         </label>
         <input
@@ -392,16 +390,16 @@ function FieldEditor({
           value={fieldType}
           onChange={(event) => setFieldType(event.target.value)}
           placeholder="如 STRING / DECIMAL / TIMESTAMP"
-          className="field-input h-9 font-mono text-[11px]"
+          className="field-input h-8 font-mono text-[13px]"
           disabled={saving}
           maxLength={64}
         />
       </div>
 
-      <div className="rounded-xl border border-line bg-surface/70">
+      <div className="rounded-xl border border-line bg-card">
         <div className="flex items-center justify-between border-b border-line-soft px-3 py-2">
-          <span className="flex items-center gap-1.5 text-[9.5px] font-medium text-ink-soft">
-            <Icon name="code" size={11} className="text-pine-600" />
+          <span className="flex items-center gap-1.5 text-[12px] font-medium text-ink-soft">
+            <Icon name="code" size={11} className="text-blue-600" />
             源定位器
           </span>
           <FileTypeBadge type={locatorType} />
@@ -409,7 +407,7 @@ function FieldEditor({
 
         <div className="space-y-2.5 px-3 py-2.5">
           {!locatorType && (
-            <p className="text-[9.5px] leading-4 text-ink-faint">
+            <p className="text-[11px] leading-4 text-ink-muted">
               源文件类型未知，当前只能编辑描述与字段类型。
             </p>
           )}
@@ -417,7 +415,7 @@ function FieldEditor({
           {locatorType === 'csv' && (
             <div className="grid grid-cols-2 gap-2">
               <label className="block">
-                <span className="mb-1 block font-mono text-[8.5px] text-ink-faint">列号</span>
+                <span className="mb-1.5 block text-[12px] font-medium text-ink-soft">列号</span>
                 <input
                   type="number"
                   min={1}
@@ -425,20 +423,20 @@ function FieldEditor({
                   onChange={(event) =>
                     updateDraft({ column: event.target.value, header: '' })
                   }
-                  className="field-input h-8 font-mono text-[10.5px]"
+                  className="field-input h-8 font-mono text-[13px]"
                   disabled={saving}
                   placeholder="如 3"
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block font-mono text-[8.5px] text-ink-faint">表头名称</span>
+                <span className="mb-1.5 block text-[12px] font-medium text-ink-soft">表头名称</span>
                 <input
                   type="text"
                   value={draft.header}
                   onChange={(event) =>
                     updateDraft({ header: event.target.value, column: '' })
                   }
-                  className="field-input h-8 text-[10.5px]"
+                  className="field-input h-8 text-[13px]"
                   disabled={saving}
                   placeholder="如 order_id"
                 />
@@ -446,7 +444,7 @@ function FieldEditor({
             </div>
           )}
           {locatorType === 'csv' && (
-            <p className="text-[8.5px] leading-4 text-ink-faint">
+            <p className="text-[11px] leading-4 text-ink-muted">
               列号与表头名称二选一；填写表头时按表头定位。
             </p>
           )}
@@ -454,19 +452,19 @@ function FieldEditor({
           {locatorType === 'xlsx' && (
             <div className="space-y-2">
               <label className="block">
-                <span className="mb-1 block font-mono text-[8.5px] text-ink-faint">工作表</span>
+                <span className="mb-1.5 block text-[12px] font-medium text-ink-soft">工作表</span>
                 <input
                   type="text"
                   value={draft.sheet}
                   onChange={(event) => updateDraft({ sheet: event.target.value })}
-                  className="field-input h-8 text-[10.5px]"
+                  className="field-input h-8 text-[13px]"
                   disabled={saving}
                   placeholder="如 订单"
                 />
               </label>
               <div className="grid grid-cols-3 gap-2">
                 <label className="block">
-                  <span className="mb-1 block font-mono text-[8.5px] text-ink-faint">列</span>
+                  <span className="mb-1.5 block text-[12px] font-medium text-ink-soft">列</span>
                   <input
                     type="text"
                     value={draft.column}
@@ -477,36 +475,36 @@ function FieldEditor({
                         headerRows: '',
                       })
                     }
-                    className="field-input h-8 font-mono text-[10.5px]"
+                    className="field-input h-8 font-mono text-[13px]"
                     disabled={saving}
                     placeholder="如 C"
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block font-mono text-[8.5px] text-ink-faint">起始行</span>
+                  <span className="mb-1.5 block text-[12px] font-medium text-ink-soft">起始行</span>
                   <input
                     type="number"
                     min={1}
                     value={draft.rowStart}
                     onChange={(event) => updateDraft({ rowStart: event.target.value })}
-                    className="field-input h-8 font-mono text-[10.5px]"
+                    className="field-input h-8 font-mono text-[13px]"
                     disabled={saving}
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block font-mono text-[8.5px] text-ink-faint">结束行</span>
+                  <span className="mb-1.5 block text-[12px] font-medium text-ink-soft">结束行</span>
                   <input
                     type="number"
                     min={1}
                     value={draft.rowEnd}
                     onChange={(event) => updateDraft({ rowEnd: event.target.value })}
-                    className="field-input h-8 font-mono text-[10.5px]"
+                    className="field-input h-8 font-mono text-[13px]"
                     disabled={saving}
                   />
                 </label>
               </div>
               <label className="block">
-                <span className="mb-1 block font-mono text-[8.5px] text-ink-faint">
+                <span className="mb-1.5 block text-[12px] font-medium text-ink-soft">
                   表头路径（用 → 或逗号分隔）
                 </span>
                 <input
@@ -518,24 +516,24 @@ function FieldEditor({
                       column: '',
                     })
                   }
-                  className="field-input h-8 text-[10.5px]"
+                  className="field-input h-8 text-[13px]"
                   disabled={saving}
                   placeholder="如 商品信息 → 订单号"
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block font-mono text-[8.5px] text-ink-faint">表头行数</span>
+                <span className="mb-1.5 block text-[12px] font-medium text-ink-soft">表头行数</span>
                 <input
                   type="number"
                   min={1}
                   value={draft.headerRows}
                   onChange={(event) => updateDraft({ headerRows: event.target.value })}
-                  className="field-input h-8 font-mono text-[10.5px]"
+                  className="field-input h-8 font-mono text-[13px]"
                   disabled={saving}
                   placeholder="可选"
                 />
               </label>
-              <p className="text-[8.5px] leading-4 text-ink-faint">
+              <p className="text-[11px] leading-4 text-ink-muted">
                 列标识与表头路径二选一；填写表头路径时按路径定位。
               </p>
             </div>
@@ -543,12 +541,12 @@ function FieldEditor({
 
           {locatorType === 'json' && (
             <label className="block">
-              <span className="mb-1 block font-mono text-[8.5px] text-ink-faint">JSONPath</span>
+              <span className="mb-1.5 block text-[12px] font-medium text-ink-soft">JSONPath</span>
               <input
                 type="text"
                 value={draft.jsonPath}
                 onChange={(event) => updateDraft({ jsonPath: event.target.value })}
-                className="field-input h-8 font-mono text-[10.5px]"
+                className="field-input h-8 font-mono text-[13px]"
                 disabled={saving}
                 placeholder="如 $.orders[*].order_id"
               />
@@ -559,7 +557,7 @@ function FieldEditor({
 
       {error && (
         <div
-          className="flex gap-2 rounded-lg border border-rosewood/20 bg-rosewood-soft px-3 py-2 text-[10px] leading-4 text-rosewood-deep"
+          className="flex gap-2 rounded-lg border border-danger/25 bg-danger-soft px-3 py-2 text-[12px] leading-4 text-danger-deep"
           role="alert"
         >
           <Icon name="warning" size={12} className="mt-0.5 shrink-0" />
@@ -571,7 +569,7 @@ function FieldEditor({
         <button
           type="submit"
           disabled={saving}
-          className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-pine-800 text-[10.5px] font-semibold text-white transition-colors hover:bg-pine-900 disabled:cursor-wait disabled:opacity-65"
+          className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-600 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
         >
           {saving ? (
             <>
@@ -589,7 +587,7 @@ function FieldEditor({
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="h-9 rounded-lg border border-line bg-surface px-3 text-[10.5px] font-medium text-ink-muted transition-colors hover:border-line-strong hover:text-ink disabled:opacity-60"
+          className="h-8 rounded-lg border border-line-strong bg-card px-3 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           取消
         </button>
@@ -639,9 +637,9 @@ export function DetailPanel({
 
   if (!selection) {
     return (
-      <aside className="relative z-10 flex w-full shrink-0 flex-col border-t border-line bg-[#f8f5ed]/70 xl:h-full xl:w-[340px] xl:border-l xl:border-t-0">
-        <div className="border-b border-line-soft px-4 py-4">
-          <div className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-ink-faint">
+      <aside className="relative flex w-full shrink-0 flex-col border-t border-line bg-card xl:h-full xl:w-[320px] xl:border-l xl:border-t-0">
+        <div className="flex h-12 shrink-0 flex-col justify-center border-b border-line-soft px-4">
+          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
             检查器
           </div>
           <h2 className="mt-0.5 text-[12px] font-semibold text-ink">字段详情</h2>
@@ -800,26 +798,26 @@ export function DetailPanel({
 
   return (
     <aside
-      className="relative z-10 flex w-full shrink-0 flex-col border-t border-line bg-[#f8f5ed]/80 xl:h-full xl:w-[340px] xl:border-l xl:border-t-0"
+      className="relative flex w-full shrink-0 flex-col border-t border-line bg-card xl:h-full xl:w-[320px] xl:border-l xl:border-t-0"
       aria-label="字段详情"
     >
-      <div className="flex shrink-0 items-start justify-between border-b border-line-soft px-4 py-3.5">
+      <div className="flex h-12 shrink-0 items-center justify-between border-b border-line-soft px-4">
         <div className="min-w-0">
-          <div className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-ink-faint">
+          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
             字段检查
           </div>
-          <div className="mt-1 flex min-w-0 items-center gap-1.5 font-mono text-[9px] text-ink-muted">
-            <Icon name="database" size={10} className="shrink-0" />
+          <div className="mt-1 flex min-w-0 items-center gap-1.5 font-mono text-[12px] text-ink-muted">
+            <Icon name="database" size={12} className="shrink-0" />
             <span className="truncate">{dataset.id}</span>
-            <Icon name="chevron-right" size={9} className="shrink-0" />
-            <span className="truncate text-pine-700">{field.name}</span>
+            <Icon name="chevron-right" size={12} className="shrink-0" />
+            <span className="truncate text-blue-700">{field.name}</span>
           </div>
         </div>
         <div className="ml-2 flex shrink-0 items-center gap-0.5">
           <button
             type="button"
             onClick={() => setHistoryOpen(true)}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-faint transition-colors hover:border-line hover:bg-surface hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-faint transition-colors duration-150 hover:border-line hover:bg-card hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
             aria-label="查看字段变更历史"
             title="变更历史"
           >
@@ -829,7 +827,7 @@ export function DetailPanel({
             <button
               type="button"
               onClick={() => setEditing((value) => !value)}
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-faint transition-colors hover:border-line hover:bg-surface hover:text-pine-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-faint transition-colors duration-150 hover:border-line hover:bg-card hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               aria-label={editing ? '退出字段编辑' : '编辑字段属性'}
               title={editing ? '退出编辑' : '编辑字段'}
             >
@@ -839,7 +837,7 @@ export function DetailPanel({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-faint transition-colors hover:border-line hover:bg-surface hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-faint transition-colors duration-150 hover:border-line hover:bg-card hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
             aria-label="关闭字段详情"
             title="关闭字段详情"
           >
@@ -851,16 +849,16 @@ export function DetailPanel({
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 pb-7">
         <div className="animate-fade-in">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="rounded border border-line bg-surface/80 px-1.5 py-[2px] font-mono text-[8.5px] uppercase tracking-[0.08em] text-ink-muted">
+            <span className="rounded border border-line bg-card px-1.5 py-0.5 font-mono text-[11px] uppercase text-ink-muted">
               {field.field_type || '类型未登记'}
             </span>
             <FileTypeBadge type={field.src_locator.type} />
             <SourceBadge source={fieldSource} />
           </div>
-          <h2 className="mt-2.5 break-all font-mono text-[22px] font-semibold leading-[1.2] tracking-[-0.035em] text-ink">
+          <h2 className="mt-2.5 break-all font-mono text-lg font-semibold leading-6 text-ink">
             {field.name}
           </h2>
-          <p className="mt-1.5 text-[11px] leading-5 text-ink-muted">
+          <p className="mt-1.5 text-[13px] leading-5 text-ink-muted">
             {field.description || '暂无字段描述'}
           </p>
         </div>
@@ -880,26 +878,26 @@ export function DetailPanel({
           />
         ) : (
           <>
-            <div className="mt-5 rounded-xl border border-line bg-surface/75">
+            <div className="mt-5 rounded-xl border border-line bg-card">
               <div className="flex items-center gap-2 border-b border-line-soft px-3 py-2">
-                <Icon name="file" size={12} className="text-pine-600" />
-                <span className="text-[9px] font-medium uppercase tracking-[0.12em] text-ink-faint">
+                <Icon name="file" size={12} className="text-blue-600" />
+                <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-faint">
                   源文件
                 </span>
               </div>
               <div className="px-3 py-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <span
-                    className="min-w-0 truncate font-mono text-[10.5px] font-medium text-ink"
+                    className="min-w-0 truncate font-mono text-[13px] font-medium text-ink"
                     title={field.source_file.original_name}
                   >
                     {field.source_file.original_name}
                   </span>
-                  <span className="shrink-0 rounded border border-pine-200 bg-pine-50 px-1.5 py-[1px] font-mono text-[8px] text-pine-700">
+                  <span className="shrink-0 rounded border border-line bg-subtle px-1.5 py-px font-mono text-[11px] text-ink-muted">
                     托管文件
                   </span>
                 </div>
-                <div className="mt-1 font-mono text-[8.5px] text-ink-faint">
+                <div className="mt-1 font-mono text-[11px] text-ink-faint">
                   源文件 #{field.source_file.id}
                 </div>
               </div>
@@ -907,25 +905,25 @@ export function DetailPanel({
 
             <section className="mt-4">
               <div className="mb-2 flex items-center justify-between">
-                <h3 className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-ink-faint">
+                <h3 className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
                   源文件定位
                 </h3>
-                <span className="rounded-full border border-line bg-canvas/55 px-1.5 py-[1px] font-mono text-[8px] text-ink-faint">
+                <span className="rounded-full border border-line bg-page px-1.5 py-px font-mono text-[11px] text-ink-faint">
                   可读定位
                 </span>
               </div>
-              <div className="rounded-xl border border-pine-100 bg-pine-50/55 p-3">
-                <p className="text-[11px] leading-[1.75] text-pine-900">
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
+                <p className="text-[13px] leading-relaxed text-blue-800">
                   {locatorText}
                 </p>
-                <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-pine-100 pt-2">
-                  <span className="font-mono text-[8px] text-pine-700/70">
+                <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-blue-100 pt-2">
+                  <span className="font-mono text-[11px] text-blue-700">
                     定位器信封 · {field.src_locator.type || '未知'}
                   </span>
                   <button
                     type="button"
                     onClick={copyLocator}
-                    className="flex items-center gap-1 rounded px-1 py-0.5 font-mono text-[8.5px] text-pine-700 transition-colors hover:bg-pine-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+                    className="flex items-center gap-1 rounded px-1 py-0.5 font-mono text-[11px] text-blue-700 transition-colors duration-150 hover:bg-blue-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                   >
                     <Icon name="copy" size={10} />
                     {copied ? '已复制' : copyError ? '复制失败' : '复制定位'}
@@ -938,24 +936,24 @@ export function DetailPanel({
               <button
                 type="button"
                 onClick={() => onPreview(selection)}
-                className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-pine-800 text-[11.5px] font-semibold text-white shadow-[0_8px_20px_-12px_rgba(19,54,46,0.8)] transition-all hover:bg-pine-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500 focus-visible:ring-offset-2"
+                className="flex h-9 flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               >
-                <Icon name="file-search" size={15} />
+                <Icon name="file-search" size={14} />
                 回源预览
               </button>
               {canEdit && (
                 <button
                   type="button"
                   onClick={() => setEditing(true)}
-                  className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-line bg-surface px-3 text-[10.5px] font-medium text-ink-muted transition-colors hover:border-pine-300 hover:text-pine-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+                  className="flex h-9 items-center justify-center gap-1.5 rounded-lg border border-line-strong bg-card px-3 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                 >
-                  <Icon name="edit" size={13} />
+                  <Icon name="edit" size={14} />
                   编辑
                 </button>
               )}
             </div>
-            <div className="mt-2 flex items-center justify-center gap-1.5 text-[9px] text-ink-faint">
-              <Icon name="lock" size={10} />
+            <div className="mt-2 flex items-center justify-center gap-1.5 text-[11px] text-ink-faint">
+              <Icon name="lock" size={12} />
               {canEdit
                 ? '回源预览只读 · 编辑字段会写入变更日志'
                 : '只读角色 · 可查看标注与变更历史'}
@@ -963,14 +961,14 @@ export function DetailPanel({
 
             {canEdit && (
               <section className="mt-4">
-                <div className="rounded-xl border border-ai/20 bg-ai-soft/40 p-3">
+                <div className="rounded-xl border border-ai/25 bg-ai-soft/40 p-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 text-[10px] font-semibold text-ai-deep">
-                        <Icon name="sparkles" size={12} />
+                      <div className="flex items-center gap-1.5 text-[13px] font-semibold text-ai-deep">
+                        <Icon name="sparkles" size={12} className="text-ai" />
                         AI 建议
                       </div>
-                      <p className="mt-1 text-[9px] leading-4 text-ink-muted">
+                      <p className="mt-1 text-[12px] leading-4 text-ink-muted">
                         按同名字段/包含关系查找可能缺失的字段级血缘；
                         候选以 source=ai 落库，必须人工确认后才转为 manual。
                       </p>
@@ -979,7 +977,7 @@ export function DetailPanel({
                       type="button"
                       onClick={handleSuggest}
                       disabled={suggesting || busySuggestionKey !== null}
-                      className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-ai/25 bg-surface px-2 text-[9.5px] font-medium text-ai-deep transition-colors hover:border-ai/40 hover:bg-ai-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ai/25 disabled:cursor-wait disabled:opacity-60"
+                      className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-ai/25 bg-card px-2 text-[12px] font-medium text-ai-deep transition-colors duration-150 hover:border-ai/40 hover:bg-ai-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {suggesting ? (
                         <span className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-ai/25 border-t-ai" />
@@ -992,7 +990,7 @@ export function DetailPanel({
 
                   {suggestError && (
                     <div
-                      className="mt-2.5 flex gap-1.5 rounded-lg border border-rosewood/20 bg-rosewood-soft px-2.5 py-2 text-[9px] leading-4 text-rosewood-deep"
+                      className="mt-2.5 flex gap-1.5 rounded-lg border border-danger/25 bg-danger-soft px-2.5 py-2 text-[12px] leading-4 text-danger-deep"
                       role="alert"
                     >
                       <Icon name="warning" size={11} className="mt-0.5 shrink-0" />
@@ -1009,10 +1007,10 @@ export function DetailPanel({
                         return (
                           <div
                             key={key}
-                            className="rounded-xl border border-ai/20 bg-surface p-2.5"
+                            className="rounded-xl border border-ai/20 bg-card p-2.5"
                           >
                             <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0 space-y-0.5 font-mono text-[9px] leading-4">
+                              <div className="min-w-0 space-y-0.5 font-mono text-[12px] leading-4">
                                 <div className="break-all">
                                   <span className="text-ink-faint">
                                     {item.from_dataset}.
@@ -1029,17 +1027,17 @@ export function DetailPanel({
                                   />
                                   <span className="min-w-0 break-all">
                                     <span>{item.to_dataset}.</span>
-                                    <span className="font-medium text-pine-700">
+                                    <span className="font-medium text-blue-700">
                                       {item.to_field ?? '*'}
                                     </span>
                                   </span>
                                 </div>
                               </div>
-                              <span className="shrink-0 rounded-full border border-ai/20 bg-ai-soft px-1.5 py-[1px] font-mono text-[8.5px] text-ai-deep">
+                              <span className="shrink-0 rounded-full border border-ai/20 bg-ai-soft px-1.5 py-px font-mono text-[11px] text-ai-deep">
                                 置信 {formatConfidence(item.confidence)}
                               </span>
                             </div>
-                            <p className="mt-1.5 text-[9px] leading-4 text-ink-muted">
+                            <p className="mt-1.5 text-[12px] leading-4 text-ink-muted">
                               {item.reason}
                             </p>
                             <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-line-soft pt-2">
@@ -1049,18 +1047,18 @@ export function DetailPanel({
                                   type="button"
                                   onClick={() => handleConfirmSuggestion(item)}
                                   disabled={anyBusy}
-                                  className="flex h-6 items-center gap-1 rounded-md bg-pine-800 px-2 text-[9px] font-medium text-white transition-colors hover:bg-pine-900 disabled:cursor-wait disabled:opacity-60"
+                                  className="flex h-7 items-center gap-1 rounded-lg bg-blue-600 px-2 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                                 >
-                                  <Icon name="check" size={10} />
+                                  <Icon name="check" size={12} />
                                   {busy ? '确认中…' : '确认'}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleRejectSuggestion(item)}
                                   disabled={anyBusy}
-                                  className="flex h-6 items-center gap-1 rounded-md border border-line bg-surface px-2 text-[9px] font-medium text-ink-muted transition-colors hover:border-rosewood/30 hover:text-rosewood disabled:cursor-wait disabled:opacity-60"
+                                  className="flex h-7 items-center gap-1 rounded-lg border border-line-strong bg-card px-2 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-danger/30 hover:text-danger-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                  <Icon name="trash" size={10} />
+                                  <Icon name="trash" size={12} />
                                   {busy ? '拒绝中…' : '拒绝'}
                                 </button>
                               </div>
@@ -1072,7 +1070,7 @@ export function DetailPanel({
                   )}
 
                   {suggestNote && (
-                    <div className="mt-2.5 rounded-lg border border-dashed border-line bg-surface/65 px-2.5 py-2 text-center text-[9px] text-ink-faint">
+                    <div className="mt-2.5 rounded-lg border border-dashed border-line bg-page px-2.5 py-2 text-center text-[12px] text-ink-muted">
                       {suggestNote}
                     </div>
                   )}
@@ -1082,10 +1080,10 @@ export function DetailPanel({
 
             <section className="mt-5">
               <div className="mb-2 flex items-center justify-between">
-                <h3 className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-ink-faint">
+                <h3 className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
                   上游血缘
                 </h3>
-                <span className="font-mono text-[8.5px] tabular-nums text-ink-faint">
+                <span className="font-mono text-[11px] tabular-nums text-ink-faint">
                   {incomingEdges.length} 条字段级边
                 </span>
               </div>
@@ -1100,10 +1098,10 @@ export function DetailPanel({
                 </div>
               ) : (
                 <div className="rounded-xl border border-dashed border-line px-3 py-3 text-center">
-                  <div className="font-mono text-[9.5px] text-ink-muted">
+                  <div className="font-mono text-[12px] text-ink-muted">
                     根字段 / 无字段级入边
                   </div>
-                  <p className="mt-1 text-[9px] leading-4 text-ink-faint">
+                  <p className="mt-1 text-[11px] leading-4 text-ink-muted">
                     该字段可能是链路起点，或仅由表级血缘覆盖。
                   </p>
                 </div>
@@ -1121,7 +1119,7 @@ export function DetailPanel({
               <button
                 type="button"
                 onClick={() => setHistoryOpen(true)}
-                className="flex w-full items-center justify-between rounded-xl border border-line bg-surface/70 px-3 py-2.5 text-[9.5px] font-medium text-ink-muted transition-colors hover:border-pine-300 hover:text-pine-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/30"
+                className="flex w-full items-center justify-between rounded-xl border border-line bg-card px-3 py-2.5 text-[13px] font-medium text-ink-muted transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               >
                 <span className="flex items-center gap-1.5">
                   <Icon name="history" size={12} />
@@ -1131,16 +1129,16 @@ export function DetailPanel({
               </button>
             </section>
 
-            <details className="group mt-4 rounded-xl border border-line-soft bg-surface/45">
-              <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[9.5px] font-medium text-ink-muted outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-pine-500/30">
+            <details className="group mt-4 rounded-xl border border-line-soft bg-card">
+              <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[13px] font-medium text-ink-muted outline-none transition-colors duration-150 hover:text-ink focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white">
                 查看原始定位器
                 <Icon
                   name="chevron-down"
                   size={12}
-                  className="text-ink-faint transition-transform group-open:rotate-180"
+                  className="text-ink-faint transition-transform duration-150 group-open:rotate-180"
                 />
               </summary>
-              <pre className="max-h-52 overflow-auto border-t border-line-soft px-3 py-2.5 font-mono text-[9px] leading-4 text-ink-muted">
+              <pre className="max-h-52 overflow-auto border-t border-line-soft bg-subtle/50 px-3 py-2.5 font-mono text-[11px] leading-4 text-ink-muted">
                 {rawLocator}
               </pre>
             </details>

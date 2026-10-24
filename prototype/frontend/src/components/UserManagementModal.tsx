@@ -17,6 +17,12 @@ const ROLE_OPTIONS = [
   { value: 'admin', label: '管理员（admin）' },
 ];
 
+const ROLE_BADGE_STYLES: Record<string, string> = {
+  admin: 'border-transparent bg-blue-800 text-white',
+  editor: 'border-blue-200 bg-blue-50 text-blue-800',
+  viewer: 'border-line bg-subtle text-ink-muted',
+};
+
 export function UserManagementModal({
   token,
   currentUsername,
@@ -118,39 +124,36 @@ export function UserManagementModal({
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-ink/45 p-3 backdrop-blur-[3px] sm:p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-3 animate-fade-in sm:p-6"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !submitting) onClose();
       }}
     >
       <div
-        className="flex max-h-[92vh] w-full max-w-[620px] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-float animate-modal-in"
+        className="relative z-[51] flex max-h-[85vh] w-full max-w-[560px] flex-col overflow-hidden rounded-xl border border-line bg-card shadow-modal animate-modal-in"
         role="dialog"
         aria-modal="true"
         aria-labelledby="user-management-title"
       >
-        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-line px-4 py-3.5 sm:px-5">
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-pine-200 bg-pine-50 text-pine-700">
-              <Icon name="users" size={17} />
+        <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-line-soft px-4">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
+              <Icon name="users" size={16} />
             </span>
             <div className="min-w-0">
-              <div className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-ink-faint">
+              <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
                 管理员功能
               </div>
-              <h2 id="user-management-title" className="mt-1 text-[15px] font-semibold text-ink">
+              <h2 id="user-management-title" className="mt-0.5 text-[14px] font-semibold text-ink">
                 用户管理
               </h2>
-              <p className="mt-0.5 text-[9.5px] leading-4 text-ink-faint">
-                账号由 admin 创建；当前接口仅支持新增用户。
-              </p>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <button
               type="button"
               onClick={() => setReloadKey((value) => value + 1)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-ink-faint transition-colors hover:border-line hover:bg-canvas hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               aria-label="刷新用户列表"
               title="刷新"
             >
@@ -160,21 +163,21 @@ export function UserManagementModal({
               ref={closeRef}
               type="button"
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-ink-faint transition-colors hover:border-line hover:bg-canvas hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               aria-label="关闭用户管理"
             >
-              <Icon name="close" size={15} />
+              <Icon name="close" size={16} />
             </button>
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-[#fbf9f3] px-4 py-4 sm:px-5">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-page px-4 py-4">
           <section>
             <div className="mb-2 flex items-center justify-between">
-              <h3 className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-ink-faint">
+              <h3 className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
                 用户列表
               </h3>
-              <span className="font-mono text-[8px] text-ink-faint">
+              <span className="font-mono text-[11px] tabular-nums text-ink-faint">
                 {users?.length ?? 0} 个账号
               </span>
             </div>
@@ -184,41 +187,45 @@ export function UserManagementModal({
                 {[0, 1, 2].map((item) => (
                   <div
                     key={item}
-                    className="h-11 animate-soft-pulse rounded-xl border border-line bg-surface"
+                    className="h-11 animate-soft-pulse rounded-xl border border-line bg-subtle"
                   />
                 ))}
               </div>
             )}
 
             {!loading && loadError && (
-              <div className="rounded-xl border border-rosewood/20 bg-rosewood-soft px-3.5 py-3" role="alert">
-                <p className="text-[10.5px] leading-5 text-rosewood-deep">{loadError}</p>
+              <div className="rounded-xl border border-danger/25 bg-danger-soft px-3.5 py-3" role="alert">
+                <p className="text-[13px] leading-5 text-danger-deep">{loadError}</p>
               </div>
             )}
 
             {!loading && !loadError && (
-              <div className="divide-y divide-line-soft overflow-hidden rounded-xl border border-line bg-surface">
+              <div className="divide-y divide-line-soft overflow-hidden rounded-xl border border-line bg-card">
                 {(users ?? []).map((user) => (
                   <div key={user.username} className="flex items-center gap-2.5 px-3 py-2.5">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-pine-800 font-mono text-[9px] font-semibold text-white">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-800 font-mono text-[11px] font-semibold text-white">
                       {Array.from(user.username).slice(0, 2).join('').toUpperCase()}
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="truncate text-[11px] font-medium text-ink">
+                        <span className="truncate text-[13px] font-medium text-ink">
                           {user.username}
                         </span>
                         {user.username === currentUsername && (
-                          <span className="rounded-full border border-pine-200 bg-pine-50 px-1.5 py-[1px] font-mono text-[7.5px] text-pine-700">
+                          <span className="rounded-full border border-blue-200 bg-blue-50 px-1.5 py-px font-mono text-[11px] text-blue-800">
                             当前账号
                           </span>
                         )}
                       </div>
-                      <div className="mt-0.5 truncate font-mono text-[8.5px] text-ink-faint">
+                      <div className="mt-0.5 truncate font-mono text-[11px] text-ink-faint">
                         {user.display_name || '未登记显示名'}
                       </div>
                     </div>
-                    <span className="shrink-0 rounded border border-line bg-canvas/55 px-1.5 py-[1px] font-mono text-[8.5px] text-ink-muted">
+                    <span
+                      className={`inline-flex h-5 shrink-0 items-center rounded-full border px-2 text-[11px] font-medium leading-none ${
+                        ROLE_BADGE_STYLES[user.role] ?? 'border-line bg-subtle text-ink-muted'
+                      }`}
+                    >
                       {user.role}
                     </span>
                   </div>
@@ -228,79 +235,108 @@ export function UserManagementModal({
           </section>
 
           <section className="mt-4">
-            <h3 className="mb-2 flex items-center gap-1.5 font-mono text-[8.5px] uppercase tracking-[0.16em] text-ink-faint">
+            <h3 className="mb-2 flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
               <Icon name="user-plus" size={11} />
               新增用户
             </h3>
             <form
               onSubmit={handleSubmit}
-              className="rounded-xl border border-line bg-surface/80 p-3"
+              className="rounded-xl border border-line bg-card p-3"
               noValidate
             >
-              <div className="grid gap-2.5 sm:grid-cols-2">
-                <label className="block">
-                  <span className="mb-1 block text-[10px] font-medium text-ink-soft">用户名</span>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="um-username"
+                    className="mb-1.5 block text-[12px] font-medium text-ink-soft"
+                  >
+                    用户名
+                  </label>
                   <input
+                    id="um-username"
                     type="text"
                     value={username}
                     onChange={(event) => setUsername(event.target.value)}
-                    className="field-input h-8 font-mono text-[10.5px]"
+                    className="field-input h-9 font-mono text-[13px]"
                     placeholder="至少 2 个字符"
                     autoComplete="off"
                     maxLength={64}
                     disabled={submitting}
                     required
                   />
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-[10px] font-medium text-ink-soft">
+                </div>
+                <div>
+                  <label
+                    htmlFor="um-display-name"
+                    className="mb-1.5 block text-[12px] font-medium text-ink-soft"
+                  >
                     显示名（可选）
-                  </span>
+                  </label>
                   <input
+                    id="um-display-name"
                     type="text"
                     value={displayName}
                     onChange={(event) => setDisplayName(event.target.value)}
-                    className="field-input h-8 text-[10.5px]"
+                    className="field-input h-9 text-[13px]"
                     placeholder="如 张三"
                     maxLength={64}
                     disabled={submitting}
                   />
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-[10px] font-medium text-ink-soft">初始密码</span>
+                </div>
+                <div>
+                  <label
+                    htmlFor="um-password"
+                    className="mb-1.5 block text-[12px] font-medium text-ink-soft"
+                  >
+                    初始密码
+                  </label>
                   <input
+                    id="um-password"
                     type="password"
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
-                    className="field-input h-8 font-mono text-[10.5px]"
+                    className="field-input h-9 font-mono text-[13px]"
                     placeholder="至少 6 个字符"
                     autoComplete="new-password"
                     disabled={submitting}
                     required
                   />
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-[10px] font-medium text-ink-soft">角色</span>
-                  <select
-                    value={role}
-                    onChange={(event) => setRole(event.target.value)}
-                    className="h-8 w-full rounded-xl border border-line bg-canvas/25 px-2.5 font-mono text-[10.5px] text-ink outline-none transition-colors focus:border-pine-500 focus:bg-surface focus:ring-2 focus:ring-pine-500/15"
-                    disabled={submitting}
+                </div>
+                <div>
+                  <label
+                    htmlFor="um-role"
+                    className="mb-1.5 block text-[12px] font-medium text-ink-soft"
                   >
-                    {ROLE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    角色
+                  </label>
+                  <span className="relative block">
+                    <select
+                      id="um-role"
+                      value={role}
+                      onChange={(event) => setRole(event.target.value)}
+                      className="field-input h-9 appearance-none pr-8 text-[13px] text-ink"
+                      disabled={submitting}
+                    >
+                      {ROLE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <Icon
+                      name="chevron-down"
+                      size={14}
+                      className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-faint"
+                    />
+                  </span>
+                </div>
               </div>
 
-              <div className="mt-2.5 flex flex-wrap items-center gap-2">
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex h-8 items-center gap-1.5 rounded-lg bg-pine-800 px-3 text-[10px] font-semibold text-white transition-colors hover:bg-pine-900 disabled:cursor-wait disabled:opacity-65"
+                  className="flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                 >
                   {submitting ? (
                     <>
@@ -309,32 +345,34 @@ export function UserManagementModal({
                     </>
                   ) : (
                     <>
-                      <Icon name="user-plus" size={11} />
+                      <Icon name="user-plus" size={12} />
                       创建用户
                     </>
                   )}
                 </button>
-                <span className="font-mono text-[8px] text-ink-faint">
+                <span className="font-mono text-[11px] text-ink-faint">
                   密码仅保存加盐哈希；用户名重复返回 409。
                 </span>
               </div>
 
               {formError && (
-                <p className="mt-2 rounded-md border border-rosewood/20 bg-rosewood-soft px-2 py-1.5 text-[9.5px] leading-4 text-rosewood-deep" role="alert">
+                <p className="mt-2 rounded-md border border-danger/25 bg-danger-soft px-2.5 py-1.5 text-[12px] leading-4 text-danger-deep" role="alert">
                   {formError}
                 </p>
               )}
               {notice && (
-                <p className="mt-2 rounded-md border border-pine-200 bg-pine-50 px-2 py-1.5 text-[9.5px] leading-4 text-pine-800" role="status">
+                <p className="mt-2 rounded-md border border-success/25 bg-success-soft px-2.5 py-1.5 text-[12px] leading-4 text-success-deep" role="status">
                   {notice}
                 </p>
               )}
             </form>
-            <p className="mt-2 flex items-start gap-1.5 text-[8.5px] leading-4 text-ink-faint">
-              <Icon name="info" size={10} className="mt-0.5 shrink-0" />
-              角色变更与停用账号尚未提供接口；原型中的逐行角色下拉与 RBAC
-              权限矩阵暂未实现，如需调整请由后端补充管理员接口。
-            </p>
+            <div className="mt-2 flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2.5 text-[12px] leading-5 text-blue-800">
+              <Icon name="info" size={12} className="mt-0.5 shrink-0" />
+              <span>
+                账号由 admin 创建；当前接口仅支持新增用户。角色变更与停用账号尚未提供接口；原型中的逐行角色下拉与
+                RBAC 权限矩阵暂未实现，如需调整请由后端补充管理员接口。
+              </span>
+            </div>
           </section>
         </div>
       </div>
