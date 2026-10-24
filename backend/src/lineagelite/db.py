@@ -1,8 +1,10 @@
 """SQLite 连接与建表 DDL。表结构对应《轻量级AI血缘工具-数据模型.md》。
 
-与文档的两处 M1 实现补充（均向后兼容）：
+与文档的 M1/M3 实现补充（均向后兼容）：
 - import_batch 增加 rolled_back_at / rolled_back_by：回滚留痕（业务规则#6），
   同时保证 change_log 保持只读历史，重放/重导入幂等。
+- M3 新增 rollback_record：按版本标签回滚的审计（回滚不写 change_log，
+  避免重复回滚反做回滚日志），数据模型 §2.10 / §七。
 - 时间列统一存 ISO8601 UTC 文本（SQLite TEXT 亲和）。
 """
 
@@ -116,12 +118,25 @@ CREATE TABLE IF NOT EXISTS change_log (
   created_at TEXT NOT NULL
 );
 
+-- M3：按版本标签回滚的审计记录。回滚本身不写 change_log（否则下次回滚会反做
+-- 回滚日志，破坏幂等），操作者/时间/反做范围记录在此表，满足「写必留痕」。
+CREATE TABLE IF NOT EXISTS rollback_record (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  tag_name TEXT NOT NULL REFERENCES version_tag(name),
+  from_change_seq INTEGER NOT NULL,
+  to_change_seq INTEGER NOT NULL,
+  reverted INTEGER NOT NULL,
+  actor TEXT NOT NULL REFERENCES user(username),
+  created_at TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_edge_to ON edge(to_dataset, to_field);
 CREATE INDEX IF NOT EXISTS idx_edge_from ON edge(from_dataset, from_field);
 CREATE INDEX IF NOT EXISTS idx_field_sf ON field(source_file_id);
 CREATE INDEX IF NOT EXISTS idx_log_entity ON change_log(entity_kind, entity_key);
 CREATE INDEX IF NOT EXISTS idx_log_batch ON change_log(batch_id);
 CREATE INDEX IF NOT EXISTS idx_annot_target ON annotation(target_kind, target_id);
+CREATE INDEX IF NOT EXISTS idx_rollback_tag ON rollback_record(tag_name, id);
 
 -- 部分唯一索引：SQLite 的 UNIQUE 对含 NULL 的组合按 NULLS DISTINCT 语义处理，
 -- 表级边（from_field/to_field 均为 NULL）无法被上面的 UNIQUE 拦截，

@@ -164,7 +164,7 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
               </div>
             </div>
             <span className="rounded-full border border-white/15 px-3 py-1 font-mono text-[9px] uppercase tracking-[0.16em] text-[#a8c4b8]">
-              M2 · 血缘画布
+              M3 · 编辑与版本
             </span>
           </div>
 

@@ -1,9 +1,27 @@
 import type {
+  AiChatMessage,
+  AiChatResponse,
+  AiEdgeKey,
+  AiFocus,
+  AiStatus,
+  AiSuggestion,
+  Annotation,
+  AnnotationCreatePayload,
+  ChangeEntry,
   DatasetSummary,
+  EdgeCreatePayload,
+  EdgePatchPayload,
+  FieldPatchPayload,
+  ImportBatch,
+  LineageEdge,
   LineageGraph,
   LoginResponse,
   PreviewResponse,
   Session,
+  TargetKind,
+  UserAccount,
+  VersionTag,
+  VersionTagDiff,
 } from '../types';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
@@ -40,7 +58,7 @@ function readErrorDetail(payload: unknown, status: number): string {
   if (status === 401) return '登录已过期，请重新登录';
   if (status === 403) return '当前账号无权执行此操作';
   if (status === 404) return '请求的资源不存在';
-  if (status === 409) return '定位已失效';
+  if (status === 409) return '操作冲突，请检查当前状态后重试';
   if (status === 422) return '请求参数不合法';
   return `请求失败（HTTP ${status}）`;
 }
@@ -171,6 +189,258 @@ export async function getFieldPreview(
   return request<PreviewResponse>(
     `/fields/${encodeURIComponent(datasetId)}/${encodeURIComponent(fieldName)}/preview`,
     { signal },
+    token,
+  );
+}
+
+// ---------- M3：标注 ----------
+
+export async function getAnnotations(
+  token: string,
+  targetKind: TargetKind,
+  targetId: string,
+  signal?: AbortSignal,
+): Promise<Annotation[]> {
+  const search = new URLSearchParams({
+    target_kind: targetKind,
+    target_id: targetId,
+  });
+  return request<Annotation[]>(
+    `/annotations?${search.toString()}`,
+    { signal },
+    token,
+  );
+}
+
+export async function createAnnotation(
+  token: string,
+  payload: AnnotationCreatePayload,
+  signal?: AbortSignal,
+): Promise<Annotation> {
+  return request<Annotation>(
+    '/annotations',
+    { method: 'POST', body: JSON.stringify(payload), signal },
+    token,
+  );
+}
+
+// ---------- M3：字段与边编辑 ----------
+
+export async function patchField(
+  token: string,
+  datasetId: string,
+  fieldName: string,
+  payload: FieldPatchPayload,
+  signal?: AbortSignal,
+): Promise<Record<string, unknown>> {
+  return request<Record<string, unknown>>(
+    `/fields/${encodeURIComponent(datasetId)}/${encodeURIComponent(fieldName)}`,
+    { method: 'PATCH', body: JSON.stringify(payload), signal },
+    token,
+  );
+}
+
+export async function createEdge(
+  token: string,
+  payload: EdgeCreatePayload,
+  signal?: AbortSignal,
+): Promise<LineageEdge> {
+  return request<LineageEdge>(
+    '/edges',
+    { method: 'POST', body: JSON.stringify(payload), signal },
+    token,
+  );
+}
+
+export async function patchEdge(
+  token: string,
+  edgeId: number,
+  payload: EdgePatchPayload,
+  signal?: AbortSignal,
+): Promise<LineageEdge> {
+  return request<LineageEdge>(
+    `/edges/${edgeId}`,
+    { method: 'PATCH', body: JSON.stringify(payload), signal },
+    token,
+  );
+}
+
+export async function deleteEdge(
+  token: string,
+  edgeId: number,
+  signal?: AbortSignal,
+): Promise<void> {
+  return request<void>(
+    `/edges/${edgeId}`,
+    { method: 'DELETE', signal },
+    token,
+  );
+}
+
+// ---------- M3：变更历史与版本标签 ----------
+
+export async function getChanges(
+  token: string,
+  entityKind: TargetKind,
+  entityKey: string,
+  limit = 50,
+  signal?: AbortSignal,
+): Promise<ChangeEntry[]> {
+  const search = new URLSearchParams({
+    entity_kind: entityKind,
+    entity_key: entityKey,
+    limit: String(limit),
+  });
+  return request<ChangeEntry[]>(
+    `/changes?${search.toString()}`,
+    { signal },
+    token,
+  );
+}
+
+export async function getVersionTags(
+  token: string,
+  signal?: AbortSignal,
+): Promise<VersionTag[]> {
+  return request<VersionTag[]>('/version-tags', { signal }, token);
+}
+
+export async function createVersionTag(
+  token: string,
+  payload: { name: string; note?: string | null },
+  signal?: AbortSignal,
+): Promise<
+  Pick<
+    VersionTag,
+    'name' | 'note' | 'change_seq' | 'created_by' | 'created_at'
+  >
+> {
+  return request<
+    Pick<
+      VersionTag,
+      'name' | 'note' | 'change_seq' | 'created_by' | 'created_at'
+    >
+  >(
+    '/version-tags',
+    { method: 'POST', body: JSON.stringify(payload), signal },
+    token,
+  );
+}
+
+export async function getVersionTagDiff(
+  token: string,
+  from: string,
+  to: string,
+  signal?: AbortSignal,
+): Promise<VersionTagDiff> {
+  const search = new URLSearchParams({ from, to });
+  return request<VersionTagDiff>(
+    `/version-tags/diff?${search.toString()}`,
+    { signal },
+    token,
+  );
+}
+
+export async function rollbackVersionTag(
+  token: string,
+  name: string,
+  signal?: AbortSignal,
+): Promise<{ reverted: number }> {
+  return request<{ reverted: number }>(
+    `/version-tags/${encodeURIComponent(name)}/rollback`,
+    { method: 'POST', signal },
+    token,
+  );
+}
+
+export async function getImportBatches(
+  token: string,
+  signal?: AbortSignal,
+): Promise<ImportBatch[]> {
+  return request<ImportBatch[]>('/import/batches', { signal }, token);
+}
+
+// ---------- 用户管理（admin） ----------
+
+export async function getUsers(
+  token: string,
+  signal?: AbortSignal,
+): Promise<UserAccount[]> {
+  return request<UserAccount[]>('/users', { signal }, token);
+}
+
+export async function createUser(
+  token: string,
+  payload: {
+    username: string;
+    password: string;
+    display_name?: string | null;
+    role: string;
+  },
+  signal?: AbortSignal,
+): Promise<UserAccount> {
+  return request<UserAccount>(
+    '/users',
+    { method: 'POST', body: JSON.stringify(payload), signal },
+    token,
+  );
+}
+
+// ---------- M4：AI 助手与启发式血缘建议 ----------
+
+export async function getAiStatus(
+  token: string,
+  signal?: AbortSignal,
+): Promise<AiStatus> {
+  return request<AiStatus>('/ai/status', { signal }, token);
+}
+
+export async function sendAiChat(
+  token: string,
+  payload: { messages: AiChatMessage[]; focus?: AiFocus | null },
+  signal?: AbortSignal,
+): Promise<AiChatResponse> {
+  return request<AiChatResponse>(
+    '/ai/chat',
+    { method: 'POST', body: JSON.stringify(payload), signal },
+    token,
+  );
+}
+
+export async function suggestAiEdges(
+  token: string,
+  payload: { dataset: string; field?: string | null },
+  signal?: AbortSignal,
+): Promise<AiSuggestion[]> {
+  const result = await request<{ candidates: AiSuggestion[] }>(
+    '/ai/suggest',
+    { method: 'POST', body: JSON.stringify(payload), signal },
+    token,
+  );
+  return result.candidates;
+}
+
+export async function confirmAiSuggestion(
+  token: string,
+  key: AiEdgeKey,
+  signal?: AbortSignal,
+): Promise<LineageEdge> {
+  const result = await request<{ edge: LineageEdge }>(
+    '/ai/suggest/confirm',
+    { method: 'POST', body: JSON.stringify(key), signal },
+    token,
+  );
+  return result.edge;
+}
+
+export async function rejectAiSuggestion(
+  token: string,
+  key: AiEdgeKey,
+  signal?: AbortSignal,
+): Promise<void> {
+  return request<void>(
+    '/ai/suggest/reject',
+    { method: 'POST', body: JSON.stringify(key), signal },
     token,
   );
 }

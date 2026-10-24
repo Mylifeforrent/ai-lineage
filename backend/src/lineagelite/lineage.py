@@ -145,13 +145,14 @@ def _payload(conn: sqlite3.Connection, dataset_ids: list[str]) -> dict:
                 for row in dataset_rows]
 
     edge_rows = conn.execute(
-        f"SELECT from_dataset, from_field, to_dataset, to_field, transform,"
+        f"SELECT id, from_dataset, from_field, to_dataset, to_field, transform,"
         f" confidence, source, note FROM edge"
         f" WHERE from_dataset IN ({marks}) AND to_dataset IN ({marks})"
         f" ORDER BY from_dataset, COALESCE(from_field, ''),"
         f" to_dataset, COALESCE(to_field, '')",
         [*dataset_ids, *dataset_ids]).fetchall()
     edges = [{
+        "id": row["id"],
         "from_dataset": row["from_dataset"],
         "from_field": row["from_field"],
         "to_dataset": row["to_dataset"],

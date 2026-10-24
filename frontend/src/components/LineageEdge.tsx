@@ -17,6 +17,12 @@ export interface LineageEdgeData extends Record<string, unknown> {
   kind: EdgeKind;
   fromLabel: string;
   toLabel: string;
+  /** 折叠分组时跨组边的聚合条数；存在时该连线不可单独操作 */
+  aggregateCount?: number;
+  canEdit?: boolean;
+  onSelect?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 export type LineageFlowEdge = Edge<LineageEdgeData, 'lineage'>;
@@ -64,6 +70,7 @@ export function LineageEdgeView({
   data,
   style,
   markerEnd,
+  selected,
 }: EdgeProps) {
   const edgeData = data as unknown as LineageEdgeData | undefined;
   const [hovered, setHovered] = useState(false);
@@ -77,7 +84,20 @@ export function LineageEdgeView({
 
   if (!edgeData) return null;
 
-  const { edge, kind, fromLabel, toLabel } = edgeData;
+  const {
+    edge,
+    kind,
+    fromLabel,
+    toLabel,
+    aggregateCount,
+    canEdit,
+    onSelect,
+    onEdit,
+    onDelete,
+  } = edgeData;
+  const isAggregate =
+    aggregateCount !== undefined && aggregateCount !== null && aggregateCount > 0;
+  const active = hovered || Boolean(selected);
   const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
@@ -123,12 +143,14 @@ export function LineageEdgeView({
         interactionWidth={0}
         style={{
           ...style,
-          strokeWidth: hovered ? (edge.source === 'ai' ? 2.8 : 2.4) : undefined,
-          filter: hovered ? 'drop-shadow(0 1px 1px rgba(27,42,37,0.14))' : undefined,
+          strokeWidth: active ? (edge.source === 'ai' ? 2.8 : 2.4) : undefined,
+          filter: active
+            ? 'drop-shadow(0 1px 1px rgba(27,42,37,0.14))'
+            : undefined,
           transition: 'stroke-width 150ms ease, opacity 150ms ease',
         }}
       />
-      {hovered && (
+      {active && (
         <EdgeLabelRenderer>
           <div
             className="nodrag nopan pointer-events-auto absolute z-50 w-[268px]"
@@ -142,7 +164,9 @@ export function LineageEdgeView({
             <div className="edge-tooltip animate-fade-in rounded-xl border border-line bg-surface/98 p-3 text-left shadow-float backdrop-blur-sm">
               <div className="flex items-center justify-between gap-2">
                 <span className="font-mono text-[8px] uppercase tracking-[0.16em] text-ink-faint">
-                  {kind === 'field' ? '字段级血缘' : '表级血缘'}
+                  {isAggregate
+                    ? `跨组聚合 · ${aggregateCount} 条边`
+                    : `${kind === 'field' ? '字段级血缘' : '表级血缘'} · #${edge.id}`}
                 </span>
                 <SourceBadge source={edge.source} withDescription={false} />
               </div>
@@ -177,6 +201,50 @@ export function LineageEdgeView({
                 <p className="mt-2 border-t border-line-soft pt-2 text-[9.5px] leading-4 text-ink-muted">
                   {edge.note}
                 </p>
+              )}
+              {isAggregate ? (
+                <p className="mt-2 border-t border-line-soft pt-2 text-[9px] leading-4 text-ink-faint">
+                  展开分组后可查看并编辑其中每一条具体血缘。
+                </p>
+              ) : (
+                <div className="mt-2 flex items-center gap-1.5 border-t border-line-soft pt-2">
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onSelect?.();
+                    }}
+                    className="rounded-md border border-line bg-surface px-2 py-1 text-[9.5px] font-medium text-ink-muted transition-colors hover:border-pine-300 hover:text-pine-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+                  >
+                    查看详情
+                  </button>
+                  {canEdit && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onEdit?.();
+                        }}
+                        className="flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-[9.5px] font-medium text-ink-muted transition-colors hover:border-pine-300 hover:text-pine-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+                      >
+                        <Icon name="edit" size={10} />
+                        编辑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onDelete?.();
+                        }}
+                        className="ml-auto flex items-center gap-1 rounded-md border border-transparent px-2 py-1 text-[9.5px] font-medium text-rosewood transition-colors hover:border-rosewood/25 hover:bg-rosewood-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rosewood/30"
+                      >
+                        <Icon name="trash" size={10} />
+                        删除
+                      </button>
+                    </>
+                  )}
+                </div>
               )}
             </div>
           </div>

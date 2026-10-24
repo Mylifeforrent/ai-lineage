@@ -7,15 +7,12 @@
 import json
 from datetime import UTC, datetime
 
+from .changes import edge_snapshot
 from .config import resolve_storage
 from .db import get_db
-from .locator import LocatorError, check_csv, check_json, check_xlsx
-from .models import (CsvLocatorIn, DatasetFieldRecord, ImportReport,
-                     ImportReportItem, JsonLocatorIn, LineageEdgeRecord,
-                     XlsxLocatorIn)
-
-CHECKERS = {"csv": check_csv, "xlsx": check_xlsx, "json": check_json}
-LOCATOR_MODELS = {"csv": CsvLocatorIn, "xlsx": XlsxLocatorIn, "json": JsonLocatorIn}
+from .locator import CHECKERS, LOCATOR_MODELS, LocatorError
+from .models import (DatasetFieldRecord, ImportReport,
+                     ImportReportItem, LineageEdgeRecord)
 
 
 def _now() -> str:
@@ -237,10 +234,9 @@ def run_import(actor: str, fmt: str, bound_files: list[dict],
                      payload["source"], payload["note"], actor, actor, _now(), _now()))
                 _log(conn, batch_id, "edge", ref, "added", None, payload, actor)
             else:
-                before = dict(existing)
-                before.pop("id")
-                before.pop("created_at")
-                before.pop("updated_at")
+                # 只取 EDGE_SNAPSHOT_KEYS 业务列，与人工编辑/added 快照保持一致
+                # （不含 id/时间戳，也不含 created_by/updated_by 审计列）。
+                before = edge_snapshot(existing)
                 if all(before[k] == payload[k] for k in payload):
                     items.append(ImportReportItem(status="ok", kind="edge", ref=ref,
                                                   reason="unchanged", source_row=rec.row))

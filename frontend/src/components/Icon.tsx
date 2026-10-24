@@ -30,7 +30,19 @@ export type IconName =
   | 'network'
   | 'fold-all'
   | 'unfold-all'
-  | 'panel-left';
+  | 'panel-left'
+  | 'history'
+  | 'tag'
+  | 'edit'
+  | 'trash'
+  | 'plus'
+  | 'rollback'
+  | 'users'
+  | 'user-plus'
+  | 'message-square'
+  | 'group'
+  | 'diff'
+  | 'send';
 
 const paths: Record<IconName, ReactNode> = {
   search: (
@@ -206,6 +218,86 @@ const paths: Record<IconName, ReactNode> = {
     <>
       <rect x="3" y="4" width="18" height="16" rx="2" />
       <path d="M9 4v16" />
+    </>
+  ),
+  history: (
+    <>
+      <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+      <path d="M3 3v5h5" />
+      <path d="M12 7v5l3 2" />
+    </>
+  ),
+  tag: (
+    <>
+      <path d="M20.6 13.6 13.6 20.6a2 2 0 0 1-2.8 0L3.4 13.2a2 2 0 0 1-.4-1.2V5a2 2 0 0 1 2-2h7a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.8Z" />
+      <circle cx="7.5" cy="7.5" r="1.2" />
+    </>
+  ),
+  edit: (
+    <>
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </>
+  ),
+  trash: (
+    <>
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="m19 6-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+    </>
+  ),
+  plus: (
+    <>
+      <path d="M12 5v14M5 12h14" />
+    </>
+  ),
+  rollback: (
+    <>
+      <path d="M9 14 4 9l5-5" />
+      <path d="M4 9h10a6 6 0 0 1 0 12h-3" />
+    </>
+  ),
+  users: (
+    <>
+      <circle cx="9" cy="8" r="3.5" />
+      <path d="M2.5 21a6.5 6.5 0 0 1 13 0" />
+      <path d="M16 4.5a3.5 3.5 0 0 1 0 7" />
+      <path d="M17.5 14.5A6.5 6.5 0 0 1 22 21" />
+    </>
+  ),
+  'user-plus': (
+    <>
+      <circle cx="9" cy="8" r="3.5" />
+      <path d="M2.5 21a6.5 6.5 0 0 1 13 0" />
+      <path d="M19 8v6M16 11h6" />
+    </>
+  ),
+  'message-square': (
+    <>
+      <path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" />
+    </>
+  ),
+  group: (
+    <>
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </>
+  ),
+  diff: (
+    <>
+      <circle cx="6" cy="6" r="2.5" />
+      <circle cx="18" cy="18" r="2.5" />
+      <path d="M6 8.5V15a3 3 0 0 0 3 3h6.5" />
+      <path d="M18 15.5V9a3 3 0 0 0-3-3H8.5" />
+    </>
+  ),
+  send: (
+    <>
+      <path d="m22 2-7 20-4-9-9-4Z" />
+      <path d="M22 2 11 13" />
     </>
   ),
 };

@@ -122,3 +122,9 @@ def check_json(path: str, loc: JsonLocatorIn) -> dict:
     if hits == 0:
         raise LocatorError(f"JSONPath「{loc.json_path}」在源文件中无命中")
     return {"hits": hits}
+
+
+# src_type → 结构模型/实文件核查器；导入与 M3 字段定位器编辑共用
+CHECKERS = {"csv": check_csv, "xlsx": check_xlsx, "json": check_json}
+LOCATOR_MODELS = {"csv": CsvLocatorIn, "xlsx": XlsxLocatorIn,
+                  "json": JsonLocatorIn}

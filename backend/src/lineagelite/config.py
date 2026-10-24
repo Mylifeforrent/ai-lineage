@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     max_upload_mb: int = 50  # 单个源文件上传大小上限（MB）
     # 允许跨域的前端来源（逗号分隔）；默认仅本机 Vite 开发服务器
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    # M4：OpenAI 兼容 LLM（仓库根 .env 注入；默认空表示未配置，/ai/chat 返回 503）。
+    # API Key 允许为空，便于连接无需鉴权的本地 OpenAI 兼容服务。
+    llm_base_url: str = ""
+    llm_api_key: str = ""
+    llm_model: str = ""
 
 
 def get_settings() -> Settings:

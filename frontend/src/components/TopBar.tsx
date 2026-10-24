@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Session } from '../types';
+import { isAdmin, roleLabel } from '../lib/roles';
 import { Brand } from './Brand';
 import { Icon } from './Icon';
 
@@ -15,6 +16,10 @@ interface TopBarProps {
   hops: number;
   onHopsChange: (hops: number) => void;
   graphLoading: boolean;
+  aiOpen: boolean;
+  onOpenAi: () => void;
+  onOpenVersions: () => void;
+  onOpenUsers: () => void;
   onLogout: () => void;
 }
 
@@ -38,9 +43,15 @@ export function TopBar({
   hops,
   onHopsChange,
   graphLoading,
+  aiOpen,
+  onOpenAi,
+  onOpenVersions,
+  onOpenUsers,
   onLogout,
 }: TopBarProps) {
   const searchRef = useRef<HTMLInputElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   useEffect(() => {
     function focusSearch(event: KeyboardEvent) {
@@ -59,7 +70,29 @@ export function TopBar({
     return () => window.removeEventListener('keydown', focusSearch);
   }, []);
 
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    function handlePointerDown(event: MouseEvent) {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target as Node)
+      ) {
+        setUserMenuOpen(false);
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setUserMenuOpen(false);
+    }
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [userMenuOpen]);
+
   const initials = Array.from(session.username).slice(0, 2).join('').toUpperCase();
+  const admin = isAdmin(session.role);
 
   return (
     <header className="sticky top-0 z-30 shrink-0 border-b border-line bg-surface/95 backdrop-blur-sm">
@@ -122,6 +155,32 @@ export function TopBar({
         </div>
 
         <div className="ml-auto flex flex-wrap items-center gap-2.5 sm:gap-3">
+          <button
+            type="button"
+            onClick={onOpenAi}
+            aria-haspopup="dialog"
+            aria-expanded={aiOpen}
+            className={`flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[10.5px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35 ${
+              aiOpen
+                ? 'border-ai/30 bg-ai-soft text-ai-deep'
+                : 'border-line bg-canvas/55 text-ink-muted hover:border-ai/25 hover:text-ai-deep'
+            }`}
+            title="打开 AI 助手：自然语言查血缘并联动出图"
+          >
+            <Icon name="sparkles" size={13} className={aiOpen ? 'text-ai' : ''} />
+            AI 助手
+          </button>
+
+          <button
+            type="button"
+            onClick={onOpenVersions}
+            className="flex h-8 items-center gap-1.5 rounded-lg border border-line bg-canvas/55 px-2.5 text-[10.5px] font-medium text-ink-muted transition-colors hover:border-pine-300 hover:text-pine-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+            title="查看导入批次、业务标签、版本差异与回滚"
+          >
+            <Icon name="tag" size={13} />
+            版本
+          </button>
+
           <div className="flex items-center gap-2 rounded-lg border border-line bg-canvas/55 p-1 pl-2.5">
             <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-ink-faint">
               跳数
@@ -156,30 +215,83 @@ export function TopBar({
             )}
           </div>
 
-          <div className="flex items-center gap-2 border-l border-line pl-2.5 sm:pl-3">
-            <div
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-pine-800 font-mono text-[10px] font-semibold tracking-wide text-white"
-              aria-hidden="true"
-            >
-              {initials}
-            </div>
-            <div className="hidden sm:block">
-              <div className="max-w-[110px] truncate text-[11.5px] font-medium text-ink">
-                {session.username}
-              </div>
-              <div className="mt-0.5 font-mono text-[8.5px] uppercase tracking-[0.12em] text-ink-faint">
-                {session.role}
-              </div>
-            </div>
+          <div
+            ref={userMenuRef}
+            className="relative flex items-center gap-2 border-l border-line pl-2.5 sm:pl-3"
+          >
             <button
               type="button"
-              onClick={onLogout}
-              className="ml-0.5 flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-ink-faint transition-colors hover:border-line hover:bg-canvas hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
-              title="退出登录"
-              aria-label="退出登录"
+              onClick={() => setUserMenuOpen((value) => !value)}
+              className="flex items-center gap-2 rounded-lg px-1 py-1 text-left transition-colors hover:bg-canvas/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+              aria-haspopup="menu"
+              aria-expanded={userMenuOpen}
+              title="用户菜单"
             >
-              <Icon name="logout" size={15} />
+              <span
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-pine-800 font-mono text-[10px] font-semibold tracking-wide text-white"
+                aria-hidden="true"
+              >
+                {initials}
+              </span>
+              <span className="hidden sm:block">
+                <span className="block max-w-[110px] truncate text-[11.5px] font-medium text-ink">
+                  {session.username}
+                </span>
+                <span className="mt-0.5 block font-mono text-[8.5px] uppercase tracking-[0.12em] text-ink-faint">
+                  {roleLabel(session.role)}
+                </span>
+              </span>
+              <Icon
+                name="chevron-down"
+                size={12}
+                className={`hidden shrink-0 text-ink-faint transition-transform sm:block ${
+                  userMenuOpen ? 'rotate-180' : ''
+                }`}
+              />
             </button>
+
+            {userMenuOpen && (
+              <div
+                className="absolute right-0 top-full z-50 mt-2 w-[192px] overflow-hidden rounded-xl border border-line bg-surface shadow-float animate-fade-in"
+                role="menu"
+                aria-label="用户菜单"
+              >
+                <div className="border-b border-line-soft bg-canvas/45 px-3 py-2.5">
+                  <div className="truncate text-[11px] font-medium text-ink">
+                    {session.username}
+                  </div>
+                  <div className="mt-0.5 font-mono text-[8.5px] uppercase tracking-[0.12em] text-ink-faint">
+                    {session.role} · {roleLabel(session.role)}
+                  </div>
+                </div>
+                {admin && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      onOpenUsers();
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-[10.5px] text-ink-muted transition-colors hover:bg-canvas/70 hover:text-pine-700 focus-visible:outline-none focus-visible:bg-canvas/70"
+                  >
+                    <Icon name="users" size={13} />
+                    用户管理
+                  </button>
+                )}
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    onLogout();
+                  }}
+                  className="flex w-full items-center gap-2 border-t border-line-soft px-3 py-2 text-left text-[10.5px] text-ink-muted transition-colors hover:bg-canvas/70 hover:text-ink focus-visible:outline-none focus-visible:bg-canvas/70"
+                >
+                  <Icon name="logout" size={13} />
+                  退出登录
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

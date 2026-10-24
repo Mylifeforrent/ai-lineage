@@ -15,6 +15,8 @@ export interface DatasetNodeData extends Record<string, unknown> {
   collapsed: boolean;
   isSeed: boolean;
   fieldsExpanded: boolean;
+  /** editor+ 才允许从 handle 拖出新血缘；viewer 的 handle 不可连接 */
+  connectable: boolean;
   onToggleCollapse: (datasetId: string) => void;
   onToggleFields: (datasetId: string) => void;
   onSelectField: (dataset: LineageDataset, field: DatasetField) => void;
@@ -29,6 +31,7 @@ export function DatasetNode({ data }: NodeProps) {
     collapsed,
     isSeed,
     fieldsExpanded,
+    connectable,
     onToggleCollapse,
     onToggleFields,
     onSelectField,
@@ -60,7 +63,7 @@ export function DatasetNode({ data }: NodeProps) {
         id={TABLE_TARGET_HANDLE}
         className="table-handle"
         style={{ top: 28 }}
-        isConnectable={false}
+        isConnectable={connectable}
       />
       <Handle
         type="source"
@@ -68,7 +71,7 @@ export function DatasetNode({ data }: NodeProps) {
         id={TABLE_SOURCE_HANDLE}
         className="table-handle"
         style={{ top: 28 }}
-        isConnectable={false}
+        isConnectable={connectable}
       />
 
       <header
@@ -172,7 +175,7 @@ export function DatasetNode({ data }: NodeProps) {
                     id={fieldTargetHandle(field.name)}
                     className="field-handle"
                     style={{ top: '50%' }}
-                    isConnectable={false}
+                    isConnectable={connectable}
                   />
                   <button
                     type="button"
@@ -197,7 +200,7 @@ export function DatasetNode({ data }: NodeProps) {
                     id={fieldSourceHandle(field.name)}
                     className="field-handle"
                     style={{ top: '50%' }}
-                    isConnectable={false}
+                    isConnectable={connectable}
                   />
                 </div>
               ))}

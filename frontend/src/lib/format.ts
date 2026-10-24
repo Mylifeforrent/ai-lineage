@@ -155,3 +155,10 @@ export function formatJsonValue(value: unknown): string {
 export function formatCount(value: number): string {
   return new Intl.NumberFormat('zh-CN').format(value);
 }
+
+/** ISO8601 →「2026-10-23 14:30」（本地阅读用，秒级截断）。 */
+export function formatDateTime(value: string | null | undefined): string {
+  if (!value) return '—';
+  const normalized = value.replace('T', ' ');
+  return normalized.length > 16 ? normalized.slice(0, 16) : normalized;
+}

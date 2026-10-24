@@ -74,7 +74,7 @@ export function layoutDatasets(
     graph.setNode(dataset.id, { width, height });
   });
 
-  edges.forEach((edge, index) => {
+  edges.forEach((edge) => {
     if (edge.from_dataset === edge.to_dataset) return;
     if (
       !datasetIds.has(edge.from_dataset) ||
@@ -86,7 +86,7 @@ export function layoutDatasets(
       edge.from_dataset,
       edge.to_dataset,
       { minlen: 1, weight: 1 },
-      `lineage-${index}`,
+      `lineage-${edge.id}`,
     );
   });
 

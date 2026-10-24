@@ -1,23 +1,37 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
+  AiFocus,
   DatasetField,
   DatasetSummary,
+  EdgeDraft,
   FieldSelection,
   LineageDataset,
+  LineageEdge,
   LineageGraph,
   Session,
 } from '../types';
 import {
   ApiError,
+  deleteEdge,
   getDatasets,
   getSubgraph,
   isAbortError,
 } from '../lib/api';
+import { edgeEntityKey } from '../lib/entities';
+import { isAdmin, isEditor } from '../lib/roles';
 import { TopBar } from './TopBar';
 import { DatasetSidebar } from './DatasetSidebar';
 import { LineageCanvas } from './LineageCanvas';
 import { DetailPanel } from './DetailPanel';
+import { EdgeDetailPanel } from './EdgeDetailPanel';
 import { PreviewModal } from './PreviewModal';
+import { EdgeCreateModal } from './EdgeCreateModal';
+import { ConfirmDialog } from './ConfirmDialog';
+import { VersionDrawer } from './VersionDrawer';
+import { AiAssistantDrawer } from './AiAssistantDrawer';
+import { UserManagementModal } from './UserManagementModal';
+import { Toast } from './Toast';
+import type { ToastMessage, ToastTone } from './Toast';
 
 interface WorkspaceProps {
   session: Session;
@@ -30,6 +44,9 @@ function errorMessage(reason: unknown, fallback: string): string {
 }
 
 export function Workspace({ session, onLogout }: WorkspaceProps) {
+  const canEdit = isEditor(session.role);
+  const admin = isAdmin(session.role);
+
   const [datasets, setDatasets] = useState<DatasetSummary[]>([]);
   const [datasetsLoading, setDatasetsLoading] = useState(true);
   const [datasetsError, setDatasetsError] = useState<string | null>(null);
@@ -40,6 +57,9 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
   const [hops, setHops] = useState(3);
 
   const [graph, setGraph] = useState<LineageGraph | null>(null);
+  // AI 对话返回的子图：优先于按选中数据集拉取的 graph 显示；
+  // 数据集/跳数/刷新变化时清空，回到常规子图逻辑。
+  const [aiGraph, setAiGraph] = useState<LineageGraph | null>(null);
   const [graphLoading, setGraphLoading] = useState(false);
   const [graphError, setGraphError] = useState<string | null>(null);
   const [graphReloadKey, setGraphReloadKey] = useState(0);
@@ -57,8 +77,75 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
   const [selectedField, setSelectedField] = useState<FieldSelection | null>(
     null,
   );
+  const [selectedEdgeId, setSelectedEdgeId] = useState<number | null>(null);
+  const [edgeStartEditing, setEdgeStartEditing] = useState(false);
   const [previewSelection, setPreviewSelection] =
     useState<FieldSelection | null>(null);
+
+  // M3：新增边草稿、删除确认、版本抽屉、用户管理
+  const [edgeDraft, setEdgeDraft] = useState<EdgeDraft | null>(null);
+  const [pendingDeleteEdge, setPendingDeleteEdge] = useState<LineageEdge | null>(
+    null,
+  );
+  const [deletingEdge, setDeletingEdge] = useState(false);
+  const [versionsOpen, setVersionsOpen] = useState(false);
+  const [usersOpen, setUsersOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+  const toastTimer = useRef<number | null>(null);
+  const toastSeq = useRef(1);
+
+  const showToast = useCallback((message: string, tone: ToastTone = 'info') => {
+    if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
+    setToast({ id: toastSeq.current, message, tone });
+    toastSeq.current += 1;
+    toastTimer.current = window.setTimeout(() => {
+      setToast(null);
+      toastTimer.current = null;
+    }, 4200);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
+    };
+  }, []);
+
+  /** 统一应用一份 GraphPayload：常规子图与 AI 出图共用同一套画布状态清理。 */
+  const applyGraph = useCallback((payload: LineageGraph) => {
+    setGraph(payload);
+    setCollapsedIds((current) => {
+      const retained = new Set(
+        payload.datasets
+          .map((dataset) => dataset.id)
+          .filter((id) => current.has(id)),
+      );
+      return retained.size === current.size ? current : retained;
+    });
+    setFieldsExpandedIds((current) => {
+      const retained = new Set(
+        payload.datasets
+          .map((dataset) => dataset.id)
+          .filter((id) => current.has(id)),
+      );
+      return retained.size === current.size ? current : retained;
+    });
+    setSelectedField((current) => {
+      if (!current) return null;
+      const dataset = payload.datasets.find(
+        (item) => item.id === current.dataset.id,
+      );
+      const field = dataset?.fields.find(
+        (item) => item.name === current.field.name,
+      );
+      return dataset && field ? { dataset, field } : null;
+    });
+    setSelectedEdgeId((current) =>
+      current !== null && payload.edges.some((edge) => edge.id === current)
+        ? current
+        : null,
+    );
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -90,6 +177,8 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
   }, [session.access_token, datasetsReloadKey]);
 
   useEffect(() => {
+    // 数据集、跳数或刷新变化时退出 AI 出图覆盖，回到常规子图逻辑。
+    setAiGraph(null);
     if (!selectedDatasetId) {
       setGraph(null);
       setGraphError(null);
@@ -108,33 +197,7 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
     )
       .then((payload) => {
         if (controller.signal.aborted) return;
-        setGraph(payload);
-        setCollapsedIds((current) => {
-          const retained = new Set(
-            payload.datasets
-              .map((dataset) => dataset.id)
-              .filter((id) => current.has(id)),
-          );
-          return retained.size === current.size ? current : retained;
-        });
-        setFieldsExpandedIds((current) => {
-          const retained = new Set(
-            payload.datasets
-              .map((dataset) => dataset.id)
-              .filter((id) => current.has(id)),
-          );
-          return retained.size === current.size ? current : retained;
-        });
-        setSelectedField((current) => {
-          if (!current) return null;
-          const dataset = payload.datasets.find(
-            (item) => item.id === current.dataset.id,
-          );
-          const field = dataset?.fields.find(
-            (item) => item.name === current.field.name,
-          );
-          return dataset && field ? { dataset, field } : null;
-        });
+        applyGraph(payload);
       })
       .catch((reason: unknown) => {
         if (controller.signal.aborted || isAbortError(reason)) return;
@@ -147,7 +210,10 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
       });
 
     return () => controller.abort();
-  }, [session.access_token, selectedDatasetId, hops, graphReloadKey]);
+  }, [applyGraph, session.access_token, selectedDatasetId, hops, graphReloadKey]);
+
+  /** 画布最终展示的图：AI 返回的子图优先，直到用户改变数据集/跳数或刷新。 */
+  const displayGraph = aiGraph ?? graph;
 
   const visibleDatasets = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -164,27 +230,52 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
 
   // 过滤只影响画布/边列表，不改动后端返回的子图数据
   const filteredGraph = useMemo(() => {
-    if (!graph) return null;
-    if (!minConfidence && !hideAiEdges && !confirmedOnly) return graph;
-    const edges = graph.edges.filter((edge) => {
+    if (!displayGraph) return null;
+    if (!minConfidence && !hideAiEdges && !confirmedOnly) return displayGraph;
+    const edges = displayGraph.edges.filter((edge) => {
       if ((hideAiEdges || confirmedOnly) && edge.source === 'ai') return false;
       if (minConfidence > 0 && (edge.confidence ?? 1) < minConfidence) {
         return false;
       }
       return true;
     });
-    return edges.length === graph.edges.length ? graph : { ...graph, edges };
-  }, [graph, minConfidence, hideAiEdges, confirmedOnly]);
+    return edges.length === displayGraph.edges.length
+      ? displayGraph
+      : { ...displayGraph, edges };
+  }, [displayGraph, minConfidence, hideAiEdges, confirmedOnly]);
+
+  // 边详情使用未过滤的原始子图，避免画布过滤把正在查看的边藏掉
+  const selectedEdge = useMemo(
+    () => displayGraph?.edges.find((edge) => edge.id === selectedEdgeId) ?? null,
+    [displayGraph, selectedEdgeId],
+  );
+
+  const refreshGraph = useCallback(() => {
+    setAiGraph(null);
+    setGraphReloadKey((value) => value + 1);
+  }, []);
+
+  const refreshAll = useCallback(() => {
+    setAiGraph(null);
+    setDatasetsReloadKey((value) => value + 1);
+    setGraphReloadKey((value) => value + 1);
+    setSelectedEdgeId(null);
+    setEdgeStartEditing(false);
+  }, []);
 
   const handleSelectDataset = useCallback((datasetId: string) => {
+    setAiGraph(null);
     setSelectedDatasetId(datasetId);
     setSelectedField(null);
+    setSelectedEdgeId(null);
+    setEdgeStartEditing(false);
     setCollapsedIds(new Set());
     setFieldsExpandedIds(new Set());
     setGraphError(null);
   }, []);
 
   const handleHopsChange = useCallback((nextHops: number) => {
+    setAiGraph(null);
     setHops(nextHops);
   }, []);
 
@@ -207,28 +298,130 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
   }, []);
 
   const handleToggleAll = useCallback(() => {
-    if (!graph) return;
+    if (!displayGraph) return;
     setCollapsedIds((current) => {
-      const allCollapsed = graph.datasets.every((dataset) =>
+      const allCollapsed = displayGraph.datasets.every((dataset) =>
         current.has(dataset.id),
       );
       if (allCollapsed) return new Set();
-      return new Set(graph.datasets.map((dataset) => dataset.id));
+      return new Set(displayGraph.datasets.map((dataset) => dataset.id));
     });
-  }, [graph]);
+  }, [displayGraph]);
+
+  const aiFocus = useMemo<AiFocus | null>(() => {
+    if (selectedField) {
+      return {
+        dataset: selectedField.dataset.id,
+        field: selectedField.field.name,
+      };
+    }
+    if (selectedDatasetId) return { dataset: selectedDatasetId };
+    return null;
+  }, [selectedField, selectedDatasetId]);
+
+  /** AI 回答携带 graph：复用画布状态直接切换子图，并提示用户。 */
+  const handleAiGraph = useCallback(
+    (payload: LineageGraph) => {
+      setAiGraph(payload);
+      applyGraph(payload);
+      setGraphError(null);
+      showToast(
+        `画布已更新：${payload.datasets.length} 个数据集 · ${payload.edges.length} 条连线`,
+        'success',
+      );
+    },
+    [applyGraph, showToast],
+  );
 
   const handleSelectField = useCallback(
     (dataset: LineageDataset, field: DatasetField) => {
       setSelectedField({ dataset, field });
+      setSelectedEdgeId(null);
+      setEdgeStartEditing(false);
     },
     [],
   );
 
   const handleCloseField = useCallback(() => setSelectedField(null), []);
+
+  const handleSelectEdge = useCallback(
+    (edge: LineageEdge, options?: { edit?: boolean }) => {
+      setSelectedField(null);
+      setSelectedEdgeId(edge.id);
+      setEdgeStartEditing(Boolean(options?.edit));
+    },
+    [],
+  );
+
+  const handleCloseEdge = useCallback(() => {
+    setSelectedEdgeId(null);
+    setEdgeStartEditing(false);
+  }, []);
+
   const handleOpenPreview = useCallback((selection: FieldSelection) => {
     setPreviewSelection(selection);
   }, []);
   const handleClosePreview = useCallback(() => setPreviewSelection(null), []);
+
+  const handleRequestDeleteEdge = useCallback((edge: LineageEdge) => {
+    setPendingDeleteEdge(edge);
+  }, []);
+
+  const handleConfirmDeleteEdge = useCallback(async () => {
+    if (!pendingDeleteEdge || deletingEdge) return;
+    setDeletingEdge(true);
+    try {
+      await deleteEdge(session.access_token, pendingDeleteEdge.id);
+      showToast(`已删除血缘边 #${pendingDeleteEdge.id}`, 'success');
+      if (selectedEdgeId === pendingDeleteEdge.id) {
+        setSelectedEdgeId(null);
+        setEdgeStartEditing(false);
+      }
+      refreshGraph();
+    } catch (reason) {
+      showToast(
+        reason instanceof ApiError
+          ? reason.message
+          : '删除血缘边失败，请稍后重试。',
+        'error',
+      );
+    } finally {
+      setDeletingEdge(false);
+      setPendingDeleteEdge(null);
+    }
+  }, [
+    deletingEdge,
+    pendingDeleteEdge,
+    refreshGraph,
+    selectedEdgeId,
+    session.access_token,
+    showToast,
+  ]);
+
+  const handleConnectRequest = useCallback((draft: EdgeDraft) => {
+    setEdgeDraft(draft);
+  }, []);
+
+  const handleEdgeCreated = useCallback(
+    (edge: LineageEdge) => {
+      setEdgeDraft(null);
+      setSelectedField(null);
+      setSelectedEdgeId(edge.id);
+      setEdgeStartEditing(false);
+      showToast(`已新增血缘边 #${edge.id}（人工补边）`, 'success');
+      refreshGraph();
+    },
+    [refreshGraph, showToast],
+  );
+
+  const handleCanvasNotice = useCallback(
+    (message: string) => showToast(message, 'error'),
+    [showToast],
+  );
+
+  const handleFieldUpdated = useCallback(() => {
+    refreshGraph();
+  }, [refreshGraph]);
 
   const retryDatasets = useCallback(() => {
     setDatasetsReloadKey((value) => value + 1);
@@ -236,6 +429,20 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
   const retryGraph = useCallback(() => {
     setGraphReloadKey((value) => value + 1);
   }, []);
+
+  /** AI 出图时若原选中数据集不在子图内，用子图内节点作为画布种子。 */
+  const canvasSeedId = useMemo(() => {
+    if (!aiGraph) return selectedDatasetId;
+    const preferred = aiFocus?.dataset;
+    if (preferred && aiGraph.datasets.some((item) => item.id === preferred)) {
+      return preferred;
+    }
+    return aiGraph.datasets[0]?.id ?? null;
+  }, [aiFocus, aiGraph, selectedDatasetId]);
+
+  const deleteDescription = pendingDeleteEdge
+    ? `${edgeEntityKey(pendingDeleteEdge)}（来源 ${pendingDeleteEdge.source}）`
+    : '';
 
   return (
     <div className="flex min-h-dvh flex-col bg-canvas xl:h-dvh xl:overflow-hidden">
@@ -248,6 +455,12 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
         hops={hops}
         onHopsChange={handleHopsChange}
         graphLoading={graphLoading}
+        aiOpen={aiOpen}
+        onOpenAi={() => setAiOpen(true)}
+        onOpenVersions={() => setVersionsOpen(true)}
+        onOpenUsers={() => {
+          if (admin) setUsersOpen(true);
+        }}
         onLogout={onLogout}
       />
 
@@ -277,27 +490,49 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
           <div className="relative min-h-0 flex-1">
             <LineageCanvas
               graph={filteredGraph}
-              seedDatasetId={selectedDatasetId}
+              seedDatasetId={canvasSeedId}
               hops={hops}
               loading={graphLoading}
               error={graphError}
+              canEdit={canEdit}
               collapsedIds={collapsedIds}
               fieldsExpandedIds={fieldsExpandedIds}
               onToggleCollapse={handleToggleCollapse}
               onToggleFields={handleToggleFields}
               onToggleAll={handleToggleAll}
               onSelectField={handleSelectField}
+              onSelectEdge={handleSelectEdge}
+              onRequestDeleteEdge={handleRequestDeleteEdge}
+              onConnectRequest={handleConnectRequest}
+              onNotice={handleCanvasNotice}
               onRetry={retryGraph}
             />
           </div>
         </main>
 
-        <DetailPanel
-          selection={selectedField}
-          graph={filteredGraph}
-          onClose={handleCloseField}
-          onPreview={handleOpenPreview}
-        />
+        {selectedEdge ? (
+          <EdgeDetailPanel
+            edge={selectedEdge}
+            token={session.access_token}
+            canEdit={canEdit}
+            startEditing={edgeStartEditing}
+            onClose={handleCloseEdge}
+            onRequestDelete={handleRequestDeleteEdge}
+            onRefresh={handleFieldUpdated}
+            onNotify={showToast}
+          />
+        ) : (
+          <DetailPanel
+            selection={selectedField}
+            graph={filteredGraph}
+            token={session.access_token}
+            canEdit={canEdit}
+            onClose={handleCloseField}
+            onPreview={handleOpenPreview}
+            onRefresh={handleFieldUpdated}
+            onNotify={showToast}
+          />
+        )}
       </div>
 
       {previewSelection && (
@@ -308,6 +543,64 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
           onClose={handleClosePreview}
         />
       )}
+
+      {edgeDraft && (
+        <EdgeCreateModal
+          key={`${edgeDraft.from_dataset}.${edgeDraft.from_field ?? '*'}-${edgeDraft.to_dataset}.${edgeDraft.to_field ?? '*'}`}
+          draft={edgeDraft}
+          token={session.access_token}
+          onClose={() => setEdgeDraft(null)}
+          onCreated={handleEdgeCreated}
+        />
+      )}
+
+      <ConfirmDialog
+        open={Boolean(pendingDeleteEdge)}
+        title="删除血缘边"
+        danger
+        busy={deletingEdge}
+        confirmLabel="确认删除"
+        message={
+          <div className="space-y-1.5">
+            <p className="break-all font-mono text-[9.5px] text-ink-soft">
+              {deleteDescription}
+            </p>
+            <p>删除会写入变更日志；如需恢复，可由管理员回滚到之前的版本标签。</p>
+          </div>
+        }
+        onConfirm={handleConfirmDeleteEdge}
+        onCancel={() => {
+          if (!deletingEdge) setPendingDeleteEdge(null);
+        }}
+      />
+
+      {versionsOpen && (
+        <VersionDrawer
+          token={session.access_token}
+          role={session.role}
+          onClose={() => setVersionsOpen(false)}
+          onDataChanged={refreshAll}
+          onNotify={showToast}
+        />
+      )}
+
+      <AiAssistantDrawer
+        open={aiOpen}
+        token={session.access_token}
+        focus={aiFocus}
+        onClose={() => setAiOpen(false)}
+        onGraph={handleAiGraph}
+      />
+
+      {usersOpen && admin && (
+        <UserManagementModal
+          token={session.access_token}
+          currentUsername={session.username}
+          onClose={() => setUsersOpen(false)}
+        />
+      )}
+
+      <Toast toast={toast} />
     </div>
   );
 }

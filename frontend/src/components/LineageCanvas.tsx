@@ -10,10 +10,16 @@ import {
   useEdgesState,
   useNodesState,
 } from '@xyflow/react';
-import type { ReactFlowInstance } from '@xyflow/react';
+import type {
+  Connection,
+  OnSelectionChangeParams,
+  ReactFlowInstance,
+} from '@xyflow/react';
 import type {
   DatasetField,
+  EdgeDraft,
   LineageDataset,
+  LineageEdge,
   LineageGraph,
 } from '../types';
 import { FIELD_PREVIEW_LIMIT, layoutDatasets, NODE_WIDTH } from '../lib/layout';
@@ -25,6 +31,8 @@ import {
 } from '../lib/handles';
 import { DatasetNode } from './DatasetNode';
 import type { DatasetFlowNode } from './DatasetNode';
+import { GroupNode } from './GroupNode';
+import type { GroupFlowNode } from './GroupNode';
 import {
   LineageEdgeView,
   getEdgeVisual,
@@ -32,8 +40,25 @@ import {
 import type { EdgeKind, LineageEdgeData, LineageFlowEdge } from './LineageEdge';
 import { Icon } from './Icon';
 
-const nodeTypes = { dataset: DatasetNode };
+const nodeTypes = { dataset: DatasetNode, group: GroupNode };
 const edgeTypes = { lineage: LineageEdgeView };
+
+type FlowNode = DatasetFlowNode | GroupFlowNode;
+
+interface CollapsedGroup {
+  id: string;
+  memberIds: string[];
+  label: string;
+}
+
+interface AggregateEdge {
+  sourceNode: string;
+  targetNode: string;
+  sourceLabel: string;
+  targetLabel: string;
+  edge: LineageEdge;
+  count: number;
+}
 
 interface LineageCanvasProps {
   graph: LineageGraph | null;
@@ -41,13 +66,27 @@ interface LineageCanvasProps {
   hops: number;
   loading: boolean;
   error: string | null;
+  canEdit: boolean;
   collapsedIds: ReadonlySet<string>;
   fieldsExpandedIds: ReadonlySet<string>;
   onToggleCollapse: (datasetId: string) => void;
   onToggleFields: (datasetId: string) => void;
   onToggleAll: () => void;
   onSelectField: (dataset: LineageDataset, field: DatasetField) => void;
+  onSelectEdge: (edge: LineageEdge, options?: { edit?: boolean }) => void;
+  onRequestDeleteEdge: (edge: LineageEdge) => void;
+  onConnectRequest: (draft: EdgeDraft) => void;
+  onNotice: (message: string) => void;
   onRetry: () => void;
+}
+
+function parseFieldHandle(
+  handleId: string | null,
+  prefix: string,
+): string | null {
+  if (!handleId || !handleId.startsWith(prefix)) return null;
+  const name = handleId.slice(prefix.length);
+  return name || null;
 }
 
 export function LineageCanvas({
@@ -56,31 +95,229 @@ export function LineageCanvas({
   hops,
   loading,
   error,
+  canEdit,
   collapsedIds,
   fieldsExpandedIds,
   onToggleCollapse,
   onToggleFields,
   onToggleAll,
   onSelectField,
+  onSelectEdge,
+  onRequestDeleteEdge,
+  onConnectRequest,
+  onNotice,
   onRetry,
 }: LineageCanvasProps) {
-  const [nodes, setNodes, onNodesChange] = useNodesState<DatasetFlowNode>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<LineageFlowEdge>([]);
   const [flowInstance, setFlowInstance] = useState<ReactFlowInstance<
-    DatasetFlowNode,
+    FlowNode,
     LineageFlowEdge
   > | null>(null);
   // 用户手动拖拽后的节点位置：折叠/刷新重建 nodes 时优先复用，避免被 dagre 重排覆盖
   const draggedPositions = useRef(new Map<string, { x: number; y: number }>());
+  const [groups, setGroups] = useState<CollapsedGroup[]>([]);
+  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+  const nextGroupId = useRef(1);
 
-  // 切换种子数据集时视为一张新图，清除旧的拖拽位置
+  // M2 遗留修复：种子或跳数变化都视为一张新图——清空拖拽位置与折叠组，
+  // 让 dagre 按新的子图规模重新布局，避免新旧节点位置叠加。
   useEffect(() => {
     draggedPositions.current.clear();
-  }, [seedDatasetId]);
+    setGroups([]);
+    setSelectedNodeIds([]);
+    nextGroupId.current = 1;
+  }, [seedDatasetId, hops]);
 
-  const handleNodeDragStop = useCallback((_: unknown, node: DatasetFlowNode) => {
+  // 子图刷新后剔除已不存在的分组成员
+  useEffect(() => {
+    if (!graph) {
+      setGroups([]);
+      setSelectedNodeIds([]);
+      return;
+    }
+    const present = new Set(graph.datasets.map((dataset) => dataset.id));
+    setSelectedNodeIds((previous) => {
+      const next = previous.filter((id) => present.has(id));
+      return next.length === previous.length ? previous : next;
+    });
+    setGroups((previous) => {
+      const next = previous
+        .map((group) => ({
+          ...group,
+          memberIds: group.memberIds.filter((id) => present.has(id)),
+        }))
+        .filter((group) => group.memberIds.length >= 2);
+      const unchanged =
+        next.length === previous.length &&
+        next.every(
+          (group, index) =>
+            group.id === previous[index].id &&
+            group.memberIds.length === previous[index].memberIds.length,
+        );
+      return unchanged ? previous : next;
+    });
+  }, [graph]);
+
+  const handleNodeDragStop = useCallback((_: unknown, node: FlowNode) => {
     draggedPositions.current.set(node.id, { ...node.position });
   }, []);
+
+  const handleExpandGroup = useCallback((groupId: string) => {
+    draggedPositions.current.delete(groupId);
+    setGroups((previous) => previous.filter((group) => group.id !== groupId));
+  }, []);
+
+  const handleSelectionChange = useCallback(
+    (params: OnSelectionChangeParams<FlowNode, LineageFlowEdge>) => {
+      const ids = params.nodes
+        .filter((node) => node.type === 'dataset')
+        .map((node) => node.id);
+      setSelectedNodeIds((previous) => {
+        const same =
+          previous.length === ids.length &&
+          previous.every((id) => ids.includes(id));
+        return same ? previous : ids;
+      });
+    },
+    [],
+  );
+
+  const handleCollapseSelected = useCallback(() => {
+    if (selectedNodeIds.length < 2) return;
+    const nameById = new Map(
+      (graph?.datasets ?? []).map((dataset) => [
+        dataset.id,
+        dataset.name || dataset.id,
+      ]),
+    );
+    const names = selectedNodeIds.map((id) => nameById.get(id) ?? id);
+    const label =
+      names.length > 2
+        ? `${names.slice(0, 2).join('、')} 等`
+        : names.join('、');
+    const groupId = `group-${nextGroupId.current}`;
+    nextGroupId.current += 1;
+
+    const positions = new Map<string, { x: number; y: number }>(
+      nodes
+        .filter((node): node is DatasetFlowNode => node.type === 'dataset')
+        .map((node) => [node.id, node.position] as const),
+    );
+    const memberPositions = selectedNodeIds
+      .map((id) => positions.get(id))
+      .filter((position): position is { x: number; y: number } =>
+        Boolean(position),
+      );
+    if (memberPositions.length >= 2) {
+      const centerX =
+        memberPositions.reduce((sum, position) => sum + position.x, 0) /
+        memberPositions.length;
+      const centerY =
+        memberPositions.reduce((sum, position) => sum + position.y, 0) /
+        memberPositions.length;
+      draggedPositions.current.set(groupId, {
+        x: centerX + NODE_WIDTH / 2 - 124,
+        y: centerY + 70,
+      });
+    }
+
+    setGroups((previous) => [
+      ...previous,
+      { id: groupId, memberIds: selectedNodeIds, label },
+    ]);
+    setSelectedNodeIds([]);
+    setNodes((current) =>
+      current.map((node) =>
+        node.selected ? { ...node, selected: false } : node,
+      ),
+    );
+    setEdges((current) =>
+      current.map((edge) =>
+        edge.selected ? { ...edge, selected: false } : edge,
+      ),
+    );
+  }, [graph, nodes, selectedNodeIds, setEdges, setNodes]);
+
+  const handleSelectField = useCallback(
+    (dataset: LineageDataset, field: DatasetField) => {
+      setSelectedNodeIds([]);
+      setNodes((current) => {
+        const hasSelected = current.some((node) => node.selected);
+        return hasSelected
+          ? current.map((node) => ({ ...node, selected: false }))
+          : current;
+      });
+      setEdges((current) => {
+        const hasSelected = current.some((edge) => edge.selected);
+        return hasSelected
+          ? current.map((edge) => ({ ...edge, selected: false }))
+          : current;
+      });
+      onSelectField(dataset, field);
+    },
+    [onSelectField, setEdges, setNodes],
+  );
+
+  const handleEdgeClick = useCallback(
+    (_: unknown, edge: LineageFlowEdge) => {
+      const data = edge.data;
+      if (!data || data.aggregateCount) return;
+      onSelectEdge(data.edge);
+    },
+    [onSelectEdge],
+  );
+
+  const handleNodeClick = useCallback(
+    (_: unknown, node: FlowNode) => {
+      if (node.type === 'group') handleExpandGroup(node.id);
+    },
+    [handleExpandGroup],
+  );
+
+  const handleConnect = useCallback(
+    (connection: Connection) => {
+      const { source, target, sourceHandle, targetHandle } = connection;
+      if (!source || !target || !sourceHandle || !targetHandle) return;
+      if (source === target && sourceHandle === targetHandle) {
+        onNotice('上下游不能是同一个字段或同一个节点。');
+        return;
+      }
+      const sourceIsTable = sourceHandle === TABLE_SOURCE_HANDLE;
+      const targetIsTable = targetHandle === TABLE_TARGET_HANDLE;
+      if (sourceIsTable !== targetIsTable) {
+        onNotice('字段级与表级血缘不能混连：请字段连字段，或表头 handle 连表头 handle。');
+        return;
+      }
+
+      const fromField = sourceIsTable
+        ? null
+        : parseFieldHandle(sourceHandle, 'field:out:');
+      const toField = targetIsTable
+        ? null
+        : parseFieldHandle(targetHandle, 'field:in:');
+      if (!sourceIsTable && (!fromField || !toField)) {
+        onNotice('未能识别字段 handle，请重新拖拽。');
+        return;
+      }
+      if (source === target && sourceIsTable) {
+        onNotice('上下游不能是同一个数据集。');
+        return;
+      }
+      if (source === target && fromField !== null && fromField === toField) {
+        onNotice('上下游不能是同一个字段。');
+        return;
+      }
+
+      onConnectRequest({
+        from_dataset: source,
+        from_field: fromField,
+        to_dataset: target,
+        to_field: toField,
+      });
+    },
+    [onConnectRequest, onNotice],
+  );
 
   useEffect(() => {
     if (!graph) {
@@ -95,33 +332,80 @@ export function LineageCanvas({
       collapsedIds,
       fieldsExpandedIds,
     );
-    const nextNodes: DatasetFlowNode[] = graph.datasets.map((dataset) => {
-      const position = positions.get(dataset.id);
-      const dragged = draggedPositions.current.get(dataset.id);
-      return {
+    const present = new Set(graph.datasets.map((dataset) => dataset.id));
+
+    // 分组映射：成员数据集在视图层隐藏，跨组边聚合到组节点
+    const datasetGroups = new Map<string, CollapsedGroup>();
+    groups.forEach((group) => {
+      const memberIds = group.memberIds.filter((id) => present.has(id));
+      if (memberIds.length < 2) return;
+      memberIds.forEach((id) => datasetGroups.set(id, group));
+    });
+    const hiddenIds = new Set(datasetGroups.keys());
+
+    const positionOf = (datasetId: string) => {
+      const dragged = draggedPositions.current.get(datasetId);
+      if (dragged) return dragged;
+      const position = positions.get(datasetId);
+      return { x: position?.x ?? 0, y: position?.y ?? 0 };
+    };
+
+    const nextNodes: FlowNode[] = [];
+    graph.datasets.forEach((dataset) => {
+      if (hiddenIds.has(dataset.id)) return;
+      const position = positionOf(dataset.id);
+      nextNodes.push({
         id: dataset.id,
         type: 'dataset',
-        position: dragged ?? {
-          x: position?.x ?? 0,
-          y: position?.y ?? 0,
-        },
+        position,
         style: { width: NODE_WIDTH },
         data: {
           dataset,
           collapsed: collapsedIds.has(dataset.id),
           isSeed: dataset.id === seedDatasetId,
           fieldsExpanded: fieldsExpandedIds.has(dataset.id),
+          connectable: canEdit,
           onToggleCollapse,
           onToggleFields,
-          onSelectField,
+          onSelectField: handleSelectField,
         },
         draggable: true,
         selectable: true,
         zIndex: dataset.id === seedDatasetId ? 4 : 1,
-      };
+      });
     });
 
-    const present = new Set(graph.datasets.map((dataset) => dataset.id));
+    // 组节点放在成员当前位置的包围盒中心；不参与 dagre 布局（最小实现取舍）。
+    groups.forEach((group) => {
+      const memberIds = group.memberIds.filter((id) => present.has(id));
+      if (memberIds.length < 2) return;
+      const memberPositions = memberIds.map(positionOf);
+      const centerX =
+        memberPositions.reduce((sum, position) => sum + position.x, 0) /
+        memberPositions.length;
+      const centerY =
+        memberPositions.reduce((sum, position) => sum + position.y, 0) /
+        memberPositions.length;
+      const draggedGroup = draggedPositions.current.get(group.id);
+      nextNodes.push({
+        id: group.id,
+        type: 'group',
+        position: draggedGroup ?? {
+          x: centerX + NODE_WIDTH / 2 - 124,
+          y: centerY + 70,
+        },
+        style: { width: 248 },
+        data: {
+          label: group.label,
+          memberIds,
+          onExpand: handleExpandGroup,
+        },
+        draggable: true,
+        selectable: false,
+        zIndex: 3,
+      });
+    });
+
     // 只渲染节点中实际可见字段的 handle/连线；部分折叠时隐藏字段的边同步隐藏
     const fieldNames = new Map(
       graph.datasets.map((dataset) => [
@@ -136,8 +420,55 @@ export function LineageCanvas({
     );
 
     const nextEdges: LineageFlowEdge[] = [];
-    graph.edges.forEach((edge, index) => {
+    const aggregateEdges = new Map<string, AggregateEdge>();
+
+    const edgeData = (
+      edge: LineageEdge,
+      kind: EdgeKind,
+      fromLabel: string,
+      toLabel: string,
+    ): LineageEdgeData => ({
+      edge,
+      kind,
+      fromLabel,
+      toLabel,
+      canEdit,
+      onSelect: () => onSelectEdge(edge),
+      onEdit: canEdit ? () => onSelectEdge(edge, { edit: true }) : undefined,
+      onDelete: canEdit ? () => onRequestDeleteEdge(edge) : undefined,
+    });
+
+    graph.edges.forEach((edge) => {
       if (!present.has(edge.from_dataset) || !present.has(edge.to_dataset)) {
+        return;
+      }
+
+      const fromGroup = datasetGroups.get(edge.from_dataset);
+      const toGroup = datasetGroups.get(edge.to_dataset);
+      if (fromGroup && toGroup && fromGroup.id === toGroup.id) {
+        return;
+      }
+
+      if (fromGroup || toGroup) {
+        // 跨组边聚合：同一对「组/数据集」只保留一条，展开组后可再操作具体边
+        const sourceNode = fromGroup?.id ?? edge.from_dataset;
+        const targetNode = toGroup?.id ?? edge.to_dataset;
+        const key = `${sourceNode}-->${targetNode}`;
+        const existing = aggregateEdges.get(key);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          aggregateEdges.set(key, {
+            sourceNode,
+            targetNode,
+            sourceLabel: fromGroup
+              ? fromGroup.label
+              : `${edge.from_dataset}.*`,
+            targetLabel: toGroup ? toGroup.label : `${edge.to_dataset}.*`,
+            edge,
+            count: 1,
+          });
+        }
         return;
       }
 
@@ -146,14 +477,14 @@ export function LineageCanvas({
 
       if (fromField === null || toField === null) {
         const visual = getEdgeVisual(edge);
-        const data: LineageEdgeData = {
+        const data = edgeData(
           edge,
-          kind: 'table' satisfies EdgeKind,
-          fromLabel: `${edge.from_dataset}.*`,
-          toLabel: `${edge.to_dataset}.*`,
-        };
+          'table',
+          `${edge.from_dataset}.*`,
+          `${edge.to_dataset}.*`,
+        );
         nextEdges.push({
-          id: `edge-${index}-${edge.from_dataset}-${edge.to_dataset}-table`,
+          id: `edge-${edge.id}-table`,
           source: edge.from_dataset,
           target: edge.to_dataset,
           sourceHandle: TABLE_SOURCE_HANDLE,
@@ -175,7 +506,7 @@ export function LineageCanvas({
             height: 15,
           },
           zIndex: 0,
-          selectable: false,
+          selectable: true,
           focusable: false,
         });
         return;
@@ -195,14 +526,14 @@ export function LineageCanvas({
       }
 
       const visual = getEdgeVisual(edge);
-      const data: LineageEdgeData = {
+      const data = edgeData(
         edge,
-        kind: 'field' satisfies EdgeKind,
-        fromLabel: `${edge.from_dataset}.${fromField}`,
-        toLabel: `${edge.to_dataset}.${toField}`,
-      };
+        'field',
+        `${edge.from_dataset}.${fromField}`,
+        `${edge.to_dataset}.${toField}`,
+      );
       nextEdges.push({
-        id: `edge-${index}-${edge.from_dataset}-${fromField}-${edge.to_dataset}-${toField}`,
+        id: `edge-${edge.id}-field`,
         source: edge.from_dataset,
         target: edge.to_dataset,
         sourceHandle: fieldSourceHandle(fromField),
@@ -224,6 +555,42 @@ export function LineageCanvas({
           height: 15,
         },
         zIndex: 0,
+        selectable: true,
+        focusable: false,
+      });
+    });
+
+    aggregateEdges.forEach((aggregate) => {
+      const visual = getEdgeVisual(aggregate.edge);
+      const data: LineageEdgeData = {
+        edge: aggregate.edge,
+        kind: 'table',
+        fromLabel: aggregate.sourceLabel,
+        toLabel: aggregate.targetLabel,
+        aggregateCount: aggregate.count,
+      };
+      nextEdges.push({
+        id: `edge-agg-${encodeURIComponent(aggregate.sourceNode)}-${encodeURIComponent(aggregate.targetNode)}`,
+        source: aggregate.sourceNode,
+        target: aggregate.targetNode,
+        sourceHandle: TABLE_SOURCE_HANDLE,
+        targetHandle: TABLE_TARGET_HANDLE,
+        type: 'lineage',
+        data,
+        ariaLabel: `跨组聚合血缘，从 ${aggregate.sourceLabel} 到 ${aggregate.targetLabel}，共 ${aggregate.count} 条`,
+        style: {
+          stroke: visual.color,
+          strokeWidth: 1.5,
+          strokeDasharray: visual.dash ?? '5 4',
+          opacity: 0.85,
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: visual.color,
+          width: 15,
+          height: 15,
+        },
+        zIndex: 0,
         selectable: false,
         focusable: false,
       });
@@ -233,12 +600,18 @@ export function LineageCanvas({
     setEdges(nextEdges);
   }, [
     graph,
+    // 跳数变化时即使 graph 还是旧引用，也要立刻用清空后的拖拽位置重新布局
+    hops,
     seedDatasetId,
     collapsedIds,
     fieldsExpandedIds,
+    groups,
+    canEdit,
     onToggleCollapse,
     onToggleFields,
-    onSelectField,
+    handleSelectField,
+    onSelectEdge,
+    onRequestDeleteEdge,
     setNodes,
     setEdges,
   ]);
@@ -254,8 +627,8 @@ export function LineageCanvas({
       });
     }, 100);
     return () => window.clearTimeout(timer);
-    // 过滤只改变边集合，不重置视口；仅在种子或子图规模变化时重新适配
-  }, [flowInstance, seedDatasetId, graph?.datasets.length]);
+    // 过滤只改变边集合，不重置视口；种子/跳数/分组变化时重新适配
+  }, [flowInstance, seedDatasetId, hops, graph?.datasets.length, groups.length]);
 
   const allCollapsed =
     Boolean(graph?.datasets.length) &&
@@ -286,6 +659,9 @@ export function LineageCanvas({
     );
   }
 
+  const groupableCount = selectedNodeIds.length;
+  const hasGroupControls = groupableCount >= 2 || groups.length > 0;
+
   return (
     <div className="relative h-full min-h-[560px] bg-canvas bg-fine-grid bg-grid-28">
       {graph && (
@@ -298,13 +674,20 @@ export function LineageCanvas({
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           onInit={(instance) => setFlowInstance(instance)}
+          onSelectionChange={handleSelectionChange}
+          onNodeClick={handleNodeClick}
+          onEdgeClick={handleEdgeClick}
+          onConnect={handleConnect}
           fitView
           fitViewOptions={{ padding: 0.18, maxZoom: 0.95 }}
           minZoom={0.22}
           maxZoom={1.65}
-          nodesConnectable={false}
+          nodesConnectable={canEdit}
           nodesFocusable
           edgesFocusable={false}
+          selectionKeyCode="Shift"
+          multiSelectionKeyCode={['Meta', 'Control', 'Shift']}
+          deleteKeyCode={null}
           elevateNodesOnSelect
           proOptions={{ hideAttribution: true }}
           className="lineage-flow"
@@ -334,31 +717,67 @@ export function LineageCanvas({
           />
 
           <Panel position="top-left" className="!m-3">
-            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface/92 p-1.5 pr-2 shadow-sm backdrop-blur-md">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-pine-800 text-pine-100">
-                <Icon name="network" size={14} />
-              </span>
-              <div className="px-0.5">
-                <div className="max-w-[140px] truncate text-[10.5px] font-semibold text-ink">
-                  {seedName || '血缘子图'}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface/92 p-1.5 pr-2 shadow-sm backdrop-blur-md">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-pine-800 text-pine-100">
+                  <Icon name="network" size={14} />
+                </span>
+                <div className="px-0.5">
+                  <div className="max-w-[140px] truncate text-[10.5px] font-semibold text-ink">
+                    {seedName || '血缘子图'}
+                  </div>
+                  <div className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-ink-faint">
+                    {graph.datasets.length} 个数据集 · {graph.edges.length} 条连线
+                  </div>
                 </div>
-                <div className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-ink-faint">
-                  {graph.datasets.length} 个数据集 · {graph.edges.length} 条连线
-                </div>
+                <span className="mx-1 h-5 w-px bg-line" aria-hidden="true" />
+                <button
+                  type="button"
+                  onClick={onToggleAll}
+                  className="flex h-7 items-center gap-1.5 rounded-md border border-line bg-surface px-2 text-[9.5px] font-medium text-ink-muted transition-colors hover:border-pine-300 hover:text-pine-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+                  title={allCollapsed ? '展开全部字段' : '收起全部字段'}
+                >
+                  <Icon
+                    name={allCollapsed ? 'unfold-all' : 'fold-all'}
+                    size={12}
+                  />
+                  {allCollapsed ? '全部展开' : '全部收起'}
+                </button>
               </div>
-              <span className="mx-1 h-5 w-px bg-line" aria-hidden="true" />
-              <button
-                type="button"
-                onClick={onToggleAll}
-                className="flex h-7 items-center gap-1.5 rounded-md border border-line bg-surface px-2 text-[9.5px] font-medium text-ink-muted transition-colors hover:border-pine-300 hover:text-pine-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
-                title={allCollapsed ? '展开全部字段' : '收起全部字段'}
-              >
-                <Icon
-                  name={allCollapsed ? 'unfold-all' : 'fold-all'}
-                  size={12}
-                />
-                {allCollapsed ? '全部展开' : '全部收起'}
-              </button>
+
+              {hasGroupControls && (
+                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface/92 p-1.5 pr-2 shadow-sm backdrop-blur-md">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-line-soft bg-canvas/70 text-ink-muted">
+                    <Icon name="group" size={14} />
+                  </span>
+                  {groupableCount >= 2 && (
+                    <button
+                      type="button"
+                      onClick={handleCollapseSelected}
+                      className="flex h-7 items-center gap-1.5 rounded-md border border-pine-300 bg-pine-50 px-2 text-[9.5px] font-medium text-pine-700 transition-colors hover:bg-pine-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+                      title="把框选的节点折叠成一个组占位节点"
+                    >
+                      <Icon name="fold-all" size={12} />
+                      折叠选中（{groupableCount}）
+                    </button>
+                  )}
+                  {groups.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        groups.forEach((group) =>
+                          draggedPositions.current.delete(group.id),
+                        );
+                        setGroups([]);
+                      }}
+                      className="flex h-7 items-center gap-1.5 rounded-md border border-line bg-surface px-2 text-[9.5px] font-medium text-ink-muted transition-colors hover:border-pine-300 hover:text-pine-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-500/35"
+                    >
+                      <Icon name="unfold-all" size={12} />
+                      展开全部组（{groups.length}）
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </Panel>
 
@@ -366,9 +785,15 @@ export function LineageCanvas({
             <div className="flex items-center gap-2.5 rounded-full border border-line/85 bg-surface/80 px-3 py-1.5 font-mono text-[8px] uppercase tracking-[0.1em] text-ink-faint backdrop-blur-sm">
               <span>拖拽平移</span>
               <span className="h-2 w-px bg-line" />
-              <span>滚轮缩放</span>
+              <span>Shift + 拖拽框选</span>
               <span className="h-2 w-px bg-line" />
-              <span>悬停连线查看详情</span>
+              <span>悬停/点击连线查看详情</span>
+              {canEdit && (
+                <>
+                  <span className="h-2 w-px bg-line" />
+                  <span>拖拽 handle 新增血缘</span>
+                </>
+              )}
             </div>
           </Panel>
         </ReactFlow>

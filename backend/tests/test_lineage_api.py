@@ -176,8 +176,9 @@ def test_graph_payload_shape_matches_contract(client):
             assert set(field["source_file"]) == {"id", "original_name"}
 
     for edge in payload["edges"]:
-        assert set(edge) == {"from_dataset", "from_field", "to_dataset", "to_field",
-                             "transform", "confidence", "source", "note"}
+        assert set(edge) == {"id", "from_dataset", "from_field", "to_dataset",
+                             "to_field", "transform", "confidence", "source", "note"}
+        assert isinstance(edge["id"], int)  # M3：人工编辑/删除按边主键定位
         assert edge["source"] == "imported"
         assert 0 <= edge["confidence"] <= 1
 
