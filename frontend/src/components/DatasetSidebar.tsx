@@ -36,6 +36,8 @@ const LEGEND_LINE_VISUALS = {
   field: { stroke: EDGE_COLORS.imported, width: 1.55, dash: undefined },
   table: { stroke: EDGE_COLORS.importedWeak, width: 1.4, dash: '4 5' },
   ai: { stroke: EDGE_COLORS.ai, width: 1.8, dash: '6 5' },
+  derived: { stroke: EDGE_COLORS.derived, width: 1.3, dash: '2 4' },
+  focus: { stroke: EDGE_COLORS.focus, width: 2.6, dash: undefined },
 } as const;
 
 function EdgeLegendLine({ variant }: { variant: keyof typeof LEGEND_LINE_VISUALS }) {
@@ -333,6 +335,14 @@ export function DatasetSidebar({
           <div className="flex items-center gap-2">
             <EdgeLegendLine variant="table" />
             <span>表级血缘</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <EdgeLegendLine variant="derived" />
+            <span>同名字段匹配（推断）</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <EdgeLegendLine variant="focus" />
+            <span className="text-danger-deep">点击字段的追踪链路</span>
           </div>
           <div className="flex items-center gap-2">
             <EdgeLegendLine variant="ai" />

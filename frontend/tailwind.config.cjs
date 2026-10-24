@@ -47,6 +47,8 @@ module.exports = {
           'imported-weak': '#64748B', // imported 表级（虚线 1.4）
           manual: '#D97706',          // 人工确认
           ai: '#4F46E5',              // AI 建议（虚线+流动）
+          derived: '#94A3B8',         // 视图派生：表级血缘同名字段匹配推断线
+          focus: '#DC2626',           // 字段追踪高亮（= danger）
         },
       },
       fontFamily: {

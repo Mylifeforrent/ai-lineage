@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Controls,
   MarkerType,
@@ -20,6 +20,12 @@ import type {
   LineageEdge,
   LineageGraph,
 } from '../types';
+import { EDGE_COLORS, withAlpha } from '../lib/edgeColors';
+import {
+  computeFieldChain,
+  deriveFieldMatches,
+  derivedLinkKey,
+} from '../lib/fieldChain';
 import { FIELD_PREVIEW_LIMIT, layoutDatasets, NODE_WIDTH } from '../lib/layout';
 import {
   TABLE_SOURCE_HANDLE,
@@ -41,7 +47,16 @@ import { Icon } from './Icon';
 const nodeTypes = { dataset: DatasetNode, group: GroupNode };
 const edgeTypes = { lineage: LineageEdgeView };
 
+/** 追踪焦点激活时，未命中链路的连线统一压暗到该透明度 */
+const DIMMED_OPACITY = 0.15;
+const DIMMED_MARKER_ALPHA = 0.3;
+
 type FlowNode = DatasetFlowNode | GroupFlowNode;
+
+interface FieldFocus {
+  datasetId: string;
+  fieldName: string;
+}
 
 interface CollapsedGroup {
   id: string;
@@ -117,6 +132,21 @@ export function LineageCanvas({
   const [groups, setGroups] = useState<CollapsedGroup[]>([]);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const nextGroupId = useRef(1);
+  // 字段追踪焦点：点击字段行后，沿字段级关联高亮整条上下游链路
+  const [focusedField, setFocusedField] = useState<FieldFocus | null>(null);
+
+  // 视图派生：表级血缘两端同名字段匹配线（非库内血缘，仅追踪演示用）
+  const derivedLinks = useMemo(
+    () => (graph ? deriveFieldMatches(graph) : []),
+    [graph],
+  );
+  const chain = useMemo(
+    () =>
+      graph && focusedField
+        ? computeFieldChain(graph, derivedLinks, focusedField)
+        : null,
+    [graph, derivedLinks, focusedField],
+  );
 
   // M2 遗留修复：种子或跳数变化都视为一张新图——清空拖拽位置与折叠组，
   // 让 dagre 按新的子图规模重新布局，避免新旧节点位置叠加。
@@ -124,8 +154,23 @@ export function LineageCanvas({
     draggedPositions.current.clear();
     setGroups([]);
     setSelectedNodeIds([]);
+    setFocusedField(null);
     nextGroupId.current = 1;
   }, [seedDatasetId, hops]);
+
+  // 子图刷新后焦点字段已不存在时，清空追踪态
+  useEffect(() => {
+    if (!focusedField || !graph) return;
+    const dataset = graph.datasets.find(
+      (item) => item.id === focusedField.datasetId,
+    );
+    if (
+      !dataset ||
+      !dataset.fields.some((item) => item.name === focusedField.fieldName)
+    ) {
+      setFocusedField(null);
+    }
+  }, [graph, focusedField]);
 
   // 子图刷新后剔除已不存在的分组成员
   useEffect(() => {
@@ -171,6 +216,7 @@ export function LineageCanvas({
       const ids = params.nodes
         .filter((node) => node.type === 'dataset')
         .map((node) => node.id);
+      if (ids.length > 0) setFocusedField(null);
       setSelectedNodeIds((previous) => {
         const same =
           previous.length === ids.length &&
@@ -252,19 +298,62 @@ export function LineageCanvas({
           ? current.map((edge) => ({ ...edge, selected: false }))
           : current;
       });
+
+      const nextFocus = { datasetId: dataset.id, fieldName: field.name };
+      const sameFocus =
+        focusedField?.datasetId === nextFocus.datasetId &&
+        focusedField?.fieldName === nextFocus.fieldName;
+      setFocusedField(nextFocus);
+
+      // 追踪前先保证链路上的字段行可见：折叠的表自动展开，
+      // 超出字段预览上限的列表自动展开，否则链路线会被隐藏。
+      if (graph && !sameFocus) {
+        const nextChain = computeFieldChain(graph, derivedLinks, nextFocus);
+        nextChain?.nodes.forEach((node) => {
+          if (collapsedIds.has(node.datasetId)) {
+            onToggleCollapse(node.datasetId);
+          }
+          const target = graph.datasets.find(
+            (item) => item.id === node.datasetId,
+          );
+          if (!target) return;
+          const visibleCount = fieldsExpandedIds.has(node.datasetId)
+            ? target.fields.length
+            : Math.min(target.fields.length, FIELD_PREVIEW_LIMIT);
+          const index = target.fields.findIndex(
+            (item) => item.name === node.fieldName,
+          );
+          if (index >= visibleCount) onToggleFields(node.datasetId);
+        });
+      }
+
       onSelectField(dataset, field);
     },
-    [onSelectField, setEdges, setNodes],
+    [
+      collapsedIds,
+      fieldsExpandedIds,
+      focusedField,
+      derivedLinks,
+      graph,
+      onToggleCollapse,
+      onToggleFields,
+      onSelectField,
+      setEdges,
+      setNodes,
+    ],
   );
 
   const handleEdgeClick = useCallback(
     (_: unknown, edge: LineageFlowEdge) => {
       const data = edge.data;
-      if (!data || data.aggregateCount) return;
+      if (!data?.edge || data.aggregateCount || data.derived) return;
+      setFocusedField(null);
       onSelectEdge(data.edge);
     },
     [onSelectEdge],
   );
+
+  const handlePaneClick = useCallback(() => setFocusedField(null), []);
 
   const handleNodeClick = useCallback(
     (_: unknown, node: FlowNode) => {
@@ -365,6 +454,21 @@ export function LineageCanvas({
       }
     });
 
+    // 追踪链路命中的字段：按数据集聚合，驱动节点内字段行红色高亮
+    const chainByDataset = new Map<
+      string,
+      { focused: string | null; linked: string[] }
+    >();
+    if (chain) {
+      chain.nodes.forEach((node) => {
+        const entry =
+          chainByDataset.get(node.datasetId) ?? { focused: null, linked: [] };
+        if (node.role === 'focus') entry.focused = node.fieldName;
+        else entry.linked.push(node.fieldName);
+        chainByDataset.set(node.datasetId, entry);
+      });
+    }
+
     const nextNodes: FlowNode[] = [];
     graph.datasets.forEach((dataset) => {
       if (hiddenIds.has(dataset.id)) return;
@@ -382,6 +486,8 @@ export function LineageCanvas({
           fieldsExpanded: fieldsExpandedIds.has(dataset.id),
           connectable: canEdit,
           aiEndpointFields: aiFields ? Array.from(aiFields) : [],
+          chainFieldNames: chainByDataset.get(dataset.id)?.linked ?? [],
+          focusedFieldName: chainByDataset.get(dataset.id)?.focused ?? null,
           onToggleCollapse,
           onToggleFields,
           onSelectField: handleSelectField,
@@ -444,11 +550,13 @@ export function LineageCanvas({
       kind: EdgeKind,
       fromLabel: string,
       toLabel: string,
+      focusState?: 'chain' | 'dim',
     ): LineageEdgeData => ({
       edge,
       kind,
       fromLabel,
       toLabel,
+      focusState,
       canEdit,
       onSelect: () => onSelectEdge(edge),
       onEdit: canEdit ? () => onSelectEdge(edge, { edit: true }) : undefined,
@@ -499,6 +607,7 @@ export function LineageCanvas({
           'table',
           `${edge.from_dataset}.*`,
           `${edge.to_dataset}.*`,
+          chain ? 'dim' : undefined,
         );
         nextEdges.push({
           id: `edge-${edge.id}-table`,
@@ -513,12 +622,14 @@ export function LineageCanvas({
             stroke: visual.color,
             strokeWidth: visual.width,
             strokeDasharray: visual.dash,
-            opacity: 0.92,
+            opacity: chain ? DIMMED_OPACITY : 0.92,
           },
           animated: visual.isAi,
           markerEnd: {
             type: MarkerType.ArrowClosed,
-            color: visual.color,
+            color: chain
+              ? withAlpha(visual.color, DIMMED_MARKER_ALPHA)
+              : visual.color,
             width: 15,
             height: 15,
           },
@@ -543,11 +654,19 @@ export function LineageCanvas({
       }
 
       const visual = getEdgeVisual(edge);
+      const focusState = chain
+        ? chain.edgeIds.has(edge.id)
+          ? 'chain'
+          : 'dim'
+        : undefined;
+      const strokeColor =
+        focusState === 'chain' ? EDGE_COLORS.focus : visual.color;
       const data = edgeData(
         edge,
         'field',
         `${edge.from_dataset}.${fromField}`,
         `${edge.to_dataset}.${toField}`,
+        focusState,
       );
       nextEdges.push({
         id: `edge-${edge.id}-field`,
@@ -559,20 +678,103 @@ export function LineageCanvas({
         data,
         ariaLabel: `字段级血缘，从 ${edge.from_dataset}.${fromField} 到 ${edge.to_dataset}.${toField}，来源 ${edge.source}`,
         style: {
-          stroke: visual.color,
-          strokeWidth: visual.width,
+          stroke: strokeColor,
+          strokeWidth: focusState === 'chain' ? 2.6 : visual.width,
           strokeDasharray: visual.dash,
-          opacity: 0.95,
+          opacity:
+            focusState === 'chain'
+              ? 1
+              : focusState === 'dim'
+                ? DIMMED_OPACITY
+                : 0.95,
         },
-        animated: visual.isAi,
+        animated: focusState === 'chain' ? true : visual.isAi,
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          color: visual.color,
+          color:
+            focusState === 'dim'
+              ? withAlpha(visual.color, DIMMED_MARKER_ALPHA)
+              : strokeColor,
           width: 15,
           height: 15,
         },
-        zIndex: 0,
+        zIndex: focusState === 'chain' ? 2 : 0,
         selectable: true,
+        focusable: false,
+      });
+    });
+
+    // 视图派生连线：表级血缘两端同名字段匹配（非库内边，不可选中/编辑）
+    derivedLinks.forEach((link) => {
+      if (!present.has(link.from_dataset) || !present.has(link.to_dataset)) {
+        return;
+      }
+      // 分组内/跨组时推导线不画：跨组关系已由聚合边表达
+      if (
+        datasetGroups.has(link.from_dataset) ||
+        datasetGroups.has(link.to_dataset)
+      ) {
+        return;
+      }
+      if (
+        collapsedIds.has(link.from_dataset) ||
+        collapsedIds.has(link.to_dataset)
+      ) {
+        return;
+      }
+      if (
+        !fieldNames.get(link.from_dataset)?.has(link.from_field) ||
+        !fieldNames.get(link.to_dataset)?.has(link.to_field)
+      ) {
+        return;
+      }
+
+      const key = derivedLinkKey(link);
+      const focusState = chain
+        ? chain.linkKeys.has(key)
+          ? 'chain'
+          : 'dim'
+        : undefined;
+      const strokeColor =
+        focusState === 'chain' ? EDGE_COLORS.focus : EDGE_COLORS.derived;
+      nextEdges.push({
+        id: `edge-derived-${key}`,
+        source: link.from_dataset,
+        target: link.to_dataset,
+        sourceHandle: fieldSourceHandle(link.from_field),
+        targetHandle: fieldTargetHandle(link.to_field),
+        type: 'lineage',
+        data: {
+          kind: 'field',
+          derived: true,
+          focusState,
+          fromLabel: `${link.from_dataset}.${link.from_field}`,
+          toLabel: `${link.to_dataset}.${link.to_field}`,
+        },
+        ariaLabel: `同名字段匹配推断线，从 ${link.from_dataset}.${link.from_field} 到 ${link.to_dataset}.${link.to_field}`,
+        style: {
+          stroke: strokeColor,
+          strokeWidth: focusState === 'chain' ? 2.6 : 1.3,
+          strokeDasharray: '2 4',
+          opacity:
+            focusState === 'chain'
+              ? 1
+              : focusState === 'dim'
+                ? DIMMED_OPACITY
+                : 0.9,
+        },
+        animated: focusState === 'chain',
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color:
+            focusState === 'dim'
+              ? withAlpha(EDGE_COLORS.derived, DIMMED_MARKER_ALPHA)
+              : strokeColor,
+          width: 13,
+          height: 13,
+        },
+        zIndex: focusState === 'chain' ? 2 : 0,
+        selectable: false,
         focusable: false,
       });
     });
@@ -585,6 +787,7 @@ export function LineageCanvas({
         fromLabel: aggregate.sourceLabel,
         toLabel: aggregate.targetLabel,
         aggregateCount: aggregate.count,
+        focusState: chain ? 'dim' : undefined,
       };
       nextEdges.push({
         id: `edge-agg-${encodeURIComponent(aggregate.sourceNode)}-${encodeURIComponent(aggregate.targetNode)}`,
@@ -599,11 +802,13 @@ export function LineageCanvas({
           stroke: visual.color,
           strokeWidth: 1.5,
           strokeDasharray: visual.dash ?? '5 4',
-          opacity: 0.85,
+          opacity: chain ? DIMMED_OPACITY : 0.85,
         },
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          color: visual.color,
+          color: chain
+            ? withAlpha(visual.color, DIMMED_MARKER_ALPHA)
+            : visual.color,
           width: 15,
           height: 15,
         },
@@ -616,6 +821,8 @@ export function LineageCanvas({
     setNodes(nextNodes);
     setEdges(nextEdges);
   }, [
+    chain,
+    derivedLinks,
     graph,
     // 跳数变化时即使 graph 还是旧引用，也要立刻用清空后的拖拽位置重新布局
     hops,
@@ -690,6 +897,7 @@ export function LineageCanvas({
           onSelectionChange={handleSelectionChange}
           onNodeClick={handleNodeClick}
           onEdgeClick={handleEdgeClick}
+          onPaneClick={handlePaneClick}
           onConnect={handleConnect}
           fitView
           fitViewOptions={{ padding: 0.18, maxZoom: 0.95 }}
@@ -795,6 +1003,8 @@ export function LineageCanvas({
               <span>Shift + 拖拽框选</span>
               <span className="h-2 w-px bg-line" />
               <span>悬停/点击连线查看详情</span>
+              <span className="h-2 w-px bg-line" />
+              <span>点击字段高亮上下游链路</span>
               {canEdit && (
                 <>
                   <span className="h-2 w-px bg-line" />

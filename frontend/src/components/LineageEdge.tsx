@@ -14,12 +14,17 @@ import { Icon } from './Icon';
 export type EdgeKind = 'field' | 'table';
 
 export interface LineageEdgeData extends Record<string, unknown> {
-  edge: LineageEdge;
+  /** 库内血缘边；derived（同名字段匹配推断）线没有对应实体，为空 */
+  edge?: LineageEdge;
   kind: EdgeKind;
   fromLabel: string;
   toLabel: string;
   /** 折叠分组时跨组边的聚合条数；存在时该连线不可单独操作 */
   aggregateCount?: number;
+  /** true = 表级血缘同名字段匹配的视图派生线（非库内边，不可选中/编辑） */
+  derived?: boolean;
+  /** 字段追踪焦点态：'chain' = 命中链路（红），'dim' = 被压暗 */
+  focusState?: 'chain' | 'dim';
   canEdit?: boolean;
   onSelect?: () => void;
   onEdit?: () => void;
@@ -91,6 +96,7 @@ export function LineageEdgeView({
     fromLabel,
     toLabel,
     aggregateCount,
+    derived,
     canEdit,
     onSelect,
     onEdit,
@@ -99,6 +105,10 @@ export function LineageEdgeView({
   const isAggregate =
     aggregateCount !== undefined && aggregateCount !== null && aggregateCount > 0;
   const active = hovered || Boolean(selected);
+  const styleOpacity =
+    typeof style?.opacity === 'number' ? style.opacity : undefined;
+  const baseStrokeWidth =
+    typeof style?.strokeWidth === 'number' ? style.strokeWidth : 0;
   const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
@@ -144,7 +154,10 @@ export function LineageEdgeView({
         interactionWidth={0}
         style={{
           ...style,
-          strokeWidth: active ? (edge.source === 'ai' ? 2.8 : 2.4) : undefined,
+          opacity: active ? Math.max(styleOpacity ?? 1, 0.9) : styleOpacity,
+          strokeWidth: active
+            ? Math.max(baseStrokeWidth, derived ? 2.3 : edge?.source === 'ai' ? 2.8 : 2.4)
+            : undefined,
           filter: active
             ? 'drop-shadow(0 1px 1px rgba(15,23,42,0.18))'
             : undefined,
@@ -162,15 +175,43 @@ export function LineageEdgeView({
             onMouseLeave={hide}
             role="tooltip"
           >
-            <div className="edge-tooltip animate-fade-in rounded-lg border border-line bg-card p-3 text-left shadow-float">
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
-                  {isAggregate
-                    ? `跨组聚合 · ${aggregateCount} 条边`
-                    : `${kind === 'field' ? '字段级血缘' : '表级血缘'} · #${edge.id}`}
-                </span>
-                <SourceBadge source={edge.source} withDescription={false} />
+            {derived ? (
+              <div className="edge-tooltip animate-fade-in rounded-lg border border-line bg-card p-3 text-left shadow-float">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
+                    同名字段匹配 · 推断
+                  </span>
+                  <span className="rounded border border-line-soft bg-subtle px-1.5 py-px font-mono text-[11px] uppercase text-ink-faint">
+                    derived
+                  </span>
+                </div>
+                <div className="mt-2 flex items-center gap-1.5 font-mono text-[12px] leading-4 text-ink">
+                  <span className="min-w-0 truncate" title={fromLabel}>
+                    {fromLabel}
+                  </span>
+                  <Icon
+                    name="arrow-right"
+                    size={11}
+                    className="shrink-0 text-ink-faint"
+                  />
+                  <span className="min-w-0 truncate" title={toLabel}>
+                    {toLabel}
+                  </span>
+                </div>
+                <p className="mt-2 border-t border-line-soft pt-2 text-[11px] leading-4 text-ink-muted">
+                  由两端数据集的表级血缘按同名字段匹配推断，仅用于上下游追踪演示，不是库内血缘边。
+                </p>
               </div>
+            ) : edge ? (
+              <div className="edge-tooltip animate-fade-in rounded-lg border border-line bg-card p-3 text-left shadow-float">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
+                    {isAggregate
+                      ? `跨组聚合 · ${aggregateCount} 条边`
+                      : `${kind === 'field' ? '字段级血缘' : '表级血缘'} · #${edge.id}`}
+                  </span>
+                  <SourceBadge source={edge.source} withDescription={false} />
+                </div>
               <div className="mt-2 flex items-center gap-1.5 font-mono text-[12px] leading-4 text-ink">
                 <span className="min-w-0 truncate" title={fromLabel}>
                   {fromLabel}
@@ -247,8 +288,9 @@ export function LineageEdgeView({
                   )}
                 </div>
               )}
+                </div>
+              ) : null}
             </div>
-          </div>
         </EdgeLabelRenderer>
       )}
     </>

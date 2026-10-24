@@ -19,6 +19,10 @@ export interface DatasetNodeData extends Record<string, unknown> {
   connectable: boolean;
   /** 02 §3.4：是任一 AI 候选边端点的字段名列表（纯展示派生，驱动字段行 sparkles 徽标） */
   aiEndpointFields?: string[];
+  /** 字段追踪：链路上的关联字段名列表（浅红底） */
+  chainFieldNames?: string[];
+  /** 字段追踪：当前点击聚焦的字段名（强红底） */
+  focusedFieldName?: string | null;
   onToggleCollapse: (datasetId: string) => void;
   onToggleFields: (datasetId: string) => void;
   onSelectField: (dataset: LineageDataset, field: DatasetField) => void;
@@ -35,6 +39,8 @@ export function DatasetNode({ data }: NodeProps) {
     fieldsExpanded,
     connectable,
     aiEndpointFields,
+    chainFieldNames,
+    focusedFieldName,
     onToggleCollapse,
     onToggleFields,
     onSelectField,
@@ -167,57 +173,84 @@ export function DatasetNode({ data }: NodeProps) {
             </div>
           ) : (
             <>
-              {visibleFields.map((field) => (
-                <div
-                  key={field.name}
-                  className="group/field relative flex h-[34px] items-center rounded-md px-2 transition-colors duration-150 hover:bg-blue-50/70"
-                >
-                  <Handle
-                    type="target"
-                    position={Position.Left}
-                    id={fieldTargetHandle(field.name)}
-                    className="field-handle"
-                    style={{ top: '50%' }}
-                    isConnectable={connectable}
-                  />
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onSelectField(dataset, field);
-                    }}
-                    className="nodrag nopan flex h-full w-full min-w-0 items-center justify-between gap-2 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-card"
-                    aria-label={`查看字段 ${dataset.id}.${field.name}`}
-                    title={`${field.description || field.name} · 点击查看定位与回源预览`}
+              {visibleFields.map((field) => {
+                const isFocused = focusedFieldName === field.name;
+                const isLinked =
+                  !isFocused && (chainFieldNames?.includes(field.name) ?? false);
+                const traced = isFocused || isLinked;
+                const rowTone = isFocused
+                  ? 'bg-red-50 ring-1 ring-inset ring-red-300/80 hover:bg-red-100/70'
+                  : isLinked
+                    ? 'bg-red-50/70 hover:bg-red-100/50'
+                    : 'hover:bg-blue-50/70';
+                return (
+                  <div
+                    key={field.name}
+                    className={`group/field relative flex h-[34px] items-center rounded-md px-2 transition-colors duration-150 ${rowTone}`}
                   >
-                    <span className="min-w-0 truncate font-mono text-[11px] font-medium text-ink-soft transition-colors duration-150 group-hover/field:text-blue-800">
-                      {field.name}
-                    </span>
-                    <span className="flex shrink-0 items-center gap-1.5">
-                      <span className="shrink-0 rounded border border-line-soft bg-page/60 px-1 py-px font-mono text-[11px] uppercase text-ink-faint">
-                        {field.field_type || '—'}
-                      </span>
-                      {aiEndpointFields?.includes(field.name) && (
+                    <Handle
+                      type="target"
+                      position={Position.Left}
+                      id={fieldTargetHandle(field.name)}
+                      className={`field-handle${traced ? ' field-handle-traced' : ''}`}
+                      style={{ top: '50%' }}
+                      isConnectable={connectable}
+                    />
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onSelectField(dataset, field);
+                      }}
+                      className="nodrag nopan flex h-full w-full min-w-0 items-center justify-between gap-2 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-card"
+                      aria-label={`查看字段 ${dataset.id}.${field.name}`}
+                      title={`${field.description || field.name} · 点击查看定位与回源预览`}
+                    >
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        {isFocused && (
+                          <span
+                            className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500"
+                            aria-hidden="true"
+                          />
+                        )}
                         <span
-                          className="text-ai"
-                          title="存在待确认的 AI 候选血缘"
-                          aria-hidden="true"
+                          className={`min-w-0 truncate font-mono text-[11px] font-medium transition-colors duration-150 ${
+                            isFocused
+                              ? 'text-red-700'
+                              : isLinked
+                                ? 'text-red-600/90'
+                                : 'text-ink-soft group-hover/field:text-blue-800'
+                          }`}
                         >
-                          <Icon name="sparkles" size={12} />
+                          {field.name}
                         </span>
-                      )}
-                    </span>
-                  </button>
-                  <Handle
-                    type="source"
-                    position={Position.Right}
-                    id={fieldSourceHandle(field.name)}
-                    className="field-handle"
-                    style={{ top: '50%' }}
-                    isConnectable={connectable}
-                  />
-                </div>
-              ))}
+                      </span>
+                      <span className="flex shrink-0 items-center gap-1.5">
+                        <span className="shrink-0 rounded border border-line-soft bg-page/60 px-1 py-px font-mono text-[11px] uppercase text-ink-faint">
+                          {field.field_type || '—'}
+                        </span>
+                        {aiEndpointFields?.includes(field.name) && (
+                          <span
+                            className="text-ai"
+                            title="存在待确认的 AI 候选血缘"
+                            aria-hidden="true"
+                          >
+                            <Icon name="sparkles" size={12} />
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                    <Handle
+                      type="source"
+                      position={Position.Right}
+                      id={fieldSourceHandle(field.name)}
+                      className={`field-handle${traced ? ' field-handle-traced' : ''}`}
+                      style={{ top: '50%' }}
+                      isConnectable={connectable}
+                    />
+                  </div>
+                );
+              })}
               {fieldCount > FIELD_PREVIEW_LIMIT && (
                 <button
                   type="button"

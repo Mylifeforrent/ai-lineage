@@ -131,8 +131,12 @@ LineageLite 是 **B 端内部数据工具**：数据团队每天打开它核对�
 | `source='manual'`（人工确认） | `#a36b11` | `lineage-manual` = `#D97706` | 字段级实线；表级虚线 `4 5` | 1.7 | 3.05:1 ✓ |
 | imported 字段级 | `#52645c` | `lineage-imported` = `#475569` | 实线 | 1.55 | 7.2:1 ✓ |
 | imported 表级 | `#8b958f` | `lineage-imported-weak` = `#64748B` | 虚线 `4 5` | 1.4 | 4.55:1 ✓ |
+| 同名字段匹配（derived，视图派生） | —（新增） | `lineage-derived` = `#94A3B8` | 点状虚线 `2 4` | 1.3 | 2.46:1 ✗（见下方注 2） |
+| 字段追踪高亮（focusState='chain'） | —（新增） | `lineage-focus` = `#DC2626` | 沿用原形态线型 | 2.6 | 4.64:1 ✓（`animated` 流动） |
 
 > imported 表级旧色 `#8b958f` 对 `#F8FAFC` 仅 2.45:1（低于图形 3:1），改用 `#64748B`，靠「虚线 + 更细」保持弱于字段级边。
+>
+> 注 2：`lineage-derived` 为「表级血缘两端同名字段匹配」的**视图派生辅助线**（不落库、不可选中），刻意弱于全部库内边。2.46:1 低于图形 3:1 属**已知取舍**：同名匹配关系可由两端字段名、tooltip 文本与图例完整读出，线体不承载唯一信息（WCAG 1.4.11 适用于「理解内容所必需」的图形）。若评审要求达标，需在本表增设更深一档色值后再改 `lib/edgeColors.ts`【TBD-UX，确认阶段处理】。`lineage-focus` 与 danger 语义色同值（追踪 = 临时强调，非错误语义），通过红色 + 流动动画与 danger 静态用法区分。
 
 ### 2.5 图谱画布专用
 
@@ -196,6 +200,8 @@ LineageLite 是 **B 端内部数据工具**：数据团队每天打开它核对�
 | lineage-imported-weak #64748B | #F8FAFC | 4.55 | ✓ |
 | lineage-manual #D97706 | #F8FAFC | 3.05 | ✓（1.7px 线，达标下限） |
 | lineage-ai #4F46E5 | #F8FAFC | 6.01 | ✓ |
+| lineage-focus #DC2626 | #F8FAFC | 4.64 | ✓（2.6px 线 + 流动动画） |
+| lineage-derived #94A3B8 | #F8FAFC | 2.46 | ✗ 已知取舍：视图派生辅助线，信息由字段名/tooltip/图例冗余承载（§2.4 注 2） |
 | blue-500 #3B82F6（ring/选中描边） | #FFFFFF | 3.68 | ✓ 图形；✗ 不得作白底文字 |
 | input 边框 line #E2E8F0 | #FFFFFF | 1.23 | 已知权衡：静止态输入框辨识依赖 placeholder 与形状（业界通行，GitHub/Linear 同类）；focus 态边框 blue-600 达 5.17:1。无障碍检查单如实登记（§10） |
 
@@ -500,12 +506,14 @@ module.exports = {
         info: { DEFAULT: '#2563EB', soft: '#EFF6FF', deep: '#1E40AF' },
         /* AI 功能色（indigo，与主蓝区分；soft 底正文用 deep） */
         ai: { DEFAULT: '#4F46E5', soft: '#EEF2FF', deep: '#3730A3' },
-        /* 血缘边来源色（getEdgeVisual 四形态专用，SVG stroke） */
+        /* 血缘边来源色（getEdgeVisual 形态专用，SVG stroke） */
         lineage: {
           imported: '#475569',        // imported 字段级（实线 1.55）
           'imported-weak': '#64748B', // imported 表级（虚线 1.4）
           manual: '#D97706',          // 人工确认
           ai: '#4F46E5',              // AI 建议（虚线+流动）
+          derived: '#94A3B8',         // 视图派生：表级血缘同名字段匹配推断线（点状 2 4）
+          focus: '#DC2626',           // 字段追踪高亮（= danger，流动）
         },
       },
       fontFamily: {

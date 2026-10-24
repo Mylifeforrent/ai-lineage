@@ -201,6 +201,14 @@
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
+/* 字段追踪链路命中的字段行：handle 转为红色追踪态 */
+.react-flow__handle.field-handle.field-handle-traced {
+  opacity: 1;
+  border-color: #dc2626;
+  background: #fef2f2;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.14);
+}
+
 .react-flow__edge .react-flow__edge-path {
   transition: opacity 160ms ease;
 }
