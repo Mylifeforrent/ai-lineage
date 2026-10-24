@@ -19,24 +19,24 @@
 
 ```
 ai-lineage/
-├── docs/          # 设计文档（01_design）与低保真原型（02_prototype），索引见 docs/README.md
-├── prototype/     # 前后端原型项目
-│   ├── backend/   # 后端项目：M1 数据底座 + M2 图查询/回源预览 + M3 编辑/标注/版本标签 + M4 AI（FastAPI + SQLite + uv）
-│   │   ├── src/lineagelite/
-│   │   ├── tests/
-│   │   ├── pyproject.toml
-│   │   └── uv.lock
-│   └── frontend/  # 前端项目：M3 血缘画布/编辑/标注/版本标签 + M4 AI 助手（React + TS + Vite + Tailwind + @xyflow/react）
-│       ├── src/
-│       │   ├── components/
-│       │   └── lib/
-│       ├── package.json
-│       └── vite.config.ts
+├── backend/       # 正式后端项目（自 prototype/backend 移植）：M1 数据底座 + M2 图查询/回源预览 + M3 编辑/标注/版本标签 + M4 AI（FastAPI + SQLite + uv）
+│   ├── src/lineagelite/
+│   ├── tests/
+│   ├── pyproject.toml
+│   └── uv.lock
+├── frontend/      # 正式前端项目（自 prototype/frontend 移植）：hi-fi 视觉 + 导入向导（React + TS + Vite + Tailwind + @xyflow/react）
+│   ├── src/
+│   │   ├── components/
+│   │   └── lib/
+│   ├── package.json
+│   └── vite.config.ts
+├── docs/          # 设计文档（01_design）、低保真原型（02_prototype）、开发文档（03_dev）、高保真规范（04_hifi），索引见 docs/README.md
+├── prototype/     # 原型工作区（backend/frontend 的历史基线），仅作参照保留，后续功能在 backend/ 与 frontend/ 演进
 ├── .env.example   # 环境配置模板（复制为仓库根 .env 使用，.env 不入库）
 └── README.md
 ```
 
-前端与后端同在 `prototype/` 下，开发服务器通过 Vite proxy 将 `/auth`、`/datasets`、`/lineage`、`/fields`、`/edges`、`/annotations`、`/changes`、`/version-tags`、`/users`、`/files`、`/import`、`/ai` 转发到 `http://127.0.0.1:8000`。
+正式前端 `frontend/` 的开发服务器通过 Vite proxy 将 `/auth`、`/datasets`、`/lineage`、`/fields`、`/edges`、`/annotations`、`/changes`、`/version-tags`、`/users`、`/files`、`/import`、`/ai` 转发到 `http://127.0.0.1:8000`。
 
 ## 后端（M1-M4 已实现）
 
@@ -48,7 +48,7 @@ M4 AI：只读工具集（`search_fields` / `get_field_details` / `trace_lineage
 
 ```bash
 cp .env.example .env           # 仓库根配置（SECRET_KEY / ADMIN_PASSWORD 等）
-cd prototype/backend
+cd backend
 uv sync                        # 安装依赖
 uv run uvicorn lineagelite.main:app --reload   # 启动，首次自动建库并创建初始管理员
 uv run pytest                  # 运行验收测试
@@ -67,7 +67,7 @@ M3 编辑与版本：按登录角色隐藏写入口（viewer 只读）；悬停/
 M4 AI 助手：顶部栏「AI 助手」抽屉（对话、工具调用轨迹、`trace_lineage` 结果联动出图）；字段详情内一键生成启发式候选边；画布上任意 `source='ai'` 的边在边详情中都可「确认转为人工边」，不依赖候选卡片是否仍在内存中。
 
 ```bash
-cd prototype/frontend
+cd frontend
 npm install
 npm run dev        # http://localhost:5173，API 由 Vite proxy 转至 :8000
 npm run build      # tsc -b && vite build
