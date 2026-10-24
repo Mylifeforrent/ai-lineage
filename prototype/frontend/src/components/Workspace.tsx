@@ -437,6 +437,24 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
     [showToast],
   );
 
+  /** 对话内 suggest_lineage 落库候选后：刷新画布（蓝色虚线候选边）并提示。 */
+  const handleAiSuggested = useCallback(
+    (count: number) => {
+      refreshGraph();
+      showToast(`AI 已落库 ${count} 条血缘候选边，请在画布上人工确认`, 'info');
+    },
+    [refreshGraph, showToast],
+  );
+
+  /** 回答内证据锚点点击：把该字段应用为画布追踪焦点（seq 递增触发应用）。 */
+  const handleAiFieldFocus = useCallback((dataset: string, field: string) => {
+    aiFocusSeq.current += 1;
+    setAiFieldFocus({
+      seq: aiFocusSeq.current,
+      fields: [{ dataset, field }],
+    });
+  }, []);
+
   const handleFieldUpdated = useCallback(() => {
     refreshGraph();
   }, [refreshGraph]);
@@ -606,8 +624,11 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
         open={aiOpen}
         token={session.access_token}
         focus={aiFocus}
+        canEdit={canEdit}
         onClose={() => setAiOpen(false)}
         onGraph={handleAiGraph}
+        onSuggested={handleAiSuggested}
+        onFieldFocus={handleAiFieldFocus}
       />
 
       {usersOpen && admin && (

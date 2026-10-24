@@ -1,9 +1,11 @@
 import type {
   AiChatMessage,
   AiChatResponse,
+  AiDraftItem,
   AiEdgeKey,
   AiFocus,
   AiStatus,
+  AiStreamEvent,
   AiSuggestion,
   Annotation,
   AnnotationCreatePayload,
@@ -403,6 +405,113 @@ export async function sendAiChat(
   return request<AiChatResponse>(
     '/ai/chat',
     { method: 'POST', body: JSON.stringify(payload), signal },
+    token,
+  );
+}
+
+export interface AiStreamHandlers {
+  onEvent: (event: AiStreamEvent) => void;
+}
+
+/** SSE 流式对话（POST /ai/chat/stream）：解析 text/event-stream 帧并逐事件回调。 */
+export async function sendAiChatStream(
+  token: string,
+  payload: { messages: AiChatMessage[]; focus?: AiFocus | null },
+  onEvent: (event: AiStreamEvent) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const response = await fetch(`${API_BASE}/ai/chat/stream`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
+    },
+    body: JSON.stringify(payload),
+    signal,
+  });
+  if (response.status === 401) {
+    window.dispatchEvent(new CustomEvent(AUTH_EXPIRED_EVENT));
+  }
+  if (!response.ok || !response.body) {
+    let payloadError: unknown = null;
+    try {
+      payloadError = await response.json();
+    } catch {
+      // 非 JSON 错误体时使用状态码提示
+    }
+    throw new ApiError(
+      response.status,
+      readErrorDetail(payloadError, response.status),
+    );
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    // SSE 帧以空行分隔；同一 data 行可能跨 chunk，需在 buffer 内裁剪
+    let separator = buffer.indexOf('\n\n');
+    while (separator !== -1) {
+      const frame = buffer.slice(0, separator);
+      buffer = buffer.slice(separator + 2);
+      const dataLine = frame
+        .split('\n')
+        .find((line) => line.startsWith('data: '));
+      if (dataLine) {
+        try {
+          onEvent(JSON.parse(dataLine.slice(6)) as AiStreamEvent);
+        } catch {
+          // 忽略无法解析的帧（防止半包/脏帧导致 UI 崩溃）
+        }
+      }
+      separator = buffer.indexOf('\n\n');
+    }
+  }
+}
+
+export async function listDescriptionDrafts(
+  token: string,
+  dataset?: string | null,
+  status?: 'pending' | 'accepted' | 'rejected',
+  signal?: AbortSignal,
+): Promise<AiDraftItem[]> {
+  const params = new URLSearchParams();
+  if (dataset) params.set('dataset', dataset);
+  if (status) params.set('status', status);
+  const query = params.toString();
+  const result = await request<{ items: AiDraftItem[] }>(
+    `/ai/description-drafts${query ? `?${query}` : ''}`,
+    { signal },
+    token,
+  );
+  return result.items;
+}
+
+export async function acceptDescriptionDraft(
+  token: string,
+  draftId: number,
+  signal?: AbortSignal,
+): Promise<AiDraftItem> {
+  const result = await request<{ draft: AiDraftItem }>(
+    `/ai/description-drafts/${draftId}/accept`,
+    { method: 'POST', signal },
+    token,
+  );
+  return result.draft;
+}
+
+export async function rejectDescriptionDraft(
+  token: string,
+  draftId: number,
+  signal?: AbortSignal,
+): Promise<void> {
+  await request<void>(
+    `/ai/description-drafts/${draftId}/reject`,
+    { method: 'POST', signal },
     token,
   );
 }

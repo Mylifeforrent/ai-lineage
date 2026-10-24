@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import type {
   AiChatMessage,
+  AiDraftItem,
   AiFocus,
   AiHighlightItem,
   AiStatus,
@@ -9,10 +10,12 @@ import type {
   LineageGraph,
 } from '../types';
 import {
+  acceptDescriptionDraft,
   ApiError,
   getAiStatus,
   isAbortError,
-  sendAiChat,
+  rejectDescriptionDraft,
+  sendAiChatStream,
 } from '../lib/api';
 import { Icon } from './Icon';
 
@@ -21,12 +24,18 @@ interface AiAssistantDrawerProps {
   token: string;
   /** 当前画布聚焦的数据集/字段，作为每轮对话的 focus 上下文 */
   focus: AiFocus | null;
+  /** editor+ 才渲染描述草稿的采纳/拒绝按钮 */
+  canEdit: boolean;
   onClose: () => void;
   /**
    * 响应联动：graph 存在时把子图交给 Workspace 复用现有画布状态渲染；
    * highlights（mark_highlight 声明）同时交给 Workspace 驱动画布追踪高亮。
    */
   onGraph: (graph: LineageGraph | null, highlights?: AiHighlightItem[]) => void;
+  /** suggest_lineage 落库候选后由 Workspace 刷新画布（蓝色虚线候选边） */
+  onSuggested: (count: number) => void;
+  /** 回答内证据锚点点击：把该字段应用为画布追踪焦点 */
+  onFieldFocus: (dataset: string, field: string) => void;
 }
 
 interface ChatEntry {
@@ -35,6 +44,9 @@ interface ChatEntry {
   content: string;
   toolTrace?: AiToolTrace[];
   graph?: LineageGraph;
+  drafts?: AiDraftItem[];
+  /** SSE 流式进行中：显示打点光标与工具进行态 */
+  streaming?: boolean;
   error?: boolean;
 }
 
@@ -44,6 +56,9 @@ const TOOL_LABELS: Record<string, string> = {
   trace_lineage: '追溯血缘',
   get_field_history: '变更历史',
   mark_highlight: '标记高亮',
+  suggest_lineage: '建议血缘',
+  analyze_impact: '影响分析',
+  draft_descriptions: '起草描述',
 };
 
 const EXAMPLE_PROMPTS = [
@@ -58,6 +73,150 @@ const NOT_CONFIGURED_TEXT =
 function focusLabel(focus: AiFocus | null): string {
   if (!focus) return '未聚焦数据集';
   return focus.field ? `${focus.dataset}.${focus.field}` : focus.dataset;
+}
+
+/** 常见文件扩展名不作为字段引用（避免 d0_orders.csv 被当成 数据集.字段） */
+const NON_FIELD_TOKENS = new Set([
+  'csv', 'xlsx', 'xls', 'json', 'md', 'txt', 'png', 'svg', 'db', 'py', 'ts',
+]);
+
+/** 回答文本里的 `数据集.字段` 引用渲染为可点证据锚点（点击→画布追踪链）。 */
+function AnswerText({
+  content,
+  onFieldFocus,
+  streaming = false,
+}: {
+  content: string;
+  onFieldFocus: (dataset: string, field: string) => void;
+  streaming?: boolean;
+}) {
+  const parts: ReactNode[] = [];
+  const pattern = /\b([a-zA-Z][\w-]{0,31})\.([a-zA-Z][\w-]{0,63})\b/g;
+  let lastIndex = 0;
+  let key = 0;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(content)) !== null) {
+    const [full, dataset, field] = match;
+    if (NON_FIELD_TOKENS.has(field.toLowerCase())) continue;
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index));
+    }
+    parts.push(
+      <button
+        key={`ref-${key++}`}
+        type="button"
+        title={`在画布上追踪 ${full}`}
+        onClick={() => onFieldFocus(dataset, field)}
+        className="mx-0.5 inline-flex items-center rounded border border-ai/25 bg-ai-soft px-1 py-px align-baseline font-mono text-[11px] leading-4 text-ai-deep transition-colors duration-150 hover:border-ai/50 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60"
+      >
+        {full}
+      </button>,
+    );
+    lastIndex = match.index + full.length;
+  }
+  if (lastIndex < content.length) parts.push(content.slice(lastIndex));
+  if (streaming) {
+    parts.push(
+      <span
+        key="cursor"
+        className="ml-0.5 inline-block h-3.5 w-[2px] animate-pulse bg-ai align-middle"
+        aria-hidden="true"
+      />,
+    );
+  }
+  return (
+    <p className="whitespace-pre-wrap break-words text-[13px] leading-6 text-ink-soft">
+      {parts}
+    </p>
+  );
+}
+
+/** 描述草稿确认卡：采纳 → 写 annotation；拒绝 → 不再重复生成。 */
+function DraftCard({
+  item,
+  token,
+  canEdit,
+  onUpdate,
+}: {
+  item: AiDraftItem;
+  token: string;
+  canEdit: boolean;
+  onUpdate: (next: AiDraftItem) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+
+  async function decide(accept: boolean) {
+    setBusy(true);
+    try {
+      if (accept) {
+        onUpdate(await acceptDescriptionDraft(token, item.id));
+      } else {
+        await rejectDescriptionDraft(token, item.id);
+        onUpdate({
+          ...item,
+          status: 'rejected',
+          decided_at: new Date().toISOString(),
+        });
+      }
+    } catch {
+      // 失败保持 pending，卡片可重试
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-2 rounded-lg border border-ai/25 bg-ai-soft/60 px-2.5 py-2">
+      <div className="flex items-center gap-1.5">
+        <Icon name="sparkles" size={11} className="shrink-0 text-ai" />
+        <span className="font-mono text-[11px] font-medium text-ai-deep">
+          {item.dataset}.{item.field}
+        </span>
+        <span className="shrink-0 font-mono text-[11px] text-ink-faint">
+          描述草稿
+        </span>
+        {item.status === 'accepted' && (
+          <span className="ml-auto shrink-0 rounded bg-success-soft px-1.5 py-px font-mono text-[11px] text-success-deep">
+            已采纳 · 已写入标注
+          </span>
+        )}
+        {item.status === 'rejected' && (
+          <span className="ml-auto shrink-0 rounded bg-subtle px-1.5 py-px font-mono text-[11px] text-ink-faint">
+            已拒绝
+          </span>
+        )}
+      </div>
+      <p className="mt-1.5 text-[12px] leading-5 text-ink">{item.draft}</p>
+      {item.status === 'pending' && canEdit && (
+        <div className="mt-2 flex items-center gap-1.5">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => decide(true)}
+            className="inline-flex h-7 items-center rounded-md bg-blue-600 px-2.5 text-[12px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 disabled:opacity-50"
+          >
+            采纳（写入标注）
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => decide(false)}
+            className="inline-flex h-7 items-center rounded-md border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 disabled:opacity-50"
+          >
+            拒绝
+          </button>
+          {busy && (
+            <span className="text-[11px] text-ink-faint">处理中…</span>
+          )}
+        </div>
+      )}
+      {item.status === 'pending' && !canEdit && (
+        <p className="mt-1.5 text-[11px] text-ink-faint">
+          仅 editor 及以上角色可采纳/拒绝草稿。
+        </p>
+      )}
+    </div>
+  );
 }
 
 function ToolTraceCard({ trace }: { trace: AiToolTrace[] }) {
@@ -144,8 +303,11 @@ export function AiAssistantDrawer({
   open,
   token,
   focus,
+  canEdit,
   onClose,
   onGraph,
+  onSuggested,
+  onFieldFocus,
 }: AiAssistantDrawerProps) {
   const [status, setStatus] = useState<AiStatus | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
@@ -215,11 +377,14 @@ export function AiAssistantDrawer({
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
-  const appendEntry = useCallback((entry: Omit<ChatEntry, 'id'>) => {
-    const id = entrySeq.current;
-    entrySeq.current += 1;
-    setEntries((current) => [...current, { ...entry, id }]);
-  }, []);
+  const updateEntry = useCallback(
+    (id: number, patch: (entry: ChatEntry) => ChatEntry) => {
+      setEntries((current) =>
+        current.map((entry) => (entry.id === id ? patch(entry) : entry)),
+      );
+    },
+    [],
+  );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -232,13 +397,21 @@ export function AiAssistantDrawer({
       content: text,
     };
     entrySeq.current += 1;
-    const nextEntries = [...entries, userEntry];
-    setEntries(nextEntries);
+    const assistantId = entrySeq.current;
+    entrySeq.current += 1;
+    setEntries((current) => [
+      ...current,
+      userEntry,
+      { id: assistantId, role: 'assistant', content: '', streaming: true },
+    ]);
     setInput('');
     setSending(true);
 
     // 只回传有内容的 user/assistant 文本；system 提示由后端固定。
-    const history: AiChatMessage[] = nextEntries
+    const history: AiChatMessage[] = [
+      ...entries,
+      userEntry,
+    ]
       .filter((entry) => !entry.error && entry.content.trim().length > 0)
       .map((entry) => ({
         role: entry.role,
@@ -257,33 +430,85 @@ export function AiAssistantDrawer({
     abortRef.current = controller;
 
     try {
-      const response = await sendAiChat(
+      await sendAiChatStream(
         token,
         { messages: history, ...(focusPayload ? { focus: focusPayload } : {}) },
+        (event) => {
+          switch (event.type) {
+            case 'token':
+              updateEntry(assistantId, (entry) => ({
+                ...entry,
+                content: entry.content + event.delta,
+              }));
+              break;
+            case 'tool':
+              updateEntry(assistantId, (entry) => ({
+                ...entry,
+                toolTrace: [
+                  ...(entry.toolTrace ?? []),
+                  { tool: event.tool, args: event.args, ok: event.ok },
+                ],
+              }));
+              break;
+            case 'suggest':
+              onSuggested(event.count);
+              break;
+            case 'drafts':
+              updateEntry(assistantId, (entry) => ({
+                ...entry,
+                drafts: event.items,
+              }));
+              break;
+            case 'done':
+              updateEntry(assistantId, (entry) => ({
+                ...entry,
+                content: event.answer,
+                toolTrace: event.tool_trace,
+                graph: event.graph,
+                drafts:
+                  event.drafts && event.drafts.length > 0
+                    ? event.drafts
+                    : entry.drafts,
+                streaming: false,
+              }));
+              // 每轮回答都通知 Workspace：无 graph 则只更新高亮焦点
+              //（未声明 highlights 时为显式清除上一轮追踪态）
+              onGraph(event.graph ?? null, event.highlights);
+              break;
+            case 'error':
+              updateEntry(assistantId, (entry) => ({
+                ...entry,
+                streaming: false,
+                error: true,
+                content: `AI 服务返回 ${event.status}：${event.detail}`,
+              }));
+              break;
+          }
+        },
         controller.signal,
       );
-      appendEntry({
-        role: 'assistant',
-        content: response.answer,
-        toolTrace: response.tool_trace,
-        graph: response.graph,
-      });
-      if (response.graph || response.highlights?.length) {
-        onGraph(response.graph ?? null, response.highlights);
-      }
+      updateEntry(assistantId, (entry) => ({
+        ...entry,
+        streaming: false,
+      }));
     } catch (reason) {
-      if (controller.signal.aborted || isAbortError(reason)) return;
-      if (reason instanceof ApiError && reason.status === 503) {
-        setStatus({ configured: false, model: null });
+      if (isAbortError(reason)) {
+        updateEntry(assistantId, (entry) => ({
+          ...entry,
+          streaming: false,
+          content: entry.content || '（已取消）',
+        }));
+      } else {
+        updateEntry(assistantId, (entry) => ({
+          ...entry,
+          streaming: false,
+          error: true,
+          content:
+            reason instanceof ApiError
+              ? reason.message
+              : '无法连接 AI 服务，请稍后重试',
+        }));
       }
-      appendEntry({
-        role: 'assistant',
-        error: true,
-        content:
-          reason instanceof ApiError
-            ? reason.message
-            : 'AI 请求失败，请稍后重试。',
-      });
     } finally {
       if (!controller.signal.aborted) setSending(false);
     }
@@ -432,8 +657,8 @@ export function AiAssistantDrawer({
                 用自然语言查血缘
               </h3>
               <p className="mt-2 max-w-[300px] text-[13px] leading-6 text-ink-muted">
-                AI 会调用只读工具查询字段、上下游子图与变更历史；
-                返回子图时画布会自动切换并高亮。
+                AI 会调用工具查询字段、上下游子图与变更历史；回答里的字段引用
+                可点击回画布追踪，还能补血缘建议、起草字段描述（确认后才生效）。
               </p>
               <div className="mt-5 grid w-full max-w-[300px] gap-1.5">
                 {EXAMPLE_PROMPTS.map((prompt) => (
@@ -481,17 +706,42 @@ export function AiAssistantDrawer({
                         <ToolTraceCard trace={entry.toolTrace} />
                       )}
                       {entry.content.trim() ? (
-                        <p
-                          className={`whitespace-pre-wrap break-words text-[13px] leading-6 ${
-                            entry.error ? 'text-danger-deep' : 'text-ink-soft'
-                          }`}
-                        >
-                          {entry.content}
+                        <AnswerText
+                          content={entry.content}
+                          onFieldFocus={onFieldFocus}
+                          streaming={entry.streaming}
+                        />
+                      ) : entry.streaming ? (
+                        <p className="flex items-center gap-2 text-[12px] text-ink-muted">
+                          <span
+                            className="h-3.5 w-3.5 animate-spin rounded-full border-[1.5px] border-ai/25 border-t-ai"
+                            aria-hidden="true"
+                          />
+                          正在调用工具并组织回答…
                         </p>
                       ) : (
                         <p className="text-[12px] italic leading-5 text-ink-faint">
                           模型未返回文字回答。
                         </p>
+                      )}
+                      {(entry.drafts ?? []).length > 0 && (
+                        <div className="mt-2 space-y-2">
+                          {(entry.drafts ?? []).map((draft) => (
+                            <DraftCard
+                              key={draft.id}
+                              item={draft}
+                              token={token}
+                              canEdit={canEdit}
+                              onUpdate={(next) =>
+                                updateEntry(entry.id, (current) => ({
+                                  ...current,
+                                  drafts: (current.drafts ?? []).map((item) =>
+                                    item.id === next.id ? next : item),
+                                }))
+                              }
+                            />
+                          ))}
+                        </div>
                       )}
                       {entry.graph && (
                         <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-success/25 bg-success-soft px-2.5 py-2 text-[12px] text-success-deep">
@@ -513,24 +763,6 @@ export function AiAssistantDrawer({
                     </div>
                   </div>
                 ),
-              )}
-
-              {sending && (
-                <div>
-                  <div className="mb-1 flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-faint">
-                    <Icon name="sparkles" size={10} className="text-ai" />
-                    AI 助手
-                  </div>
-                  <div className="inline-flex items-center gap-2 rounded-xl rounded-tl-md border border-dashed border-line bg-card/70 px-3 py-2.5">
-                    <span
-                      className="h-3.5 w-3.5 animate-spin rounded-full border-[1.5px] border-ai/25 border-t-ai"
-                      aria-hidden="true"
-                    />
-                    <span className="text-[12px] text-ink-muted">
-                      正在调用工具并组织回答…
-                    </span>
-                  </div>
-                </div>
               )}
             </div>
           )}

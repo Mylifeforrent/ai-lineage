@@ -205,6 +205,23 @@ erDiagram
 
 **为什么单独建表**：回滚操作若写 `change_log`，下一次回滚会把「回滚日志」再反做一次，破坏「重复回滚安全」；同时 `change_log.entity_kind` 只允许 dataset/field/edge。因此回滚审计落在 `rollback_record`，满足「写必留痕」而不污染版本反做边界。
 
+### 2.11 description_draft（AI 描述草稿，M5 新增）
+
+AI 自动补描述的工作区：草稿**不触碰** `field.description`（原始导入值），用户在 UI 确认采纳后才写 `annotation`（追加式业务说明）；被拒绝的字段不再重复生成。
+
+| 列 | 类型 | 约束 | 说明 |
+|---|---|---|---|
+| id | INTEGER | PK AUTOINCREMENT | |
+| dataset_id | TEXT | NOT NULL REFERENCES dataset(id) | |
+| field_name | TEXT | NOT NULL；外键 `field(dataset_id, name)`，级联删除/更新 | 草稿目标字段 |
+| draft | TEXT | NOT NULL，1~400 字符 | AI 生成的描述草稿 |
+| model | TEXT | NOT NULL | 生成所用模型名（审计） |
+| status | TEXT | NOT NULL CHECK IN ('pending','accepted','rejected')，DEFAULT 'pending' | 生命周期 |
+| created_at | TEXT | NOT NULL | |
+| decided_at | TEXT | 可空 | 采纳/拒绝时间 |
+
+唯一约束 `(dataset_id, field_name, status)`：同一字段同时只有一条 pending 草稿，accepted/rejected 历史可并存留痕。表为 AI 工作区，**不写 change_log**（采纳时业务痕迹落在 annotation）。设计与流程见 [03_dev/07_AI模块演进规划](../03_dev/07_AI模块演进规划.md) §4.5。
+
 ---
 
 ## 三、派生视图
@@ -429,7 +446,18 @@ LIMIT 20;
 | POST | `/ai/suggest/confirm` | editor | 按自然键把 `source='ai'` 改为 `manual`，写 `updated` 日志；非 AI 边/不存在返回 404 |
 | POST | `/ai/suggest/reject` | editor | 删除 AI 候选边，写 `deleted` 日志，返回 204 |
 
-> 工具集：`search_fields`、`get_field_details`、`trace_lineage`、`get_field_history`（`prototype/backend/src/lineagelite/ai/tools.py`），全部只读，不写库。
+> 工具集（M5 起共 8 个）：`search_fields`、`get_field_details`、`trace_lineage`、`get_field_history`、`mark_highlight`、`suggest_lineage`（对话内触发候选落库）、`analyze_impact`（影响面聚合）、`draft_descriptions`（写 `description_draft` 草稿表）；除标注的两个写草稿/候选工具外全部只读，见 `prototype/backend/src/lineagelite/ai/tools.py` 与 [03_dev/07_AI模块演进规划](../03_dev/07_AI模块演进规划.md)。
+
+### 9.3.1 M5 新增接口（AI 演进）
+
+| 方法 | 路径 | 最低角色 | 语义 |
+|---|---|---|---|
+| POST | `/ai/chat/stream` | viewer | SSE 流式对话，事件：`token`/`tool`/`suggest`/`drafts`/`done`/`error`；请求体同 `/ai/chat` |
+| GET | `/ai/description-drafts?dataset=` | viewer | 列出描述草稿（按 status 过滤可选） |
+| POST | `/ai/description-drafts/{id}/accept` | editor | 采纳草稿：写 `annotation`（target_kind='field'，body=草稿）+ 置 accepted |
+| POST | `/ai/description-drafts/{id}/reject` | editor | 拒绝草稿：置 rejected（该字段不再重复生成） |
+
+> 另：MCP server（stdio）对外暴露只读工具 `search_fields` / `get_field_details` / `trace_lineage` / `get_field_history` / `get_overview`，不属于 REST 契约，见 07 规划 §4.6。
 
 ### 9.4 M3 写入与留痕矩阵
 

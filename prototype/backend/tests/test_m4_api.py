@@ -140,58 +140,60 @@ def _call(call_id: str, name: str, arguments: dict) -> dict:
                          "arguments": json.dumps(arguments, ensure_ascii=False)}}
 
 
-# ---------- LLM 客户端（不联网） ----------
+# ---------- LLM 客户端（不联网，LangChain 消息转换层） ----------
 
-def test_llm_client_uses_openai_compatible_endpoint(monkeypatch):
-    """monkeypatch urlopen，验证 URL/鉴权/请求体构造，实际不联网。"""
+def test_llm_client_message_conversion_and_not_configured(monkeypatch):
+    """M5 LangChain 化后：验证 OpenAI dict ↔ LangChain 消息转换与未配置语义。"""
+    from langchain_core.messages import AIMessage, SystemMessage, ToolMessage
+
+    from lineagelite.ai import llm
+
     monkeypatch.setenv("LLM_BASE_URL", "https://llm.invalid/v1")
     monkeypatch.setenv("LLM_API_KEY", "sk-test")
     monkeypatch.setenv("LLM_MODEL", "test-model")
 
     captured: dict = {}
 
-    class FakeResponse:
-        def __enter__(self):
+    class FakeChatModel:
+        def bind_tools(self, tools):
+            captured["tools"] = tools
             return self
 
-        def __exit__(self, *exc_info):
-            return False
+        def invoke(self, messages):
+            captured["messages"] = messages
+            return AIMessage(content="ok", tool_calls=[{
+                "name": "search_fields", "args": {"q": "order_no"}, "id": "c1"}])
 
-        def read(self):
-            return (b'{"choices":[{"message":{"role":"assistant",'
-                    b'"content":"ok"}}]}')
-
-    def fake_urlopen(request, timeout=None):
-        captured["url"] = request.full_url
-        captured["headers"] = {key.lower(): value
-                               for key, value in request.header_items()}
-        captured["body"] = json.loads(request.data.decode("utf-8"))
-        captured["timeout"] = timeout
-        return FakeResponse()
-
-    monkeypatch.setattr(
-        "lineagelite.ai.llm.urllib.request.urlopen", fake_urlopen)
-
-    from lineagelite.ai import llm
+    monkeypatch.setattr("lineagelite.ai.llm.get_chat_model",
+                        lambda settings=None: FakeChatModel())
 
     tools = [{"type": "function",
               "function": {"name": "search_fields", "parameters": {}}}]
-    result = llm.complete([{"role": "user", "content": "hi"}], tools)
-    assert result["choices"][0]["message"]["content"] == "ok"
-    assert captured["url"] == "https://llm.invalid/v1/chat/completions"
-    assert captured["headers"]["authorization"] == "Bearer sk-test"
-    assert captured["headers"]["content-type"] == "application/json"
-    assert captured["body"]["model"] == "test-model"
-    assert captured["body"]["tools"] == tools
-    assert captured["body"]["tool_choice"] == "auto"
-    assert captured["timeout"] == llm.REQUEST_TIMEOUT_SECONDS
-
-    # 已写全 /chat/completions 时不重复拼接；无 tools 时不发送 tools
-    captured.clear()
-    monkeypatch.setenv("LLM_BASE_URL", "https://llm.invalid/v1/chat/completions")
-    llm.complete([{"role": "user", "content": "hi"}], None)
-    assert captured["url"] == "https://llm.invalid/v1/chat/completions"
-    assert "tools" not in captured["body"]
+    result = llm.complete([
+        {"role": "system", "content": "sys"},
+        {"role": "user", "content": "hi"},
+        {"role": "assistant", "content": None,
+         "tool_calls": [{"id": "c0", "type": "function",
+                         "function": {"name": "search_fields",
+                                      "arguments": "{\"q\": \"x\"}"}}]},
+        {"role": "tool", "tool_call_id": "c0", "content": "{\"results\": []}"},
+    ], tools)
+    # 返回形态保持 OpenAI dict（chat.py 编排依赖）
+    message = result["choices"][0]["message"]
+    assert message["role"] == "assistant"
+    assert message["content"] == "ok"
+    assert message["tool_calls"][0]["function"]["name"] == "search_fields"
+    assert json.loads(message["tool_calls"][0]["function"]["arguments"]) == {
+        "q": "order_no"}
+    # 工具 schema 原样透传给 bind_tools
+    assert captured["tools"] == tools
+    # OpenAI dict 消息被转换为 LangChain 消息类型
+    kinds = [type(m) for m in captured["messages"]]
+    assert kinds[0] is SystemMessage
+    assert isinstance(captured["messages"][2], AIMessage)
+    assert captured["messages"][2].tool_calls[0]["args"] == {"q": "x"}
+    assert isinstance(captured["messages"][3], ToolMessage)
+    assert captured["messages"][3].tool_call_id == "c0"
 
     # 未配置（base_url 为空）→ LLMNotConfigured，不发起请求
     monkeypatch.setenv("LLM_BASE_URL", "")
@@ -242,11 +244,12 @@ def test_ai_status_and_chat_requires_configuration(client, monkeypatch):
     assert r.status_code == 200, r.text
     assert r.json() == {"answer": "你好，我是 LineageLite 助手。",
                         "tool_trace": []}
-    # system 提示由后端固定，且本轮请求携带五个只读工具（含画布高亮信号）
+    # system 提示由后端固定，且本轮请求携带八个工具（含画布高亮/建议/影响/草稿）
     assert seen["messages"][0]["role"] == "system"
     assert {tool["function"]["name"] for tool in seen["tools"]} == {
         "search_fields", "get_field_details", "trace_lineage",
-        "get_field_history", "mark_highlight"}
+        "get_field_history", "mark_highlight", "suggest_lineage",
+        "analyze_impact", "draft_descriptions"}
 
 
 # ---------- 工具循环与出图 ----------

@@ -130,6 +130,23 @@ CREATE TABLE IF NOT EXISTS rollback_record (
   created_at TEXT NOT NULL
 );
 
+-- M5：AI 描述草稿工作区（数据模型 §2.11）。草稿不触碰 field.description，
+-- 用户确认采纳后写 annotation；rejected 的字段不再重复生成。
+CREATE TABLE IF NOT EXISTS description_draft (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  dataset_id TEXT NOT NULL REFERENCES dataset(id),
+  field_name TEXT NOT NULL,
+  draft TEXT NOT NULL,
+  model TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending','accepted','rejected')),
+  created_at TEXT NOT NULL,
+  decided_at TEXT,
+  FOREIGN KEY (dataset_id, field_name)
+    REFERENCES field(dataset_id, name) ON DELETE CASCADE ON UPDATE CASCADE,
+  UNIQUE (dataset_id, field_name, status)
+);
+
 CREATE INDEX IF NOT EXISTS idx_edge_to ON edge(to_dataset, to_field);
 CREATE INDEX IF NOT EXISTS idx_edge_from ON edge(from_dataset, from_field);
 CREATE INDEX IF NOT EXISTS idx_field_sf ON field(source_file_id);

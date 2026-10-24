@@ -234,6 +234,28 @@ export interface AiHighlightItem {
   field: string;
 }
 
+/** suggest_lineage 落库的候选边（画布蓝色虚线，待人工确认） */
+export interface AiSuggestionCandidate {
+  from_dataset: string;
+  from_field: string | null;
+  to_dataset: string;
+  to_field: string | null;
+  confidence: number;
+  reason: string;
+}
+
+/** 描述草稿（draft_descriptions 生成，确认后落 annotation） */
+export interface AiDraftItem {
+  id: number;
+  dataset: string;
+  field: string;
+  draft: string;
+  model: string;
+  status: 'pending' | 'accepted' | 'rejected' | string;
+  created_at: string;
+  decided_at?: string | null;
+}
+
 export interface AiChatResponse {
   answer: string;
   tool_trace: AiToolTrace[];
@@ -241,7 +263,32 @@ export interface AiChatResponse {
   graph?: LineageGraph;
   /** mark_highlight 汇总的高亮字段；前端据此在画布上应用追踪链高亮 */
   highlights?: AiHighlightItem[];
+  /** suggest_lineage 落库的候选边（非流式路径返回） */
+  suggestions?: AiSuggestionCandidate[];
+  /** draft_descriptions 生成的描述草稿（非流式路径返回） */
+  drafts?: AiDraftItem[];
 }
+
+/** SSE 流式对话事件（POST /ai/chat/stream，演进规划 07 §4.3） */
+export type AiStreamEvent =
+  | { type: 'token'; delta: string }
+  | { type: 'tool'; tool: string; args: Record<string, unknown>; ok: boolean }
+  | {
+      type: 'suggest';
+      count: number;
+      candidates: AiSuggestionCandidate[];
+    }
+  | { type: 'drafts'; items: AiDraftItem[] }
+  | {
+      type: 'done';
+      answer: string;
+      graph?: LineageGraph;
+      highlights?: AiHighlightItem[];
+      suggestions?: AiSuggestionCandidate[];
+      drafts?: AiDraftItem[];
+      tool_trace: AiToolTrace[];
+    }
+  | { type: 'error'; status: string; detail: string };
 
 export interface AiSuggestion {
   from_dataset: string;

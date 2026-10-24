@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     llm_base_url: str = ""
     llm_api_key: str = ""
     llm_model: str = ""
+    # M5：embedding（语义血缘建议）。OpenAI / 阿里云 DashScope 兼容模式均可，
+    # 经 LangChain OpenAIEmbeddings 的 base_url 切换；默认空 = 语义层降级为纯启发式。
+    embedding_base_url: str = ""
+    embedding_api_key: str = ""
+    embedding_model: str = ""
 
 
 def get_settings() -> Settings:
