@@ -228,11 +228,19 @@ export interface AiToolTrace {
   ok: boolean;
 }
 
+/** mark_highlight 声明的画布高亮字段（红色追踪链联动信号） */
+export interface AiHighlightItem {
+  dataset: string;
+  field: string;
+}
+
 export interface AiChatResponse {
   answer: string;
   tool_trace: AiToolTrace[];
   /** 工具 trace_lineage 最后一次返回的子图，用于画布联动 */
   graph?: LineageGraph;
+  /** mark_highlight 汇总的高亮字段；前端据此在画布上应用追踪链高亮 */
+  highlights?: AiHighlightItem[];
 }
 
 export interface AiSuggestion {

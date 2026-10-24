@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import type {
   AiChatMessage,
   AiFocus,
+  AiHighlightItem,
   AiStatus,
   AiToolTrace,
   LineageGraph,
@@ -21,8 +22,11 @@ interface AiAssistantDrawerProps {
   /** 当前画布聚焦的数据集/字段，作为每轮对话的 focus 上下文 */
   focus: AiFocus | null;
   onClose: () => void;
-  /** 响应携带 graph 时，把子图交给 Workspace 复用现有画布状态渲染 */
-  onGraph: (graph: LineageGraph) => void;
+  /**
+   * 响应联动：graph 存在时把子图交给 Workspace 复用现有画布状态渲染；
+   * highlights（mark_highlight 声明）同时交给 Workspace 驱动画布追踪高亮。
+   */
+  onGraph: (graph: LineageGraph | null, highlights?: AiHighlightItem[]) => void;
 }
 
 interface ChatEntry {
@@ -39,6 +43,7 @@ const TOOL_LABELS: Record<string, string> = {
   get_field_details: '字段详情',
   trace_lineage: '追溯血缘',
   get_field_history: '变更历史',
+  mark_highlight: '标记高亮',
 };
 
 const EXAMPLE_PROMPTS = [
@@ -263,7 +268,9 @@ export function AiAssistantDrawer({
         toolTrace: response.tool_trace,
         graph: response.graph,
       });
-      if (response.graph) onGraph(response.graph);
+      if (response.graph || response.highlights?.length) {
+        onGraph(response.graph ?? null, response.highlights);
+      }
     } catch (reason) {
       if (controller.signal.aborted || isAbortError(reason)) return;
       if (reason instanceof ApiError && reason.status === 503) {

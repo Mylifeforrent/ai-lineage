@@ -21,8 +21,8 @@ export interface DatasetNodeData extends Record<string, unknown> {
   aiEndpointFields?: string[];
   /** 字段追踪：链路上的关联字段名列表（浅红底） */
   chainFieldNames?: string[];
-  /** 字段追踪：当前点击聚焦的字段名（强红底） */
-  focusedFieldName?: string | null;
+  /** 字段追踪：聚焦字段名列表（强红底；点击或 AI 声明，可为多个） */
+  focusedFieldNames?: string[];
   onToggleCollapse: (datasetId: string) => void;
   onToggleFields: (datasetId: string) => void;
   onSelectField: (dataset: LineageDataset, field: DatasetField) => void;
@@ -40,7 +40,7 @@ export function DatasetNode({ data }: NodeProps) {
     connectable,
     aiEndpointFields,
     chainFieldNames,
-    focusedFieldName,
+    focusedFieldNames,
     onToggleCollapse,
     onToggleFields,
     onSelectField,
@@ -174,7 +174,8 @@ export function DatasetNode({ data }: NodeProps) {
           ) : (
             <>
               {visibleFields.map((field) => {
-                const isFocused = focusedFieldName === field.name;
+                const isFocused =
+                  focusedFieldNames?.includes(field.name) ?? false;
                 const isLinked =
                   !isFocused && (chainFieldNames?.includes(field.name) ?? false);
                 const traced = isFocused || isLinked;

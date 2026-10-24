@@ -242,11 +242,11 @@ def test_ai_status_and_chat_requires_configuration(client, monkeypatch):
     assert r.status_code == 200, r.text
     assert r.json() == {"answer": "你好，我是 LineageLite 助手。",
                         "tool_trace": []}
-    # system 提示由后端固定，且本轮请求携带四个只读工具
+    # system 提示由后端固定，且本轮请求携带五个只读工具（含画布高亮信号）
     assert seen["messages"][0]["role"] == "system"
     assert {tool["function"]["name"] for tool in seen["tools"]} == {
         "search_fields", "get_field_details", "trace_lineage",
-        "get_field_history"}
+        "get_field_history", "mark_highlight"}
 
 
 # ---------- 工具循环与出图 ----------
@@ -329,6 +329,73 @@ def test_ai_chat_tool_loop_returns_answer_and_graph(client, monkeypatch):
     assert history_result["history"][0]["op"] == "added"
     trace_result = json.loads(tool_messages[3]["content"])
     assert trace_result["graph"]["datasets"]
+
+
+def test_ai_chat_mark_highlight_returns_highlights(client, monkeypatch):
+    """mark_highlight 校验字段存在性并把去重后的字段放入 highlights。"""
+    headers = login(client)
+    _seed(client, headers)
+    _configure_llm(monkeypatch)
+
+    def fake_complete(messages, tools=None):
+        if len(messages) == 2:
+            return _tool_round([
+                _call("call_mark", "mark_highlight", {"fields": [
+                    {"dataset": "ods_order", "field": "order_no"},
+                    # 重复项去重、不存在项忽略
+                    {"dataset": "ods_order", "field": "order_no"},
+                    {"dataset": "ods_order", "field": "no_such_field"},
+                ]}),
+            ])
+        return _final_answer("已高亮 ods_order.order_no 的上下游。")
+
+    monkeypatch.setattr("lineagelite.ai.llm.complete", fake_complete)
+
+    r = client.post("/ai/chat", headers=headers, json={
+        "messages": [{"role": "user",
+                      "content": "把 order_no 的上下游高亮出来"}],
+    })
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["answer"] == "已高亮 ods_order.order_no 的上下游。"
+    assert body["highlights"] == [
+        {"dataset": "ods_order", "field": "order_no"}]
+    assert body["tool_trace"] == [
+        {"tool": "mark_highlight",
+         "args": {"fields": [
+             {"dataset": "ods_order", "field": "order_no"},
+             {"dataset": "ods_order", "field": "order_no"},
+             {"dataset": "ods_order", "field": "no_such_field"}]},
+         "ok": True},
+    ]
+    # graph 未返回时不应出现该键
+    assert "graph" not in body
+
+
+def test_ai_chat_mark_highlight_all_invalid_is_tool_error(client, monkeypatch):
+    """fields 全部不存在时工具报错回传模型，不产生 highlights。"""
+    headers = login(client)
+    _seed(client, headers)
+    _configure_llm(monkeypatch)
+
+    def fake_complete(messages, tools=None):
+        if len(messages) == 2:
+            return _tool_round([
+                _call("call_mark", "mark_highlight", {"fields": [
+                    {"dataset": "no_ds", "field": "no_field"},
+                ]}),
+            ])
+        return _final_answer("没有找到可高亮的字段。")
+
+    monkeypatch.setattr("lineagelite.ai.llm.complete", fake_complete)
+
+    r = client.post("/ai/chat", headers=headers, json={
+        "messages": [{"role": "user", "content": "高亮一下"}],
+    })
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["tool_trace"][0]["ok"] is False
+    assert "highlights" not in body
 
 
 def test_ai_chat_reports_tool_errors(client, monkeypatch):

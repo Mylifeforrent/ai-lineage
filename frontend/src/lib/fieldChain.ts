@@ -93,15 +93,16 @@ export function deriveFieldMatches(graph: LineageGraph): DerivedFieldLink[] {
 }
 
 /**
- * 以点击的字段为起点，沿「库内字段级边 + 推导同名字段线」做无向 BFS，
- * 收集整条上下游链路；字段没有任何字段级关联时返回 null
+ * 以一个或多个点击/声明的字段为起点，沿「库内字段级边 + 推导同名字段线」
+ * 做无向 BFS，收集整条上下游链路；起点字段没有任何字段级关联时返回 null
  * （此时画布不做高亮与压暗）。
  */
 export function computeFieldChain(
   graph: LineageGraph,
   derivedLinks: DerivedFieldLink[],
-  focus: { datasetId: string; fieldName: string },
+  focus: Array<{ datasetId: string; fieldName: string }>,
 ): FieldChain | null {
+  if (focus.length === 0) return null;
   const nodeKey = (datasetId: string, fieldName: string) =>
     `${datasetId}::${fieldName}`;
   const nodeInfo = new Map<string, { datasetId: string; fieldName: string }>();
@@ -154,11 +155,11 @@ export function computeFieldChain(
     });
   });
 
-  const focusKey = nodeKey(focus.datasetId, focus.fieldName);
-  const visited = new Set<string>([focusKey]);
+  const focusKeys = focus.map((item) => nodeKey(item.datasetId, item.fieldName));
+  const visited = new Set<string>(focusKeys);
   const edgeIds = new Set<number>();
   const linkKeys = new Set<string>();
-  const queue = [focusKey];
+  const queue = [...focusKeys];
   while (queue.length > 0) {
     const current = queue.shift() as string;
     (adjacency.get(current) ?? []).forEach((connection) => {
@@ -173,13 +174,14 @@ export function computeFieldChain(
 
   if (edgeIds.size === 0 && linkKeys.size === 0) return null;
 
+  const focusKeySet = new Set(focusKeys);
   const nodes: FieldChainNode[] = [];
   visited.forEach((key) => {
     const info = nodeInfo.get(key);
     if (!info) return;
     nodes.push({
       ...info,
-      role: key === focusKey ? 'focus' : 'linked',
+      role: focusKeySet.has(key) ? 'focus' : 'linked',
     });
   });
   return { edgeIds, linkKeys, nodes };

@@ -791,7 +791,7 @@ LLM 配置状态。`configured` 语义：仓库根 `.env` 中 `LLM_BASE_URL` 与
 
 ### 13.2 POST /ai/chat
 
-自然语言对话：模型经 OpenAI 兼容 function calling 调用**只读**工具（`search_fields` / `get_field_details` / `trace_lineage` / `get_field_history`，`ai/tools.py`），最多 5 轮工具调用后强制收口作答。system 提示由后端固定（含 focus 上下文），前端不可传 `system` 角色。
+自然语言对话：模型经 OpenAI 兼容 function calling 调用**只读**工具（`search_fields` / `get_field_details` / `trace_lineage` / `get_field_history` / `mark_highlight`，`ai/tools.py`），最多 5 轮工具调用后强制收口作答。system 提示由后端固定（含 focus 上下文），前端不可传 `system` 角色。`mark_highlight` 是画布联动信号：模型声明要在前端高亮的字段（最多 8 个，校验存在性、去重），后端汇总进响应 `highlights`；详见 [06_AI画布联动高亮修复](./06_AI画布联动高亮修复.md)。
 
 - 所需角色：viewer
 - 请求体（`AiChatIn`）：
@@ -824,10 +824,14 @@ LLM 配置状态。`configured` 语义：仓库根 `.env` 中 `LLM_BASE_URL` 与
     { "tool": "search_fields", "args": { "q": "order_no" }, "ok": true },
     { "tool": "trace_lineage",
       "args": { "dataset": "dwd_order", "field": "order_no", "direction": "up", "hops": 3 },
+      "ok": true },
+    { "tool": "mark_highlight",
+      "args": { "fields": [ { "dataset": "ods_order", "field": "order_no" } ] },
       "ok": true }
   ],
   "graph": { "datasets": [ /* GraphPayload，同 GET /lineage/subgraph */ ],
-             "edges": [ /* … */ ] }
+             "edges": [ /* … */ ] },
+  "highlights": [ { "dataset": "ods_order", "field": "order_no" } ]
 }
 ```
 
@@ -836,6 +840,7 @@ LLM 配置状态。`configured` 语义：仓库根 `.env` 中 `LLM_BASE_URL` 与
 | answer | string | 模型最终回答（工具收口后的 content 文本） |
 | tool_trace | object[] | 工具调用轨迹，每项 `{tool: string, args: object, ok: boolean}`；`ok=false` 表示工具执行出错（错误信息只回传模型，不出现在轨迹中） |
 | graph | object | 可选。**最后一次**成功 `trace_lineage` 返回的 `GraphPayload`（附录 A6），供画布联动渲染；本次对话未查图时省略该字段 |
+| highlights | object[] | 可选。`mark_highlight` 汇总的高亮字段（最多 8 个，去重），每项 `{dataset: string, field: string}`；前端据此在画布上应用红色追踪链。模型未调用该工具时省略该字段（向后兼容） |
 
 - 错误场景：`503` 未配置 LLM（`未配置 LLM：请在仓库根 .env 中设置 LLM_BASE_URL / LLM_MODEL（LLM_API_KEY 视供应商要求填写）`）；`502` LLM 上游不可达 / 返回非 200 / 响应结构不合法；`422` messages 为空、role 非法、content 超长等。
 

@@ -8,7 +8,8 @@
 4. 若连续 5 轮都在调用工具，再发一次不带 tools 的请求强制收口（保证循环有界）。
 
 ``tool_trace`` 记录每次工具调用的 ``{tool, args, ok}``；``graph`` 取最后一次
-图查询工具（trace_lineage）返回的 GraphPayload，供前端画布联动渲染。
+图查询工具（trace_lineage）返回的 GraphPayload，供前端画布联动渲染；
+``highlights`` 汇总 mark_highlight 声明的字段（画布红色追踪链联动信号）。
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ import json
 from ..config import get_settings
 from ..db import get_db
 from . import llm
-from .tools import TOOL_SCHEMAS, run_tool
+from .tools import MAX_HIGHLIGHT_FIELDS, TOOL_SCHEMAS, run_tool
 
 MAX_TOOL_ROUNDS = 5
 
@@ -28,14 +29,18 @@ SYSTEM_PROMPT = """你是 LineageLite（轻量级 AI 数据血缘工具）的助
 - search_fields：按关键词定位字段；
 - get_field_details：字段详情、源文件定位器与回源预览；
 - trace_lineage：按数据集/字段追溯上下游 N 跳子图；
-- get_field_history：字段的变更历史。
+- get_field_history：字段的变更历史；
+- mark_highlight：声明要在画布上红色追踪高亮的字段（画布联动信号，不返回数据）。
 
 回答规则：
 1. 必须基于工具返回的数据作答，不得编造数据集、字段、边或文件位置；
    查不到时明确说明「未找到」，并给出下一步建议。
 2. 用户用中文提问时用中文回答；涉及血缘时说明方向、跳数与置信度，
    涉及回源时给出文件名与定位器（sheet/列/JSONPath）。
-3. 你没有写权限，不要声称已修改任何数据。"""
+3. 你没有写权限，不要声称已修改任何数据。
+4. 当用户要求「高亮/标记/标出」结果，或回答围绕某些字段的上下游时，
+   在给出最终回答前调用 mark_highlight，fields 传本次回答聚焦的字段
+   （最多 8 个）；这些字段会在画布上以红色追踪链高亮。"""
 
 
 def _system_prompt(focus: dict | None) -> str:
@@ -107,7 +112,7 @@ def _is_graph_payload(value) -> bool:
 
 
 def run_chat(messages: list[dict], focus: dict | None = None) -> dict:
-    """执行一轮 AI 对话，返回 ``{answer, tool_trace, graph?}``。
+    """执行一轮 AI 对话，返回 ``{answer, tool_trace, graph?, highlights?}``。
 
     ``messages`` 已由路由层校验为 ``[{role, content}]``（role 仅 user/assistant）。
     未配置 LLM 抛 :class:`llm.LLMNotConfigured`；上游 HTTP/结构错误抛
@@ -125,6 +130,8 @@ def run_chat(messages: list[dict], focus: dict | None = None) -> dict:
 
     tool_trace: list[dict] = []
     graph: dict | None = None
+    highlights: list[dict] = []
+    seen_highlights: set[tuple[str, str]] = set()
     rounds = 0
 
     while True:
@@ -177,6 +184,19 @@ def run_chat(messages: list[dict], focus: dict | None = None) -> dict:
                 candidate = result.get("graph")
                 if _is_graph_payload(candidate):
                     graph = candidate
+                if name == "mark_highlight":
+                    fields = result.get("fields")
+                    if isinstance(fields, list):
+                        for item in fields:
+                            if not isinstance(item, dict):
+                                continue
+                            key = (str(item.get("dataset") or ""),
+                                   str(item.get("field") or ""))
+                            if key in seen_highlights or not all(key):
+                                continue
+                            seen_highlights.add(key)
+                            highlights.append(
+                                {"dataset": key[0], "field": key[1]})
             conversation.append({
                 "role": "tool",
                 "tool_call_id": call_id or "",
@@ -186,4 +206,6 @@ def run_chat(messages: list[dict], focus: dict | None = None) -> dict:
     payload = {"answer": answer, "tool_trace": tool_trace}
     if graph is not None:
         payload["graph"] = graph
+    if highlights:
+        payload["highlights"] = highlights[:MAX_HIGHLIGHT_FIELDS]
     return payload

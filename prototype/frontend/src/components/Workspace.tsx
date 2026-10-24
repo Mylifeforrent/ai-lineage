@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   AiFocus,
+  AiHighlightItem,
   DatasetField,
   DatasetSummary,
   EdgeDraft,
@@ -60,6 +61,13 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
   // AI 对话返回的子图：优先于按选中数据集拉取的 graph 显示；
   // 数据集/跳数/刷新变化时清空，回到常规子图逻辑。
   const [aiGraph, setAiGraph] = useState<LineageGraph | null>(null);
+  // AI 回答声明的高亮字段（mark_highlight）：seq 区分每一轮回答，
+  // fields 为空数组表示新一轮回答未声明高亮（画布应清除追踪态）。
+  const [aiFieldFocus, setAiFieldFocus] = useState<{
+    seq: number;
+    fields: AiHighlightItem[];
+  } | null>(null);
+  const aiFocusSeq = useRef(0);
   const [graphLoading, setGraphLoading] = useState(false);
   const [graphError, setGraphError] = useState<string | null>(null);
   const [graphReloadKey, setGraphReloadKey] = useState(0);
@@ -252,11 +260,13 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
 
   const refreshGraph = useCallback(() => {
     setAiGraph(null);
+    setAiFieldFocus(null);
     setGraphReloadKey((value) => value + 1);
   }, []);
 
   const refreshAll = useCallback(() => {
     setAiGraph(null);
+    setAiFieldFocus(null);
     setDatasetsReloadKey((value) => value + 1);
     setGraphReloadKey((value) => value + 1);
     setSelectedEdgeId(null);
@@ -265,6 +275,7 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
 
   const handleSelectDataset = useCallback((datasetId: string) => {
     setAiGraph(null);
+    setAiFieldFocus(null);
     setSelectedDatasetId(datasetId);
     setSelectedField(null);
     setSelectedEdgeId(null);
@@ -276,6 +287,7 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
 
   const handleHopsChange = useCallback((nextHops: number) => {
     setAiGraph(null);
+    setAiFieldFocus(null);
     setHops(nextHops);
   }, []);
 
@@ -319,9 +331,15 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
     return null;
   }, [selectedField, selectedDatasetId]);
 
-  /** AI 回答携带 graph：复用画布状态直接切换子图，并提示用户。 */
+  /** AI 回答联动：切换子图并把 mark_highlight 声明交给画布做追踪高亮。 */
   const handleAiGraph = useCallback(
-    (payload: LineageGraph) => {
+    (payload: LineageGraph | null, highlights?: AiHighlightItem[]) => {
+      aiFocusSeq.current += 1;
+      setAiFieldFocus({
+        seq: aiFocusSeq.current,
+        fields: highlights ?? [],
+      });
+      if (!payload) return;
       setAiGraph(payload);
       applyGraph(payload);
       setGraphError(null);
@@ -505,6 +523,7 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
               onConnectRequest={handleConnectRequest}
               onNotice={handleCanvasNotice}
               onRetry={retryGraph}
+              aiFocusFields={aiFieldFocus}
             />
           </div>
         </main>

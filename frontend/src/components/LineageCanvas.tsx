@@ -14,6 +14,7 @@ import type {
   ReactFlowInstance,
 } from '@xyflow/react';
 import type {
+  AiHighlightItem,
   DatasetField,
   EdgeDraft,
   LineageDataset,
@@ -26,6 +27,7 @@ import {
   deriveFieldMatches,
   derivedLinkKey,
 } from '../lib/fieldChain';
+import type { FieldChain } from '../lib/fieldChain';
 import { FIELD_PREVIEW_LIMIT, layoutDatasets, NODE_WIDTH } from '../lib/layout';
 import {
   TABLE_SOURCE_HANDLE,
@@ -91,6 +93,11 @@ interface LineageCanvasProps {
   onConnectRequest: (draft: EdgeDraft) => void;
   onNotice: (message: string) => void;
   onRetry: () => void;
+  /**
+   * AI 回答声明的高亮字段（mark_highlight 汇总）：seq 变化即应用或清除
+   * 追踪焦点；fields 为空数组表示显式清除（新一轮回答未声明高亮）。
+   */
+  aiFocusFields: { seq: number; fields: AiHighlightItem[] } | null;
 }
 
 function parseFieldHandle(
@@ -120,6 +127,7 @@ export function LineageCanvas({
   onConnectRequest,
   onNotice,
   onRetry,
+  aiFocusFields,
 }: LineageCanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<LineageFlowEdge>([]);
@@ -132,8 +140,8 @@ export function LineageCanvas({
   const [groups, setGroups] = useState<CollapsedGroup[]>([]);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const nextGroupId = useRef(1);
-  // 字段追踪焦点：点击字段行后，沿字段级关联高亮整条上下游链路
-  const [focusedField, setFocusedField] = useState<FieldFocus | null>(null);
+  // 字段追踪焦点：点击字段行或 AI 回答声明后，沿字段级关联高亮整条上下游链路
+  const [focusFields, setFocusFields] = useState<FieldFocus[]>([]);
 
   // 视图派生：表级血缘两端同名字段匹配线（非库内血缘，仅追踪演示用）
   const derivedLinks = useMemo(
@@ -142,10 +150,10 @@ export function LineageCanvas({
   );
   const chain = useMemo(
     () =>
-      graph && focusedField
-        ? computeFieldChain(graph, derivedLinks, focusedField)
+      graph && focusFields.length > 0
+        ? computeFieldChain(graph, derivedLinks, focusFields)
         : null,
-    [graph, derivedLinks, focusedField],
+    [graph, derivedLinks, focusFields],
   );
 
   // M2 遗留修复：种子或跳数变化都视为一张新图——清空拖拽位置与折叠组，
@@ -154,23 +162,21 @@ export function LineageCanvas({
     draggedPositions.current.clear();
     setGroups([]);
     setSelectedNodeIds([]);
-    setFocusedField(null);
+    setFocusFields([]);
     nextGroupId.current = 1;
   }, [seedDatasetId, hops]);
 
-  // 子图刷新后焦点字段已不存在时，清空追踪态
+  // 子图刷新后焦点字段已不存在时，剔除失效焦点（全部失效即清空追踪态）
   useEffect(() => {
-    if (!focusedField || !graph) return;
-    const dataset = graph.datasets.find(
-      (item) => item.id === focusedField.datasetId,
-    );
-    if (
-      !dataset ||
-      !dataset.fields.some((item) => item.name === focusedField.fieldName)
-    ) {
-      setFocusedField(null);
-    }
-  }, [graph, focusedField]);
+    if (focusFields.length === 0 || !graph) return;
+    const next = focusFields.filter((item) => {
+      const dataset = graph.datasets.find((d) => d.id === item.datasetId);
+      return Boolean(
+        dataset?.fields.some((f) => f.name === item.fieldName),
+      );
+    });
+    if (next.length !== focusFields.length) setFocusFields(next);
+  }, [graph, focusFields]);
 
   // 子图刷新后剔除已不存在的分组成员
   useEffect(() => {
@@ -216,7 +222,7 @@ export function LineageCanvas({
       const ids = params.nodes
         .filter((node) => node.type === 'dataset')
         .map((node) => node.id);
-      if (ids.length > 0) setFocusedField(null);
+      if (ids.length > 0) setFocusFields([]);
       setSelectedNodeIds((previous) => {
         const same =
           previous.length === ids.length &&
@@ -283,6 +289,28 @@ export function LineageCanvas({
     );
   }, [graph, nodes, selectedNodeIds, setEdges, setNodes]);
 
+  /** 追踪前保证链路字段可见：折叠的表自动展开，超出预览上限的字段列表自动展开 */
+  const revealChainFields = useCallback(
+    (targetChain: FieldChain) => {
+      if (!graph) return;
+      targetChain.nodes.forEach((node) => {
+        if (collapsedIds.has(node.datasetId)) onToggleCollapse(node.datasetId);
+        const target = graph.datasets.find(
+          (item) => item.id === node.datasetId,
+        );
+        if (!target) return;
+        const visibleCount = fieldsExpandedIds.has(node.datasetId)
+          ? target.fields.length
+          : Math.min(target.fields.length, FIELD_PREVIEW_LIMIT);
+        const index = target.fields.findIndex(
+          (item) => item.name === node.fieldName,
+        );
+        if (index >= visibleCount) onToggleFields(node.datasetId);
+      });
+    },
+    [collapsedIds, fieldsExpandedIds, graph, onToggleCollapse, onToggleFields],
+  );
+
   const handleSelectField = useCallback(
     (dataset: LineageDataset, field: DatasetField) => {
       setSelectedNodeIds([]);
@@ -299,44 +327,28 @@ export function LineageCanvas({
           : current;
       });
 
-      const nextFocus = { datasetId: dataset.id, fieldName: field.name };
+      const nextFocus: FieldFocus[] = [
+        { datasetId: dataset.id, fieldName: field.name },
+      ];
       const sameFocus =
-        focusedField?.datasetId === nextFocus.datasetId &&
-        focusedField?.fieldName === nextFocus.fieldName;
-      setFocusedField(nextFocus);
+        focusFields.length === 1 &&
+        focusFields[0].datasetId === nextFocus[0].datasetId &&
+        focusFields[0].fieldName === nextFocus[0].fieldName;
+      setFocusFields(nextFocus);
 
-      // 追踪前先保证链路上的字段行可见：折叠的表自动展开，
-      // 超出字段预览上限的列表自动展开，否则链路线会被隐藏。
+      // 追踪前先保证链路上的字段行可见，否则链路线会被隐藏。
       if (graph && !sameFocus) {
         const nextChain = computeFieldChain(graph, derivedLinks, nextFocus);
-        nextChain?.nodes.forEach((node) => {
-          if (collapsedIds.has(node.datasetId)) {
-            onToggleCollapse(node.datasetId);
-          }
-          const target = graph.datasets.find(
-            (item) => item.id === node.datasetId,
-          );
-          if (!target) return;
-          const visibleCount = fieldsExpandedIds.has(node.datasetId)
-            ? target.fields.length
-            : Math.min(target.fields.length, FIELD_PREVIEW_LIMIT);
-          const index = target.fields.findIndex(
-            (item) => item.name === node.fieldName,
-          );
-          if (index >= visibleCount) onToggleFields(node.datasetId);
-        });
+        if (nextChain) revealChainFields(nextChain);
       }
 
       onSelectField(dataset, field);
     },
     [
-      collapsedIds,
-      fieldsExpandedIds,
-      focusedField,
+      focusFields,
       derivedLinks,
       graph,
-      onToggleCollapse,
-      onToggleFields,
+      revealChainFields,
       onSelectField,
       setEdges,
       setNodes,
@@ -347,13 +359,36 @@ export function LineageCanvas({
     (_: unknown, edge: LineageFlowEdge) => {
       const data = edge.data;
       if (!data?.edge || data.aggregateCount || data.derived) return;
-      setFocusedField(null);
+      setFocusFields([]);
       onSelectEdge(data.edge);
     },
     [onSelectEdge],
   );
 
-  const handlePaneClick = useCallback(() => setFocusedField(null), []);
+  const handlePaneClick = useCallback(() => setFocusFields([]), []);
+
+  // AI 回答声明的高亮字段：校验存在 → 自动展开链路 → 应用为追踪焦点
+  useEffect(() => {
+    if (!aiFocusFields) return;
+    if (aiFocusFields.fields.length === 0) {
+      setFocusFields([]);
+      return;
+    }
+    if (!graph) return;
+    const valid = aiFocusFields.fields.filter((item) => {
+      const dataset = graph.datasets.find((d) => d.id === item.dataset);
+      return Boolean(dataset?.fields.some((f) => f.name === item.field));
+    });
+    if (valid.length === 0) return;
+    const nextFocus = valid.map((item) => ({
+      datasetId: item.dataset,
+      fieldName: item.field,
+    }));
+    const nextChain = computeFieldChain(graph, derivedLinks, nextFocus);
+    if (!nextChain) return;
+    revealChainFields(nextChain);
+    setFocusFields(nextFocus);
+  }, [aiFocusFields, graph, derivedLinks, revealChainFields]);
 
   const handleNodeClick = useCallback(
     (_: unknown, node: FlowNode) => {
@@ -457,13 +492,13 @@ export function LineageCanvas({
     // 追踪链路命中的字段：按数据集聚合，驱动节点内字段行红色高亮
     const chainByDataset = new Map<
       string,
-      { focused: string | null; linked: string[] }
+      { focused: string[]; linked: string[] }
     >();
     if (chain) {
       chain.nodes.forEach((node) => {
         const entry =
-          chainByDataset.get(node.datasetId) ?? { focused: null, linked: [] };
-        if (node.role === 'focus') entry.focused = node.fieldName;
+          chainByDataset.get(node.datasetId) ?? { focused: [], linked: [] };
+        if (node.role === 'focus') entry.focused.push(node.fieldName);
         else entry.linked.push(node.fieldName);
         chainByDataset.set(node.datasetId, entry);
       });
@@ -487,7 +522,7 @@ export function LineageCanvas({
           connectable: canEdit,
           aiEndpointFields: aiFields ? Array.from(aiFields) : [],
           chainFieldNames: chainByDataset.get(dataset.id)?.linked ?? [],
-          focusedFieldName: chainByDataset.get(dataset.id)?.focused ?? null,
+          focusedFieldNames: chainByDataset.get(dataset.id)?.focused ?? [],
           onToggleCollapse,
           onToggleFields,
           onSelectField: handleSelectField,

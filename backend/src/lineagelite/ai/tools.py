@@ -6,7 +6,8 @@
 - ``search_fields``：字段名/数据集/描述/标注的模糊搜索（数据模型 §3.2 的轻量实现）；
 - ``get_field_details``：字段元数据 + 源定位器 + 回源预览 + 标注（复用 preview.py）；
 - ``trace_lineage``：N 跳血缘子图（复用 lineage.py 的 GraphPayload）；
-- ``get_field_history``：字段的 change_log 变更历史（复用 changes.py 快照解析）。
+- ``get_field_history``：字段的 change_log 变更历史（复用 changes.py 快照解析）；
+- ``mark_highlight``：声明要在画布上高亮的字段（画布联动信号，只校验存在性）。
 """
 
 from __future__ import annotations
@@ -20,6 +21,7 @@ from ..preview import PreviewError, field_preview
 
 MAX_SEARCH_RESULTS = 20
 MAX_HISTORY_ROWS = 50
+MAX_HIGHLIGHT_FIELDS = 8
 
 TOOL_SCHEMAS: list[dict] = [
     {
@@ -103,6 +105,36 @@ TOOL_SCHEMAS: list[dict] = [
                     "field": {"type": "string", "description": "字段名"},
                 },
                 "required": ["dataset", "field"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "mark_highlight",
+            "description": (
+                "声明要在画布上红色追踪高亮的字段（画布联动信号，不返回数据）。"
+                "当用户要求高亮/标记/标出结果，或回答围绕某些字段的上下游时，"
+                "在给出最终回答前调用；字段必须真实存在。"
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "fields": {
+                        "type": "array",
+                        "description": f"要高亮的字段列表（最多 {MAX_HIGHLIGHT_FIELDS} 个）",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "dataset": {"type": "string",
+                                            "description": "数据集 ID"},
+                                "field": {"type": "string", "description": "字段名"},
+                            },
+                            "required": ["dataset", "field"],
+                        },
+                    },
+                },
+                "required": ["fields"],
             },
         },
     },
@@ -274,11 +306,52 @@ def get_field_history(conn: sqlite3.Connection, args: dict) -> dict:
     return {"dataset": dataset, "field": field, "history": history}
 
 
+def mark_highlight(conn: sqlite3.Connection, args: dict) -> dict:
+    """画布联动信号：声明要在前端高亮的字段。
+
+    只校验字段存在性（SELECT），不返回业务数据；不存在的项记入 ``ignored``
+    并在结果中回传给模型，全部不存在时抛 :class:`ToolError` 让模型纠正。
+    """
+    raw = args.get("fields")
+    if not isinstance(raw, list) or not raw:
+        raise ToolError("fields 必须是非空数组")
+
+    fields: list[dict] = []
+    ignored: list[str] = []
+    seen: set[tuple[str, str]] = set()
+    for item in raw:
+        if len(fields) >= MAX_HIGHLIGHT_FIELDS:
+            break
+        if not isinstance(item, dict):
+            ignored.append(str(item))
+            continue
+        dataset = item.get("dataset")
+        field = item.get("field")
+        if (not isinstance(dataset, str) or not dataset.strip()
+                or not isinstance(field, str) or not field.strip()):
+            ignored.append(f"{dataset}.{field}")
+            continue
+        dataset, field = dataset.strip(), field.strip()
+        if (dataset, field) in seen:
+            continue
+        if conn.execute("SELECT 1 FROM field WHERE dataset_id=? AND name=?",
+                        (dataset, field)).fetchone() is None:
+            ignored.append(f"{dataset}.{field}")
+            continue
+        seen.add((dataset, field))
+        fields.append({"dataset": dataset, "field": field})
+
+    if not fields:
+        raise ToolError("没有可高亮的字段：fields 里的 dataset/field 均不存在")
+    return {"fields": fields, "ignored": ignored}
+
+
 TOOL_FUNCS = {
     "search_fields": search_fields,
     "get_field_details": get_field_details,
     "trace_lineage": trace_lineage,
     "get_field_history": get_field_history,
+    "mark_highlight": mark_highlight,
 }
 
 
