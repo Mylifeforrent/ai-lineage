@@ -75,6 +75,8 @@ npm run build      # tsc -b && vite build
 
 前端只使用 `fetch` 访问 API；画布依赖 `@xyflow/react`，分层布局依赖 `@dagrejs/dagre`。
 
+前后端接口联调：启动后端后执行 `node scripts/api-e2e.mjs`（或 `E2E_BASE_URL=http://127.0.0.1:8001 node scripts/api-e2e.mjs`），镜像 `src/lib/api.ts` 全部请求做端到端校验（含 RBAC/错误语义），会写入 `e2e_` 前缀数据并自动回滚可回滚部分。
+
 ## 已知差距
 
 - **用户管理原型保真**：当前 `UserManagementModal` 只支持用户列表 + 新增用户（含创建时角色选择）；原型「版本与用户」屏中的逐行角色下拉与 RBAC 权限矩阵尚未实现。角色变更需要新增管理员接口，且涉及「是否允许管理员修改自己的角色/如何保证至少保留一名 admin」等业务规则（`[TBD-BIZ]`，需产品确认后再实现）；UI 已明确标注该限制。

@@ -95,3 +95,54 @@ def test_rollback_v2_restores_v1(client):
 def test_rollback_unknown_batch_404(client):
     headers = login(client)
     assert client.post("/import/batches/999/rollback", headers=headers).status_code == 404
+
+
+def test_tag_rollback_repeat_is_noop_and_reports_zero(client):
+    """重复回滚到同一标签：无副作用且 reverted=0（API 契约 §12.4）。"""
+    headers = login(client)
+    _seed_and_import_v1(client, headers)
+
+    # 基线标签：锚定导入 v1 后的状态
+    r = client.post("/version-tags", headers=headers,
+                    json={"name": "base", "note": "基线"})
+    assert r.status_code == 201, r.text
+
+    # 写入两类可回滚变更：新增人工边 + 删除导入边
+    r = client.post("/edges", headers=headers,
+                    json={"from_dataset": "ods_raw", "from_field": "order_no",
+                          "to_dataset": "dwd_order", "to_field": "user_name",
+                          "transform": "join", "confidence": 0.9})
+    assert r.status_code == 201, r.text
+    sub = client.get("/lineage/subgraph?dataset=ods_raw&hops=1",
+                     headers=headers).json()
+    imported_edge_id = next(
+        e["id"] for e in sub["edges"]
+        if e["source"] == "imported"
+        and e["from_dataset"] == "ods_raw" and e["to_dataset"] == "dwd_order")
+    assert client.delete(f"/edges/{imported_edge_id}",
+                         headers=headers).status_code == 204
+
+    # 首次回滚：两条日志都被反做
+    r = client.post("/version-tags/base/rollback", headers=headers)
+    assert r.status_code == 200, r.text
+    assert r.json()["reverted"] == 2
+    snap_base = client.get("/lineage/snapshot", headers=headers).json()
+
+    # 重复回滚：全部日志已被覆盖，reverted=0 且状态不变
+    r = client.post("/version-tags/base/rollback", headers=headers)
+    assert r.status_code == 200, r.text
+    assert r.json()["reverted"] == 0
+    assert client.get("/lineage/snapshot", headers=headers).json() == snap_base
+
+    # 回滚后再删一次基线边，再次回滚只反做新日志（先删后回滚的循环可重复）
+    sub = client.get("/lineage/subgraph?dataset=ods_raw&hops=1",
+                     headers=headers).json()
+    edge_id = next(e["id"] for e in sub["edges"]
+                   if e["from_dataset"] == "ods_raw")
+    assert client.delete(f"/edges/{edge_id}", headers=headers).status_code == 204
+    r = client.post("/version-tags/base/rollback", headers=headers)
+    assert r.status_code == 200, r.text
+    assert r.json()["reverted"] == 1
+    assert client.get("/lineage/snapshot", headers=headers).json() == snap_base
+    assert client.post("/version-tags/base/rollback",
+                       headers=headers).json()["reverted"] == 0

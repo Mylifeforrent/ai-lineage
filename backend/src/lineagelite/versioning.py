@@ -1,8 +1,9 @@
 """版本管理：按导入批次/业务标签回滚（change_log 反做）、变更查询与标签 diff。
 
 回滚规则（数据模型 §七）：added→删除、updated→恢复 before、deleted→重插 before，
-按日志 id 倒序执行。反做函数对「行已不存在/已存在」均安全，因此同一标签重复回滚
-（幂等）不会改变最终状态。
+按日志 id 倒序执行。反做函数对「行已不存在/已存在」均安全；标签回滚还会跳过已被
+先前回滚覆盖的日志（批次已回滚或落在 rollback_record 区间内），因此同一标签重复
+回滚（幂等）既不改变最终状态，也返回 0。
 
 留痕策略：
 - 批次回滚沿用 import_batch.rolled_back_at/by；
@@ -211,10 +212,30 @@ def list_tags() -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def _already_reversed(conn: sqlite3.Connection, log: sqlite3.Row) -> bool:
+    """该日志是否已被更早的回滚反做过（重复回滚时应跳过）。
+
+    两种留痕覆盖同一判定：批次日志看 ``import_batch.rolled_back_at``；
+    人工日志看 ``rollback_record`` 的反做区间 ``(from_change_seq, to_change_seq]``。
+    """
+    if log["batch_id"] is not None:
+        row = conn.execute(
+            "SELECT 1 FROM import_batch WHERE id=? AND rolled_back_at IS NOT NULL",
+            (log["batch_id"],)).fetchone()
+        if row is not None:
+            return True
+    row = conn.execute(
+        "SELECT 1 FROM rollback_record WHERE ? > from_change_seq"
+        " AND ? <= to_change_seq LIMIT 1",
+        (log["id"], log["id"])).fetchone()
+    return row is not None
+
+
 def rollback_to_tag(name: str, actor: str) -> int:
     """反做标签 change_seq 之后的全部 change_log（含人工编辑），返回条数。
 
-    反做不写 change_log；重复调用因 ``_restore_row/_delete_row`` 幂等而安全，
+    反做不写 change_log；已被先前回滚反做过的日志跳过（``_already_reversed``），
+    因此重复回滚既是无副作用的、也返回 0——与 API 契约 §12.4 一致。
     每次调用追加一条 rollback_record 审计。被反做日志所属的导入批次同步写
     ``rolled_back_at/by``，使版本抽屉的批次状态与数据现状一致。
     """
@@ -227,13 +248,14 @@ def rollback_to_tag(name: str, actor: str) -> int:
         logs = conn.execute(
             "SELECT * FROM change_log WHERE id > ? ORDER BY id DESC",
             (tag["change_seq"],)).fetchall()
+        pending = [log for log in logs if not _already_reversed(conn, log)]
         _reverse_logs(
-            conn, logs,
+            conn, pending,
             "回滚遇引用完整性冲突：请先删除晚于该标签、引用将被删除字段的血缘边",
             actor)
         # 被反做日志所属的批次数据已整体回到标签时点，同步标记批次状态，
         # 避免版本抽屉把已失效批次继续显示为「有效」。重复回滚保留首次时间。
-        batch_ids = sorted({log["batch_id"] for log in logs
+        batch_ids = sorted({log["batch_id"] for log in pending
                             if log["batch_id"] is not None})
         if batch_ids:
             placeholders = ", ".join("?" for _ in batch_ids)
@@ -246,8 +268,8 @@ def rollback_to_tag(name: str, actor: str) -> int:
         conn.execute(
             "INSERT INTO rollback_record(tag_name, from_change_seq, to_change_seq,"
             " reverted, actor, created_at) VALUES (?,?,?,?,?,?)",
-            (name, tag["change_seq"], to_seq, len(logs), actor, _now()))
-        return len(logs)
+            (name, tag["change_seq"], to_seq, len(pending), actor, _now()))
+        return len(pending)
 
 
 def tag_diff(from_name: str, to_name: str) -> dict:

@@ -587,10 +587,10 @@ def test_rollback_to_tag_is_idempotent_and_keeps_annotations(client):
                                      "target_id": "ods_order"}).json()
     assert [row["body"] for row in annotations] == ["回滚也要保留"]
 
-    # 重复回滚安全：状态不变，追加审计
+    # 重复回滚安全：已反做日志被跳过，reverted=0 且状态不变，追加审计
     r = client.post("/version-tags/base/rollback", headers=admin_headers)
     assert r.status_code == 200, r.text
-    assert r.json() == {"reverted": expected_reverted}
+    assert r.json() == {"reverted": 0}
     assert client.get("/lineage/snapshot", headers=admin_headers).json() == baseline
     assert _db_count("SELECT COUNT(*) FROM rollback_record") == 2
     assert _db_count(
