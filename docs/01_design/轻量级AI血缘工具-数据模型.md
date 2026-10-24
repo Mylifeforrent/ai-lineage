@@ -225,7 +225,7 @@ WHERE from_field IS NULL AND to_field IS NULL;
 
 ### 3.2 字段检索（search_fields 工具的支撑）
 
-M4 实现**未引入 FTS5 虚拟表**，`search_fields`（`backend/src/lineagelite/ai/tools.py`）直接对 `field` / `dataset` / `annotation` 做 SQLite `LIKE` 模糊匹配：
+M4 实现**未引入 FTS5 虚拟表**，`search_fields`（`prototype/backend/src/lineagelite/ai/tools.py`）直接对 `field` / `dataset` / `annotation` 做 SQLite `LIKE` 模糊匹配：
 
 ```sql
 -- 实际实现（简化）：数据集 id/名称、字段名、字段描述、字段标注
@@ -291,7 +291,7 @@ LIMIT 20;
 
 ### 4.2 change_log.before / after（行快照）
 
-目标行的**固定业务列集合**（`backend/src/lineagelite/changes.py` 的 `FIELD_SNAPSHOT_KEYS` / `EDGE_SNAPSHOT_KEYS`），不含 `id`、时间戳与 `created_by/updated_by` 审计列：
+目标行的**固定业务列集合**（`prototype/backend/src/lineagelite/changes.py` 的 `FIELD_SNAPSHOT_KEYS` / `EDGE_SNAPSHOT_KEYS`），不含 `id`、时间戳与 `created_by/updated_by` 审计列：
 
 - field：`dataset_id, name, field_type, source_file_id, src_locator, description`
 - edge：`from_dataset, from_field, to_dataset, to_field, transform, confidence, source, note`
@@ -393,7 +393,7 @@ LIMIT 20;
 
 ## 九、API 契约增量（M2/M3/M4 实现同步）
 
-本节记录代码实现相对《设计方案》第四章的**契约增量**，避免文档与 `backend/src/lineagelite/` 漂移。
+本节记录代码实现相对《设计方案》第四章的**契约增量**，避免文档与 `prototype/backend/src/lineagelite/` 漂移。
 
 ### 9.1 M2 契约增量（已实现）
 
@@ -429,7 +429,7 @@ LIMIT 20;
 | POST | `/ai/suggest/confirm` | editor | 按自然键把 `source='ai'` 改为 `manual`，写 `updated` 日志；非 AI 边/不存在返回 404 |
 | POST | `/ai/suggest/reject` | editor | 删除 AI 候选边，写 `deleted` 日志，返回 204 |
 
-> 工具集：`search_fields`、`get_field_details`、`trace_lineage`、`get_field_history`（`backend/src/lineagelite/ai/tools.py`），全部只读，不写库。
+> 工具集：`search_fields`、`get_field_details`、`trace_lineage`、`get_field_history`（`prototype/backend/src/lineagelite/ai/tools.py`），全部只读，不写库。
 
 ### 9.4 M3 写入与留痕矩阵
 

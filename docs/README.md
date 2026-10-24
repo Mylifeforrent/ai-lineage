@@ -28,15 +28,15 @@ docs/
 
 | 文档章节 | 代码落点 |
 |---|---|
-| 数据模型 §二 表定义 | `backend/src/lineagelite/db.py`（DDL 与文档逐表对齐，含 rollback_record） |
-| 数据模型 §四 JSON 结构 | `backend/src/lineagelite/locator.py`、`manifest.py`（定位器信封 + 实文件核查） |
-| 设计方案 §3.5-3.6 导入流程 | `backend/src/lineagelite/import_service.py`、`routes/imports.py` |
-| 设计方案 §4.4 用户与权限 | `backend/src/lineagelite/security.py`、`routes/auth.py` |
-| 数据模型 §七 版本重建 | `backend/src/lineagelite/versioning.py`（按批次/按标签回滚、标签 diff、幂等反做） |
-| 数据模型 §九 M2 契约增量 | `backend/src/lineagelite/routes/datasets.py`（field_names）、`preview.py`（file/verification）、`lineage.py`（edge.id） |
-| 数据模型 §九 M3 编辑与标注 | `backend/src/lineagelite/routes/annotations.py`、`routes/fields.py`、`routes/edges.py`、`routes/changes.py`、`routes/version_tags.py`、`changes.py` |
-| 数据模型 §九 M4 AI 接口 | `backend/src/lineagelite/routes/ai.py`、`ai/suggest.py`、`ai/tools.py`、`ai/chat.py`、`ai/llm.py`；前端 `components/AiAssistantDrawer.tsx`、`components/EdgeDetailPanel.tsx` |
-| 业务模型 §六 不变量 | 部分由数据库约束保证（边唯一部分索引），部分由服务层校验保证，均有对应测试（`backend/tests/test_m3_api.py` 等） |
+| 数据模型 §二 表定义 | `prototype/backend/src/lineagelite/db.py`（DDL 与文档逐表对齐，含 rollback_record） |
+| 数据模型 §四 JSON 结构 | `prototype/backend/src/lineagelite/locator.py`、`manifest.py`（定位器信封 + 实文件核查） |
+| 设计方案 §3.5-3.6 导入流程 | `prototype/backend/src/lineagelite/import_service.py`、`routes/imports.py` |
+| 设计方案 §4.4 用户与权限 | `prototype/backend/src/lineagelite/security.py`、`routes/auth.py` |
+| 数据模型 §七 版本重建 | `prototype/backend/src/lineagelite/versioning.py`（按批次/按标签回滚、标签 diff、幂等反做） |
+| 数据模型 §九 M2 契约增量 | `prototype/backend/src/lineagelite/routes/datasets.py`（field_names）、`preview.py`（file/verification）、`lineage.py`（edge.id） |
+| 数据模型 §九 M3 编辑与标注 | `prototype/backend/src/lineagelite/routes/annotations.py`、`routes/fields.py`、`routes/edges.py`、`routes/changes.py`、`routes/version_tags.py`、`changes.py` |
+| 数据模型 §九 M4 AI 接口 | `prototype/backend/src/lineagelite/routes/ai.py`、`ai/suggest.py`、`ai/tools.py`、`ai/chat.py`、`ai/llm.py`；前端 `components/AiAssistantDrawer.tsx`、`components/EdgeDetailPanel.tsx` |
+| 业务模型 §六 不变量 | 部分由数据库约束保证（边唯一部分索引），部分由服务层校验保证，均有对应测试（`prototype/backend/tests/test_m3_api.py` 等） |
 
 ## 维护约定
 
