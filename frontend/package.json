@@ -13,7 +13,10 @@
     "@dagrejs/dagre": "^1.1.8",
     "@xyflow/react": "^12.12.0",
     "react": "^19.2.9",
-    "react-dom": "^19.2.9"
+    "react-dom": "^19.2.9",
+    "react-markdown": "^10.1.0",
+    "remark-breaks": "^4.0.0",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

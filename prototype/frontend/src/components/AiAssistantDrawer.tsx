@@ -1,5 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { FormEvent, ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { FormEvent } from 'react';
+import ReactMarkdown from 'react-markdown';
+import type { Components } from 'react-markdown';
+import remarkBreaks from 'remark-breaks';
+import remarkGfm from 'remark-gfm';
 import type {
   AiChatMessage,
   AiDraftItem,
@@ -80,7 +84,52 @@ const NON_FIELD_TOKENS = new Set([
   'csv', 'xlsx', 'xls', 'json', 'md', 'txt', 'png', 'svg', 'db', 'py', 'ts',
 ]);
 
-/** 回答文本里的 `数据集.字段` 引用渲染为可点证据锚点（点击→画布追踪链）。 */
+const FIELD_REF_PATTERN = /\b([a-zA-Z][\w-]{0,31})\.([a-zA-Z][\w-]{0,63})\b/g;
+
+/**
+ * GFM markdown 渲染（演进规划 07：业界聊天 UI 统一做法——表格/代码块/列表
+ * 带样式渲染，而非裸文本）。安全：react-markdown 默认不执行内联 HTML。
+ */
+function linkifyFieldRefs(markdown: string): string {
+  /** 把非代码段里的 `数据集.字段` 文本替换为锚点链接，由 a 组件接管为 chip。 */
+  const segments = markdown.split(/(```[\s\S]*?(?:```|$)|`[^`\n]*`)/g);
+  return segments
+    .map((segment, index) => {
+      if (index % 2 === 1) return segment; // 代码段原样保留
+      return segment.replace(
+        FIELD_REF_PATTERN,
+        (full, dataset: string, field: string) => {
+          if (NON_FIELD_TOKENS.has(field.toLowerCase())) return full;
+          return `[${full}](#ref:${encodeURIComponent(dataset)}.${encodeURIComponent(field)})`;
+        },
+      );
+    })
+    .join('');
+}
+
+function FieldRefChip({
+  dataset,
+  field,
+  label,
+  onFieldFocus,
+}: {
+  dataset: string;
+  field: string;
+  label: string;
+  onFieldFocus: (dataset: string, field: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      title={`在画布上追踪 ${dataset}.${field}`}
+      onClick={() => onFieldFocus(dataset, field)}
+      className="mx-0.5 inline-flex items-center rounded border border-ai/25 bg-ai-soft px-1 py-px align-baseline font-mono text-[11px] leading-4 text-ai-deep transition-colors duration-150 hover:border-ai/50 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60"
+    >
+      {label}
+    </button>
+  );
+}
+
 function AnswerText({
   content,
   onFieldFocus,
@@ -90,44 +139,133 @@ function AnswerText({
   onFieldFocus: (dataset: string, field: string) => void;
   streaming?: boolean;
 }) {
-  const parts: ReactNode[] = [];
-  const pattern = /\b([a-zA-Z][\w-]{0,31})\.([a-zA-Z][\w-]{0,63})\b/g;
-  let lastIndex = 0;
-  let key = 0;
-  let match: RegExpExecArray | null;
-  while ((match = pattern.exec(content)) !== null) {
-    const [full, dataset, field] = match;
-    if (NON_FIELD_TOKENS.has(field.toLowerCase())) continue;
-    if (match.index > lastIndex) {
-      parts.push(content.slice(lastIndex, match.index));
-    }
-    parts.push(
-      <button
-        key={`ref-${key++}`}
-        type="button"
-        title={`在画布上追踪 ${full}`}
-        onClick={() => onFieldFocus(dataset, field)}
-        className="mx-0.5 inline-flex items-center rounded border border-ai/25 bg-ai-soft px-1 py-px align-baseline font-mono text-[11px] leading-4 text-ai-deep transition-colors duration-150 hover:border-ai/50 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60"
-      >
-        {full}
-      </button>,
-    );
-    lastIndex = match.index + full.length;
-  }
-  if (lastIndex < content.length) parts.push(content.slice(lastIndex));
-  if (streaming) {
-    parts.push(
-      <span
-        key="cursor"
-        className="ml-0.5 inline-block h-3.5 w-[2px] animate-pulse bg-ai align-middle"
-        aria-hidden="true"
-      />,
-    );
-  }
+  const components = useMemo<Components>(() => ({
+    a: ({ href, children }) => {
+      if (href?.startsWith('#ref:')) {
+        try {
+          const raw = decodeURIComponent(href.slice(5));
+          const dot = raw.indexOf('.');
+          if (dot > 0) {
+            return (
+              <FieldRefChip
+                dataset={raw.slice(0, dot)}
+                field={raw.slice(dot + 1)}
+                label={String(children ?? raw)}
+                onFieldFocus={onFieldFocus}
+              />
+            );
+          }
+        } catch {
+          // 解码失败时按普通链接处理
+        }
+      }
+      return (
+        <a
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          className="text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-800"
+        >
+          {children}
+        </a>
+      );
+    },
+    code: ({ className, children }) => {
+      const text = String(children ?? '').replace(/\n$/, '');
+      const isBlock = (className ?? '').includes('language-') || text.includes('\n');
+      if (isBlock) {
+        return (
+          <pre className="my-2 overflow-x-auto rounded-lg border border-line bg-page px-2.5 py-2 font-mono text-[11px] leading-5 text-ink-soft">
+            <code>{text}</code>
+          </pre>
+        );
+      }
+      const match = /^([a-zA-Z][\w-]{0,31})\.([a-zA-Z][\w-]{0,63})$/.exec(text);
+      if (match && !NON_FIELD_TOKENS.has(match[2].toLowerCase())) {
+        return (
+          <FieldRefChip
+            dataset={match[1]}
+            field={match[2]}
+            label={text}
+            onFieldFocus={onFieldFocus}
+          />
+        );
+      }
+      return (
+        <code className="rounded bg-subtle px-1 py-px font-mono text-[11px] text-ink-soft">
+          {text}
+        </code>
+      );
+    },
+    pre: ({ children }) => <>{children}</>,
+    table: ({ children }) => (
+      <div className="my-2 overflow-x-auto rounded-lg border border-line">
+        <table className="w-full border-collapse text-[11px]">{children}</table>
+      </div>
+    ),
+    thead: ({ children }) => <thead className="bg-subtle">{children}</thead>,
+    th: ({ children }) => (
+      <th className="whitespace-nowrap border-b border-line px-2 py-1.5 text-left font-medium text-ink-soft">
+        {children}
+      </th>
+    ),
+    td: ({ children }) => (
+      <td className="border-t border-line-soft px-2 py-1.5 align-top text-ink-soft">
+        {children}
+      </td>
+    ),
+    p: ({ children }) => (
+      <p className="my-1.5 break-words text-[13px] leading-6 text-ink-soft first:mt-0 last:mb-0">
+        {children}
+      </p>
+    ),
+    ul: ({ children }) => (
+      <ul className="my-1.5 list-disc space-y-0.5 pl-4 text-[13px] leading-6 text-ink-soft">
+        {children}
+      </ul>
+    ),
+    ol: ({ children }) => (
+      <ol className="my-1.5 list-decimal space-y-0.5 pl-4 text-[13px] leading-6 text-ink-soft">
+        {children}
+      </ol>
+    ),
+    li: ({ children }) => <li className="break-words">{children}</li>,
+    h1: ({ children }) => (
+      <h1 className="mb-1 mt-3 text-[15px] font-semibold text-ink first:mt-0">{children}</h1>
+    ),
+    h2: ({ children }) => (
+      <h2 className="mb-1 mt-3 text-[14px] font-semibold text-ink first:mt-0">{children}</h2>
+    ),
+    h3: ({ children }) => (
+      <h3 className="mb-1 mt-2.5 text-[13px] font-semibold text-ink first:mt-0">{children}</h3>
+    ),
+    h4: ({ children }) => (
+      <h4 className="mb-1 mt-2 text-[13px] font-semibold text-ink first:mt-0">{children}</h4>
+    ),
+    strong: ({ children }) => <strong className="font-semibold text-ink">{children}</strong>,
+    blockquote: ({ children }) => (
+      <blockquote className="my-2 border-l-2 border-line-strong pl-2 text-[12px] leading-5 text-ink-muted">
+        {children}
+      </blockquote>
+    ),
+    hr: () => <hr className="my-2.5 border-line-soft" />,
+  }), [onFieldFocus]);
+
   return (
-    <p className="whitespace-pre-wrap break-words text-[13px] leading-6 text-ink-soft">
-      {parts}
-    </p>
+    <div className="break-words text-[13px] leading-6">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkBreaks]}
+        components={components}
+      >
+        {linkifyFieldRefs(content)}
+      </ReactMarkdown>
+      {streaming && (
+        <span
+          className="ml-0.5 inline-block h-3.5 w-[2px] animate-pulse bg-ai align-middle"
+          aria-hidden="true"
+        />
+      )}
+    </div>
   );
 }
 
