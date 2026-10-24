@@ -62,7 +62,7 @@ export function DatasetNode({ data }: NodeProps) {
     >
       <span
         className={`pointer-events-none absolute inset-x-5 top-0 z-10 h-[2px] rounded-b-full ${
-          isSeed ? 'bg-blue-600/80' : 'bg-line-strong/70'
+          isSeed ? 'bg-brand-600/80' : 'bg-line-strong/70'
         }`}
         aria-hidden="true"
       />
@@ -86,7 +86,7 @@ export function DatasetNode({ data }: NodeProps) {
       <header
         className={`relative flex h-14 items-center gap-2 rounded-t-xl border-b px-2.5 ${
           isSeed
-            ? 'border-blue-200 bg-blue-50'
+            ? 'border-brand-200 bg-brand-50'
             : 'border-line-soft bg-subtle'
         }`}
       >
@@ -96,7 +96,7 @@ export function DatasetNode({ data }: NodeProps) {
             event.stopPropagation();
             onToggleCollapse(dataset.id);
           }}
-          className="nodrag nopan flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-ink-faint transition-colors duration-150 hover:bg-card hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1"
+          className="nodrag nopan flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-ink-faint transition-colors duration-150 hover:bg-card hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1"
           aria-label={
             collapsed
               ? `展开 ${dataset.id} 的字段列表`
@@ -119,7 +119,7 @@ export function DatasetNode({ data }: NodeProps) {
               {dataset.name || dataset.id}
             </h3>
             {isSeed && (
-              <span className="shrink-0 rounded-full border border-blue-200 bg-card px-1.5 py-px font-mono text-[11px] uppercase text-blue-800">
+              <span className="shrink-0 rounded-full border border-brand-200 bg-card px-1.5 py-px font-mono text-[11px] uppercase text-brand-800">
                 种子
               </span>
             )}
@@ -141,7 +141,7 @@ export function DatasetNode({ data }: NodeProps) {
         <span
           className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border ${
             isSeed
-              ? 'border-blue-200 bg-card text-blue-700'
+              ? 'border-brand-200 bg-card text-brand-700'
               : 'border-line-soft bg-card/60 text-ink-faint'
           }`}
           aria-hidden="true"
@@ -158,7 +158,7 @@ export function DatasetNode({ data }: NodeProps) {
               event.stopPropagation();
               onToggleCollapse(dataset.id);
             }}
-            className="nodrag nopan flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-line text-[12px] text-ink-muted transition-colors duration-150 hover:border-blue-300 hover:bg-blue-50/60 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60"
+            className="nodrag nopan flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-line text-[12px] text-ink-muted transition-colors duration-150 hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60"
           >
             <Icon name="unfold-all" size={12} />
             展开 {fieldCount} 个字段
@@ -180,10 +180,10 @@ export function DatasetNode({ data }: NodeProps) {
                   !isFocused && (chainFieldNames?.includes(field.name) ?? false);
                 const traced = isFocused || isLinked;
                 const rowTone = isFocused
-                  ? 'bg-red-50 ring-1 ring-inset ring-red-300/80 hover:bg-red-100/70'
+                  ? 'bg-brand-50 ring-1 ring-inset ring-brand-300/80 hover:bg-brand-100/70'
                   : isLinked
-                    ? 'bg-red-50/70 hover:bg-red-100/50'
-                    : 'hover:bg-blue-50/70';
+                    ? 'bg-brand-50/70 hover:bg-brand-100/50'
+                    : 'hover:bg-subtle/70';
                 return (
                   <div
                     key={field.name}
@@ -203,24 +203,24 @@ export function DatasetNode({ data }: NodeProps) {
                         event.stopPropagation();
                         onSelectField(dataset, field);
                       }}
-                      className="nodrag nopan flex h-full w-full min-w-0 items-center justify-between gap-2 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-card"
+                      className="nodrag nopan flex h-full w-full min-w-0 items-center justify-between gap-2 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-card"
                       aria-label={`查看字段 ${dataset.id}.${field.name}`}
                       title={`${field.description || field.name} · 点击查看定位与回源预览`}
                     >
                       <span className="flex min-w-0 items-center gap-1.5">
                         {isFocused && (
                           <span
-                            className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500"
+                            className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500"
                             aria-hidden="true"
                           />
                         )}
                         <span
                           className={`min-w-0 truncate font-mono text-[11px] font-medium transition-colors duration-150 ${
                             isFocused
-                              ? 'text-red-700'
+                              ? 'text-brand-700'
                               : isLinked
-                                ? 'text-red-600/90'
-                                : 'text-ink-soft group-hover/field:text-blue-800'
+                                ? 'text-brand-700/90'
+                                : 'text-ink-soft group-hover/field:text-brand-800'
                           }`}
                         >
                           {field.name}
@@ -259,7 +259,7 @@ export function DatasetNode({ data }: NodeProps) {
                     event.stopPropagation();
                     onToggleFields(dataset.id);
                   }}
-                  className="nodrag nopan flex h-[26px] w-full items-center gap-1.5 rounded-md px-2 text-[11px] text-ink-faint transition-colors duration-150 hover:bg-blue-50/60 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60"
+                  className="nodrag nopan flex h-[26px] w-full items-center gap-1.5 rounded-md px-2 text-[11px] text-ink-faint transition-colors duration-150 hover:bg-brand-50/60 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60"
                   aria-expanded={fieldsExpanded}
                   title={
                     fieldsExpanded

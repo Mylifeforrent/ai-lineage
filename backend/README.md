@@ -1,6 +1,6 @@
-# LineageLite 后端（正式目录）
+# Clew 后端（正式目录）
 
-LineageLite 的正式后端项目：字段级数据血缘核查与协作工具的 FastAPI + SQLite 单进程服务。接口契约以 `docs/03_dev/05_API接口文档.md` 为唯一权威；实现说明见 `docs/03_dev/03_后端开发文档.md`；架构总览见 `docs/03_dev/01_架构设计.md`。
+Clew 的正式后端项目：字段级数据血缘核查与协作工具的 FastAPI + SQLite 单进程服务。接口契约以 `docs/03_dev/05_API接口文档.md` 为唯一权威；实现说明见 `docs/03_dev/03_后端开发文档.md`；架构总览见 `docs/03_dev/01_架构设计.md`。
 
 ## 与 prototype 的关系
 

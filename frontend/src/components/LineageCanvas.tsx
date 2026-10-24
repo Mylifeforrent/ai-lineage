@@ -900,7 +900,7 @@ export function LineageCanvas({
     return (
       <div className="relative flex h-full min-h-[560px] items-center justify-center overflow-hidden bg-page bg-dot-grid bg-grid-24">
         <div className="relative mx-6 max-w-sm rounded-2xl border border-dashed border-line-strong bg-card/75 px-8 py-9 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-blue-600">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-brand-200 bg-brand-50 text-brand-600">
             <Icon name="network" size={22} />
           </div>
           <h2 className="mt-4 text-xl font-medium text-ink">
@@ -958,7 +958,7 @@ export function LineageCanvas({
             position="bottom-right"
             pannable
             zoomable
-            nodeColor={(node) => (node.id === seedDatasetId ? '#2563EB' : '#CBD5E1')}
+            nodeColor={(node) => (node.id === seedDatasetId ? '#EA580C' : '#CBD5E1')}
             nodeStrokeColor="#FFFFFF"
             nodeBorderRadius={4}
             maskColor="rgba(248, 250, 252, 0.65)"
@@ -969,7 +969,7 @@ export function LineageCanvas({
           <Panel position="top-left" className="!m-3">
             <div className="flex flex-col gap-1.5">
               <div className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-card p-1.5 pr-2 shadow-float">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-600 text-white">
                   <Icon name="network" size={14} />
                 </span>
                 <div className="px-0.5">
@@ -984,7 +984,7 @@ export function LineageCanvas({
                 <button
                   type="button"
                   onClick={onToggleAll}
-                  className="flex h-7 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1"
+                  className="flex h-7 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1"
                   title={allCollapsed ? '展开全部字段' : '收起全部字段'}
                 >
                   <Icon
@@ -1004,7 +1004,7 @@ export function LineageCanvas({
                     <button
                       type="button"
                       onClick={handleCollapseSelected}
-                      className="flex h-7 items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 text-[12px] font-medium text-blue-800 transition-colors duration-150 hover:border-blue-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1"
+                      className="flex h-7 items-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-2.5 text-[12px] font-medium text-brand-800 transition-colors duration-150 hover:border-brand-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1"
                       title="把框选的节点折叠成一个组占位节点"
                     >
                       <Icon name="fold-all" size={12} />
@@ -1020,7 +1020,7 @@ export function LineageCanvas({
                         );
                         setGroups([]);
                       }}
-                      className="flex h-7 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1"
+                      className="flex h-7 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1"
                     >
                       <Icon name="unfold-all" size={12} />
                       展开全部组（{groups.length}）
@@ -1058,7 +1058,7 @@ export function LineageCanvas({
           aria-live="polite"
         >
           <div className="flex items-center gap-2.5 rounded-lg border border-line bg-card px-4 py-3 shadow-float">
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600" />
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand-200 border-t-brand-600" />
             <div>
               <div className="text-[13px] font-medium text-ink">正在加载血缘子图</div>
               <div className="mt-0.5 font-mono text-[11px] text-ink-faint">
@@ -1089,7 +1089,7 @@ export function LineageCanvas({
                 <button
                   type="button"
                   onClick={onRetry}
-                  className="mt-3 inline-flex h-7 items-center gap-1.5 rounded-lg bg-blue-600 px-2.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1"
+                  className="mt-3 inline-flex h-7 items-center gap-1.5 rounded-lg bg-brand-700 px-2.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-brand-800 active:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1"
                 >
                   <Icon name="refresh" size={12} />
                   重新加载

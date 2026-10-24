@@ -28,45 +28,45 @@ function MiniNode({
 }) {
   return (
     <div
-      className={`overflow-hidden rounded-xl border bg-blue-800 text-left ${
-        active ? 'border-blue-300' : 'border-blue-700'
+      className={`overflow-hidden rounded-xl border bg-brand-800 text-left ${
+        active ? 'border-brand-300' : 'border-brand-700'
       }`}
     >
       <div
         className={`flex h-9 items-center justify-between border-b px-3 ${
-          active ? 'bg-blue-700' : 'border-blue-700 bg-blue-800'
+          active ? 'bg-brand-700' : 'border-brand-700 bg-brand-800'
         }`}
       >
         <span
           className={`font-mono text-[11px] font-medium ${
-            active ? 'text-white' : 'text-blue-100'
+            active ? 'text-white' : 'text-brand-100'
           }`}
         >
           {title}
         </span>
         <span
           className={`h-1.5 w-1.5 rounded-full ${
-            active ? 'bg-blue-300' : 'bg-blue-500'
+            active ? 'bg-brand-300' : 'bg-brand-500'
           }`}
         />
       </div>
       {collapsed ? (
-        <div className="px-3 py-2.5 font-mono text-[11px] text-blue-300">
+        <div className="px-3 py-2.5 font-mono text-[11px] text-brand-300">
                   4 个字段 · 已收起
         </div>
       ) : (
-        <div className="divide-y divide-blue-700">
+        <div className="divide-y divide-brand-700">
           {fields.map((field, index) => (
             <div
               key={field}
               className={`flex h-7 items-center justify-between px-3 font-mono text-[11px] ${
                 active && index === 0
-                  ? 'bg-blue-700/60 text-white'
-                  : 'text-blue-200'
+                  ? 'bg-brand-700/60 text-white'
+                  : 'text-brand-200'
               }`}
             >
               <span>{field}</span>
-              <span className="text-blue-300">
+              <span className="text-brand-300">
                 {index === 0 ? '文本' : '数值'}
               </span>
             </div>
@@ -121,27 +121,27 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
   return (
     <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-page p-3 sm:p-6 lg:p-8">
       <section className="relative grid w-full max-w-[1180px] overflow-hidden rounded-2xl border border-line bg-card shadow-float lg:min-h-[690px] lg:grid-cols-[1.08fr_0.92fr]">
-        <div className="relative hidden overflow-hidden bg-blue-900 px-10 py-9 lg:flex lg:flex-col xl:px-14 xl:py-11">
+        <div className="relative hidden overflow-hidden bg-brand-900 px-10 py-9 lg:flex lg:flex-col xl:px-14 xl:py-11">
           <div className="relative z-10 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <BrandMark size={34} className="text-blue-600" />
+              <BrandMark size={34} className="text-brand-600" />
               <div>
                 <div className="font-sans text-[20px] font-semibold tracking-tight text-white">
-                  Lineage<span className="text-blue-300">Lite</span>
+                  Clew<span className="text-brand-300">.</span>
                 </div>
-                <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-blue-300">
+                <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-brand-300">
                   让数据来源清晰可见
                 </div>
               </div>
             </div>
-            <span className="rounded-full border border-blue-700 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-blue-200">
+            <span className="rounded-full border border-brand-700 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-brand-200">
               M3 · 编辑与版本
             </span>
           </div>
 
           <div className="relative z-10 mt-16 max-w-[510px] animate-fade-up xl:mt-20">
-            <div className="mb-4 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-blue-300">
-              <span className="h-px w-8 bg-blue-400" />
+            <div className="mb-4 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-brand-300">
+              <span className="h-px w-8 bg-brand-400" />
               字段级血缘 · 源文件可回查
             </div>
             <h1 className="text-[28px] font-bold leading-[1.25] tracking-tight text-white">
@@ -149,7 +149,7 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
               <br />
               都落回原始文件。
             </h1>
-            <p className="mt-5 max-w-[430px] text-[13px] leading-6 text-blue-100">
+            <p className="mt-5 max-w-[430px] text-[13px] leading-6 text-brand-100">
               从字段到工作表、行列与 JSONPath，把「数据从哪来」变成
               可以被打开、核对与讨论的证据。
             </p>
@@ -165,29 +165,29 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
               >
                 <path
                   d="M151 63 C205 63, 205 132, 253 132"
-                  stroke="#93C5FD"
+                  stroke="#FDBA74"
                   strokeWidth="1.2"
                 />
                 <path
                   d="M151 96 C215 96, 196 151, 253 151"
-                  stroke="#93C5FD"
+                  stroke="#FDBA74"
                   strokeWidth="1.2"
                 />
                 <path
                   d="M151 129 C216 129, 202 170, 253 170"
-                  stroke="#EEF2FF"
+                  stroke="#FFEDD5"
                   strokeWidth="1.2"
                   strokeDasharray="5 4"
                   opacity="0.9"
                 />
                 <path
                   d="M417 118 C453 118, 450 57, 485 57"
-                  stroke="#93C5FD"
+                  stroke="#FDBA74"
                   strokeWidth="1.2"
                   strokeDasharray="4 4"
                 />
-                <circle cx="206" cy="88" r="3" fill="#BFDBFE" />
-                <circle cx="218" cy="118" r="3" fill="#EEF2FF" />
+                <circle cx="206" cy="88" r="3" fill="#FDBA74" />
+                <circle cx="218" cy="118" r="3" fill="#FFEDD5" />
               </svg>
 
               <div className="absolute left-0 top-1 w-[155px]">
@@ -211,15 +211,15 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
                 />
               </div>
 
-              <div className="absolute bottom-0 left-[15px] flex items-center gap-3 rounded-lg border border-blue-700 bg-blue-800/85 px-3 py-2">
-                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-700/60 text-blue-200">
+              <div className="absolute bottom-0 left-[15px] flex items-center gap-3 rounded-lg border border-brand-700 bg-brand-800/85 px-3 py-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-700/60 text-brand-200">
                   <Icon name="file-search" size={13} />
                 </span>
                 <div>
-                  <div className="font-mono text-[11px] text-blue-100">
+                  <div className="font-mono text-[11px] text-brand-100">
                     订单明细.xlsx · 工作表「订单」
                   </div>
-                  <div className="mt-0.5 font-mono text-[11px] text-blue-300">
+                  <div className="mt-0.5 font-mono text-[11px] text-brand-300">
                     C 列 · 数据行 3:15000
                   </div>
                 </div>
@@ -227,18 +227,18 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
             </div>
           </div>
 
-          <div className="relative z-10 mt-8 grid grid-cols-3 gap-3 border-t border-blue-700 pt-5">
+          <div className="relative z-10 mt-8 grid grid-cols-3 gap-3 border-t border-brand-700 pt-5">
             {[
               ['01', '身份与角色', 'JWT / RBAC'],
               ['02', '字段级定位', 'CSV / XLSX / JSON'],
               ['03', '系统内回源', '高亮核查'],
             ].map(([index, title, detail]) => (
               <div key={index}>
-                <div className="font-mono text-[11px] text-blue-300">{index}</div>
+                <div className="font-mono text-[11px] text-brand-300">{index}</div>
                 <div className="mt-1 text-[12px] font-medium text-white">
                   {title}
                 </div>
-                <div className="mt-0.5 font-mono text-[11px] text-blue-300">
+                <div className="mt-0.5 font-mono text-[11px] text-brand-300">
                   {detail}
                 </div>
               </div>
@@ -257,8 +257,8 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
           <div className="mx-auto w-full max-w-[372px] animate-fade-up">
             <div className="mb-8">
               <div className="mb-3 flex items-center gap-2">
-                <span className="h-px w-7 bg-blue-600" />
-                <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-blue-700">
+                <span className="h-px w-7 bg-brand-600" />
+                <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-brand-700">
                   工作台访问
                 </span>
               </div>
@@ -289,7 +289,7 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
                   用户名
                 </label>
                 <div className="group relative">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint transition-colors duration-150 group-focus-within:text-blue-600">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint transition-colors duration-150 group-focus-within:text-brand-600">
                     <Icon name="user" size={14} />
                   </span>
                   <input
@@ -316,7 +316,7 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
                   密码
                 </label>
                 <div className="group relative">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint transition-colors duration-150 group-focus-within:text-blue-600">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint transition-colors duration-150 group-focus-within:text-brand-600">
                     <Icon name="lock" size={14} />
                   </span>
                   <input
@@ -334,7 +334,7 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
                   <button
                     type="button"
                     onClick={() => setShowPassword((value) => !value)}
-                    className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+                    className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                     aria-label={showPassword ? '隐藏密码' : '显示密码'}
                     aria-pressed={showPassword}
                   >
@@ -355,7 +355,7 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
 
               <button
                 type="submit"
-                className="group inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                className="group inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-brand-700 px-3 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-brand-800 active:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                 disabled={submitting}
               >
                 {submitting ? (

@@ -94,14 +94,14 @@ function Dropzone({
   const [dragOver, setDragOver] = useState(false);
   return (
     <label
-      className={`group flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-line-strong bg-page text-center transition-colors duration-150 focus-within:ring-2 focus-within:ring-blue-600/60 ${
+      className={`group flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-line-strong bg-page text-center transition-colors duration-150 focus-within:ring-2 focus-within:ring-brand-600/60 ${
         compact ? 'gap-1.5 px-4 py-6' : 'gap-2 px-6 py-10'
       } ${
         disabled
           ? 'cursor-not-allowed opacity-50'
           : dragOver
-            ? 'border-blue-400 bg-blue-50/60'
-            : 'hover:border-blue-300 hover:bg-blue-50/40'
+            ? 'border-brand-400 bg-brand-50/60'
+            : 'hover:border-brand-300 hover:bg-brand-50/40'
       }`}
       onDragOver={(event) => {
         event.preventDefault();
@@ -118,7 +118,7 @@ function Dropzone({
       <Icon
         name="file"
         size={24}
-        className="text-ink-faint transition-colors duration-150 group-hover:text-blue-600"
+        className="text-ink-faint transition-colors duration-150 group-hover:text-brand-600"
       />
       <span className="text-[13px] font-medium text-ink-soft">{title}</span>
       <span className="font-mono text-[11px] text-ink-faint">{hint}</span>
@@ -158,7 +158,7 @@ function Stepper({ current }: { current: number }) {
                   done
                     ? 'bg-success-soft text-success-deep'
                     : active
-                      ? 'bg-blue-600 font-semibold text-white'
+                      ? 'bg-brand-700 font-semibold text-white'
                       : 'border border-line bg-card text-ink-faint'
                 }`}
               >
@@ -182,7 +182,7 @@ function Stepper({ current }: { current: number }) {
                 node,
                 <span
                   key={`${label}-connector`}
-                  className={`h-px flex-1 ${stepNo < current ? 'bg-blue-300' : 'bg-line'}`}
+                  className={`h-px flex-1 ${stepNo < current ? 'bg-brand-300' : 'bg-line'}`}
                   aria-hidden="true"
                 />,
               ]
@@ -230,7 +230,7 @@ function ManifestFileRow({
       <button
         type="button"
         onClick={onRemove}
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-ink-faint transition-colors duration-150 hover:bg-danger-soft hover:text-danger-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-ink-faint transition-colors duration-150 hover:bg-danger-soft hover:text-danger-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
         aria-label={`移除清单文件 ${file.name}`}
       >
         <Icon name="close" size={12} />
@@ -243,7 +243,7 @@ function ManifestFileRow({
 function ColumnsReference() {
   return (
     <details className="group rounded-xl border border-line-soft bg-card">
-      <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[13px] font-medium text-ink-muted outline-none transition-colors duration-150 hover:text-ink focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white">
+      <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[13px] font-medium text-ink-muted outline-none transition-colors duration-150 hover:text-ink focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white">
         列结构参考
         <Icon
           name="chevron-down"
@@ -673,7 +673,7 @@ export function ImportWizardModal({
                     ) : (
                       <span role="status" className="flex items-center gap-2.5">
                         <span
-                          className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-blue-200 border-t-blue-600"
+                          className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-brand-200 border-t-brand-600"
                           aria-hidden="true"
                         />
                         <span className="text-[11px] text-ink-faint">上传中…</span>
@@ -687,7 +687,7 @@ export function ImportWizardModal({
                             current.filter((item) => item.key !== row.key),
                           );
                         }}
-                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-ink-faint transition-colors duration-150 hover:bg-danger-soft hover:text-danger-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-ink-faint transition-colors duration-150 hover:bg-danger-soft hover:text-danger-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                         aria-label={`移除文件 ${row.file.name}`}
                         title="移除（仅放弃本次引用，已登记记录由 sha256 去重兜底）"
                       >
@@ -717,7 +717,7 @@ export function ImportWizardModal({
               <button
                 type="button"
                 onClick={goBack}
-                className="inline-flex h-7 items-center gap-1 rounded-lg px-2 text-[12px] text-ink-muted transition-colors duration-150 hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+                className="inline-flex h-7 items-center gap-1 rounded-lg px-2 text-[12px] text-ink-muted transition-colors duration-150 hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                 title="回上一步修改"
               >
                 <Icon name="chevron-left" size={12} />
@@ -732,10 +732,10 @@ export function ImportWizardModal({
               {(Object.keys(FORMAT_HINTS) as ImportFormat[]).map((value) => (
                 <label
                   key={value}
-                  className={`flex cursor-pointer items-start gap-2.5 rounded-lg border bg-card px-3 py-2.5 transition-colors duration-150 focus-within:ring-2 focus-within:ring-blue-600/60 ${
+                  className={`flex cursor-pointer items-start gap-2.5 rounded-lg border bg-card px-3 py-2.5 transition-colors duration-150 focus-within:ring-2 focus-within:ring-brand-600/60 ${
                     format === value
-                      ? 'border-blue-300 bg-blue-50'
-                      : 'border-line hover:border-blue-300'
+                      ? 'border-brand-300 bg-brand-50'
+                      : 'border-line hover:border-brand-300'
                   }`}
                 >
                   <input
@@ -744,7 +744,7 @@ export function ImportWizardModal({
                     value={value}
                     checked={format === value}
                     onChange={() => handleFormatChange(value)}
-                    className="mt-0.5 h-4 w-4 shrink-0 accent-blue-600"
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-brand-600"
                   />
                   <span className="min-w-0">
                     <span className="flex items-center gap-1.5 font-mono text-[13px] font-medium text-ink">
@@ -870,7 +870,7 @@ export function ImportWizardModal({
             aria-live="polite"
           >
             <span
-              className="h-6 w-6 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600"
+              className="h-6 w-6 animate-spin rounded-full border-2 border-brand-200 border-t-brand-600"
               aria-hidden="true"
             />
             <p className="text-[13px] font-medium text-ink-soft">正在校验并导入…</p>
@@ -896,7 +896,7 @@ export function ImportWizardModal({
                 <button
                   type="button"
                   onClick={goBack}
-                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-line-strong bg-card px-3 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-line-strong bg-card px-3 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                 >
                   返回上一步
                 </button>
@@ -904,7 +904,7 @@ export function ImportWizardModal({
                   <button
                     type="button"
                     onClick={handleSubmitImport}
-                    className="inline-flex h-8 items-center gap-1 rounded-lg border border-line-strong bg-card px-3 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+                    className="inline-flex h-8 items-center gap-1 rounded-lg border border-line-strong bg-card px-3 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                   >
                     <Icon name="refresh" size={12} />
                     重试
@@ -928,8 +928,8 @@ export function ImportWizardModal({
             records={uploadedRecords}
             manifestNames={summaryManifestNames}
           />
-          <div className="flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2.5 text-[12px] leading-5 text-blue-800">
-            <Icon name="info" size={12} className="mt-0.5 shrink-0 text-blue-700" />
+          <div className="flex items-start gap-2 rounded-lg border border-brand-100 bg-brand-50 px-3 py-2.5 text-[12px] leading-5 text-brand-800">
+            <Icon name="info" size={12} className="mt-0.5 shrink-0 text-brand-700" />
             <span>
               提交后后端在同一事务内完成行级校验与入库：行级失败进报告、不阻塞成功行；
               清单文件级错误（缺 sheet、表头缺失、根解析失败等）整批失败。
@@ -984,7 +984,7 @@ export function ImportWizardModal({
               {rejectedItems.map((item, index) => (
                 <li
                   key={`${item.ref}-${item.source_row ?? index}-${index}`}
-                  className="flex items-start gap-2 px-3 py-2.5 transition-colors duration-150 hover:bg-blue-50/70"
+                  className="flex items-start gap-2 px-3 py-2.5 transition-colors duration-150 hover:bg-brand-50/70"
                 >
                   <span className="w-12 shrink-0 font-mono text-[12px] tabular-nums text-ink-soft">
                     {item.source_row ?? '—'}
@@ -1011,7 +1011,7 @@ export function ImportWizardModal({
 
         {result && result.report.items.length > 0 && (
           <details className="group rounded-xl border border-line-soft bg-card">
-            <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[13px] font-medium text-ink-muted outline-none transition-colors duration-150 hover:text-ink focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white">
+            <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[13px] font-medium text-ink-muted outline-none transition-colors duration-150 hover:text-ink focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white">
               全部 {result.report.summary.total} 条结果
               <Icon
                 name="chevron-down"
@@ -1047,8 +1047,8 @@ export function ImportWizardModal({
           </details>
         )}
 
-        <div className="flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2.5 text-[12px] leading-5 text-blue-800">
-          <Icon name="info" size={12} className="mt-0.5 shrink-0 text-blue-700" />
+        <div className="flex items-start gap-2 rounded-lg border border-brand-100 bg-brand-50 px-3 py-2.5 text-[12px] leading-5 text-brand-800">
+          <Icon name="info" size={12} className="mt-0.5 shrink-0 text-brand-700" />
           <span>
             拒绝行不阻塞成功行；全部变更（含合并）逐条写入 change_log，可按批次回滚
             （admin，见版本抽屉说明）。
@@ -1077,7 +1077,7 @@ export function ImportWizardModal({
         >
           <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-line-soft px-4">
             <div className="flex min-w-0 items-center gap-2.5">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-brand-50 text-brand-700">
                 <Icon name="upload" size={16} />
               </span>
               <h2
@@ -1099,7 +1099,7 @@ export function ImportWizardModal({
               type="button"
               onClick={requestClose}
               disabled={busy}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="关闭导入向导"
             >
               <Icon name="close" size={16} />
@@ -1119,7 +1119,7 @@ export function ImportWizardModal({
                 <button
                   type="button"
                   onClick={restart}
-                  className="inline-flex h-8 items-center gap-1 rounded-lg px-2.5 text-[13px] font-medium text-ink-muted transition-colors duration-150 hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+                  className="inline-flex h-8 items-center gap-1 rounded-lg px-2.5 text-[13px] font-medium text-ink-muted transition-colors duration-150 hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                 >
                   <Icon name="plus" size={12} />
                   再次导入
@@ -1127,7 +1127,7 @@ export function ImportWizardModal({
                 <button
                   type="button"
                   onClick={downloadReport}
-                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                 >
                   <Icon name="download" size={12} />
                   下载完整报告（JSON）
@@ -1140,7 +1140,7 @@ export function ImportWizardModal({
                     type="button"
                     onClick={goBack}
                     disabled={busy}
-                    className="inline-flex h-8 items-center gap-1 rounded-lg border border-line-strong bg-card px-3 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-line-strong"
+                    className="inline-flex h-8 items-center gap-1 rounded-lg border border-line-strong bg-card px-3 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-line-strong"
                   >
                     <Icon name="chevron-left" size={12} />
                     上一步
@@ -1162,7 +1162,7 @@ export function ImportWizardModal({
                 <button
                   type="button"
                   onClick={onOpenVersions}
-                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                 >
                   <Icon name="tag" size={12} />
                   查看版本抽屉
@@ -1170,7 +1170,7 @@ export function ImportWizardModal({
                 <button
                   type="button"
                   onClick={onCompleted}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand-700 px-3.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-brand-800 active:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                 >
                   <Icon name="check" size={12} />
                   完成
@@ -1195,7 +1195,7 @@ export function ImportWizardModal({
                   (step === 1 && !canProceedFromStep1) ||
                   (step === 2 && !manifestReady)
                 }
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand-700 px-3.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-brand-800 active:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
               >
                 {submitting && (
                   <span className="h-3.5 w-3.5 animate-spin rounded-full border-[1.5px] border-white/40 border-t-white" />

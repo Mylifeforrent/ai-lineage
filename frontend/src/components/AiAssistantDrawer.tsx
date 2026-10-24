@@ -36,7 +36,7 @@ interface AiAssistantDrawerProps {
    * highlights（mark_highlight 声明）同时交给 Workspace 驱动画布追踪高亮。
    */
   onGraph: (graph: LineageGraph | null, highlights?: AiHighlightItem[]) => void;
-  /** suggest_lineage 落库候选后由 Workspace 刷新画布（蓝色虚线候选边） */
+  /** suggest_lineage 落库候选后由 Workspace 刷新画布（靛蓝虚线候选边） */
   onSuggested: (count: number) => void;
   /** 回答内证据锚点点击：把该字段应用为画布追踪焦点 */
   onFieldFocus: (dataset: string, field: string) => void;
@@ -123,7 +123,7 @@ function FieldRefChip({
       type="button"
       title={`在画布上追踪 ${dataset}.${field}`}
       onClick={() => onFieldFocus(dataset, field)}
-      className="mx-0.5 inline-flex items-center rounded border border-ai/25 bg-ai-soft px-1 py-px align-baseline font-mono text-[11px] leading-4 text-ai-deep transition-colors duration-150 hover:border-ai/50 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60"
+      className="mx-0.5 inline-flex items-center rounded border border-ai/25 bg-ai-soft px-1 py-px align-baseline font-mono text-[11px] leading-4 text-ai-deep transition-colors duration-150 hover:border-ai/50 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60"
     >
       {label}
     </button>
@@ -164,7 +164,7 @@ function AnswerText({
           href={href}
           target="_blank"
           rel="noreferrer"
-          className="text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-800"
+          className="text-brand-700 underline decoration-brand-300 underline-offset-2 hover:text-brand-800"
         >
           {children}
         </a>
@@ -331,7 +331,7 @@ function DraftCard({
             type="button"
             disabled={busy}
             onClick={() => decide(true)}
-            className="inline-flex h-7 items-center rounded-md bg-blue-600 px-2.5 text-[12px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 disabled:opacity-50"
+            className="inline-flex h-7 items-center rounded-md bg-brand-700 px-2.5 text-[12px] font-medium text-white transition-colors duration-150 hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 disabled:opacity-50"
           >
             采纳（写入标注）
           </button>
@@ -339,7 +339,7 @@ function DraftCard({
             type="button"
             disabled={busy}
             onClick={() => decide(false)}
-            className="inline-flex h-7 items-center rounded-md border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 disabled:opacity-50"
+            className="inline-flex h-7 items-center rounded-md border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 disabled:opacity-50"
           >
             拒绝
           </button>
@@ -367,7 +367,7 @@ function ToolTraceCard({ trace }: { trace: AiToolTrace[] }) {
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="flex w-full items-center gap-2 px-2.5 py-2 text-left transition-colors duration-150 hover:bg-subtle/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+        className="flex w-full items-center gap-2 px-2.5 py-2 text-left transition-colors duration-150 hover:bg-subtle/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
       >
         <Icon name="code" size={12} className="shrink-0 text-ink-faint" />
         <span className="shrink-0 text-[11px] font-medium text-ink-muted">
@@ -702,7 +702,7 @@ export function AiAssistantDrawer({
             <button
               type="button"
               onClick={() => setStatusReloadKey((value) => value + 1)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               aria-label="重新检查 LLM 配置"
               title="重新检查配置"
             >
@@ -711,7 +711,7 @@ export function AiAssistantDrawer({
             <button
               type="button"
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               aria-label="关闭 AI 助手"
             >
               <Icon name="close" size={16} />
@@ -725,7 +725,7 @@ export function AiAssistantDrawer({
           </span>
           <span
             className={`min-w-0 truncate font-mono text-[12px] ${
-              focus ? 'font-medium text-blue-700' : 'text-ink-faint'
+              focus ? 'font-medium text-brand-700' : 'text-ink-faint'
             }`}
             title={focusLabel(focus)}
           >
@@ -768,7 +768,7 @@ export function AiAssistantDrawer({
                   <button
                     type="button"
                     onClick={() => setStatusReloadKey((value) => value + 1)}
-                    className="mt-1.5 inline-flex h-7 items-center gap-1 rounded-md border border-danger/25 bg-card px-2 font-mono text-[11px] text-danger-deep transition-colors duration-150 hover:border-danger/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+                    className="mt-1.5 inline-flex h-7 items-center gap-1 rounded-md border border-danger/25 bg-card px-2 font-mono text-[11px] text-danger-deep transition-colors duration-150 hover:border-danger/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                   >
                     <Icon name="refresh" size={11} />
                     重试
@@ -808,7 +808,7 @@ export function AiAssistantDrawer({
                       inputRef.current?.focus();
                     }}
                     disabled={inputDisabled}
-                    className="w-full rounded-lg border border-line bg-card px-3 py-2 text-left text-[12px] text-ink-muted transition-colors duration-150 hover:border-blue-300 hover:bg-blue-50/60 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-full rounded-lg border border-line bg-card px-3 py-2 text-left text-[12px] text-ink-muted transition-colors duration-150 hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {prompt}
                   </button>
@@ -823,7 +823,7 @@ export function AiAssistantDrawer({
                     <div className="mb-1 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-faint">
                       你
                     </div>
-                    <div className="max-w-[88%] whitespace-pre-wrap break-words rounded-xl rounded-tr-md border border-blue-100 bg-blue-50 px-3 py-2 text-[13px] leading-5 text-ink">
+                    <div className="max-w-[88%] whitespace-pre-wrap break-words rounded-xl rounded-tr-md border border-brand-100 bg-brand-50 px-3 py-2 text-[13px] leading-5 text-ink">
                       {entry.content}
                     </div>
                   </div>
@@ -892,7 +892,7 @@ export function AiAssistantDrawer({
                           <button
                             type="button"
                             onClick={onClose}
-                            className="ml-auto rounded px-1.5 py-0.5 font-medium text-success-deep transition-colors duration-150 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+                            className="ml-auto rounded px-1.5 py-0.5 font-medium text-success-deep transition-colors duration-150 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                           >
                             关闭并查看
                           </button>
@@ -942,7 +942,7 @@ export function AiAssistantDrawer({
             <button
               type="submit"
               disabled={inputDisabled || !input.trim()}
-              className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+              className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-brand-700 px-3.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-brand-800 active:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
             >
               {sending ? (
                 <span className="h-3.5 w-3.5 animate-spin rounded-full border-[1.5px] border-white/40 border-t-white" />

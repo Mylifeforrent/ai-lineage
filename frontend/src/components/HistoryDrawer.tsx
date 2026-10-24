@@ -109,7 +109,7 @@ function ChangeSummary({ entry }: { entry: ChangeEntry }) {
                 {valueText(entry.before?.[key])}
               </span>
               <span className="mx-1 text-ink-faint">→</span>
-              <span className="text-blue-800">{valueText(entry.after?.[key])}</span>
+              <span className="text-brand-800">{valueText(entry.after?.[key])}</span>
             </span>
           </li>
         ))}
@@ -203,7 +203,7 @@ export function HistoryDrawer({
       >
         <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-line-soft px-4">
           <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-brand-50 text-brand-700">
               <Icon name="history" size={16} />
             </span>
             <div className="min-w-0">
@@ -222,7 +222,7 @@ export function HistoryDrawer({
             <button
               type="button"
               onClick={() => setReloadKey((value) => value + 1)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               aria-label="刷新变更历史"
               title="刷新"
             >
@@ -232,7 +232,7 @@ export function HistoryDrawer({
               ref={closeButtonRef}
               type="button"
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               aria-label="关闭变更历史"
             >
               <Icon name="close" size={16} />
@@ -271,7 +271,7 @@ export function HistoryDrawer({
               <button
                 type="button"
                 onClick={() => setReloadKey((value) => value + 1)}
-                className="mt-2 inline-flex h-7 items-center gap-1 rounded-lg border border-line-strong bg-card px-2 text-[11px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+                className="mt-2 inline-flex h-7 items-center gap-1 rounded-lg border border-line-strong bg-card px-2 text-[11px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               >
                 <Icon name="refresh" size={11} />
                 重新加载

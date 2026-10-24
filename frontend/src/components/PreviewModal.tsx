@@ -76,8 +76,8 @@ function PreviewShell({
 
 function TargetColumnBadge({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 font-mono text-[11px] text-blue-800">
-      <span className="h-1 w-1 rounded-full bg-blue-600" />
+    <span className="inline-flex items-center gap-1 rounded-full border border-brand-200 bg-brand-50 px-2 py-0.5 font-mono text-[11px] text-brand-800">
+      <span className="h-1 w-1 rounded-full bg-brand-600" />
       高亮列 {label}
     </span>
   );
@@ -110,7 +110,7 @@ function CsvPreviewTable({ preview }: { preview: CsvPreview }) {
                     key={`${header}-${index}`}
                     scope="col"
                     className={`min-w-[118px] border-b border-r border-line px-2.5 py-2 last:border-r-0 ${
-                      target ? 'bg-blue-100 text-blue-800' : 'text-ink-soft'
+                      target ? 'bg-brand-100 text-brand-800' : 'text-ink-soft'
                     }`}
                   >
                     <div className="flex items-center gap-1.5">
@@ -119,7 +119,7 @@ function CsvPreviewTable({ preview }: { preview: CsvPreview }) {
                       </span>
                       <span className="text-[12px] font-medium">{header || '—'}</span>
                       {target && (
-                        <span className="ml-auto rounded bg-blue-600 px-1 py-px font-mono text-[11px] text-white">
+                        <span className="ml-auto rounded bg-brand-700 px-1 py-px font-mono text-[11px] text-white">
                           字段
                         </span>
                       )}
@@ -149,7 +149,7 @@ function CsvPreviewTable({ preview }: { preview: CsvPreview }) {
                       key={columnIndex}
                       className={`max-w-[260px] truncate border-r border-line-soft px-2.5 py-1.5 font-mono text-[12px] last:border-r-0 ${
                         target
-                          ? 'bg-blue-50/80 font-medium text-ink'
+                          ? 'bg-brand-50/80 font-medium text-ink'
                           : 'text-ink-soft'
                       }`}
                       title={displayCell(value)}
@@ -307,7 +307,7 @@ function XlsxPreviewTable({ preview }: { preview: XlsxPreview }) {
                     key={column}
                     scope="col"
                     className={`min-w-[120px] border-b border-r border-line px-2 py-1.5 text-center font-mono text-[11px] font-medium last:border-r-0 ${
-                      target ? 'bg-blue-100 text-blue-800' : 'text-ink-muted'
+                      target ? 'bg-brand-100 text-brand-800' : 'text-ink-muted'
                     }`}
                   >
                     {columnIndexToLabel(column)}
@@ -324,7 +324,7 @@ function XlsxPreviewTable({ preview }: { preview: XlsxPreview }) {
                   entry.isHeader
                     ? 'bg-warning-soft'
                     : entry.row === preview.row_start
-                      ? 'border-t-2 border-blue-200'
+                      ? 'border-t-2 border-brand-200'
                       : 'bg-card'
                 }
               >
@@ -358,7 +358,7 @@ function XlsxPreviewTable({ preview }: { preview: XlsxPreview }) {
                       colSpan={colSpan > 1 ? colSpan : undefined}
                       className={`max-w-[240px] truncate border-b border-r border-line-soft px-2.5 py-1.5 font-mono text-[12px] last:border-r-0 ${
                         target
-                          ? 'bg-blue-100 font-medium text-blue-800'
+                          ? 'bg-brand-100 font-medium text-brand-800'
                           : entry.isHeader
                             ? 'font-medium text-ink-soft'
                             : 'text-ink-muted'
@@ -541,7 +541,7 @@ function ErrorPreview({
           <button
             type="button"
             onClick={onRetry}
-            className="mt-4 inline-flex h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-3 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+            className="mt-4 inline-flex h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-3 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
           >
             <Icon name="refresh" size={12} />
             重新尝试
@@ -687,7 +687,7 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
       >
         <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-line-soft px-4">
           <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-brand-50 text-brand-700">
               <Icon name="file-search" size={16} />
             </span>
             <div className="min-w-0">
@@ -714,7 +714,7 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
             <button
               type="button"
               onClick={copyLocator}
-              className="hidden h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white sm:flex"
+              className="hidden h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white sm:flex"
             >
               <Icon name="copy" size={12} />
               {copied ? '已复制' : '复制定位'}
@@ -723,7 +723,7 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
               ref={closeButtonRef}
               type="button"
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               aria-label="关闭回源预览"
             >
               <Icon name="close" size={16} />
@@ -738,7 +738,7 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
                 源文件
               </div>
               <div className="mt-1 flex items-center gap-1.5">
-                <Icon name="file" size={13} className="text-blue-600" />
+                <Icon name="file" size={13} className="text-brand-600" />
                 <span className="min-w-0 truncate font-mono text-[13px] font-medium text-ink">
                   {resolvedFile.original_name}
                 </span>
@@ -818,7 +818,7 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
             type="button"
             onClick={handleDownload}
             disabled={downloading}
-            className="ml-auto inline-flex h-7 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="ml-auto inline-flex h-7 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
             title="经 GET /files/{id}/download 受控下载，存储路径不暴露"
           >
             <Icon name="download" size={12} />
@@ -827,7 +827,7 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-7 items-center rounded-lg px-2.5 text-[12px] font-medium text-ink-muted transition-colors duration-150 hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+            className="inline-flex h-7 items-center rounded-lg px-2.5 text-[12px] font-medium text-ink-muted transition-colors duration-150 hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
           >
             关闭
           </button>

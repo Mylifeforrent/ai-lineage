@@ -1,6 +1,6 @@
-# LineageLite 前端（正式目录）
+# Clew 前端（正式目录）
 
-LineageLite 的正式前端项目：字段级数据血缘核查与协作工具的 React SPA。视觉与交互以 `docs/04_hifi/00_设计总览与DesignToken.md` 及 01–06 页面文档为唯一设计事实来源；接口契约以 `docs/03_dev/05_API接口文档.md` 为准；实现说明见 `docs/03_dev/02_前端开发文档.md`。
+Clew 的正式前端项目：字段级数据血缘核查与协作工具的 React SPA。视觉与交互以 `docs/04_hifi/00_设计总览与DesignToken.md` 及 01–06 页面文档为唯一设计事实来源；接口契约以 `docs/03_dev/05_API接口文档.md` 为准；实现说明见 `docs/03_dev/02_前端开发文档.md`。
 
 ## 与 prototype 的关系
 

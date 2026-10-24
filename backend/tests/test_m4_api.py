@@ -236,13 +236,13 @@ def test_ai_status_and_chat_requires_configuration(client, monkeypatch):
     def fake_final(messages, tools=None):
         seen["messages"] = copy.deepcopy(messages)
         seen["tools"] = tools
-        return _final_answer("你好，我是 LineageLite 助手。")
+        return _final_answer("你好，我是 Clew 助手。")
 
     monkeypatch.setattr("lineagelite.ai.llm.complete", fake_final)
     r = client.post("/ai/chat", headers=viewer_headers,
                     json={"messages": [{"role": "user", "content": "你好"}]})
     assert r.status_code == 200, r.text
-    assert r.json() == {"answer": "你好，我是 LineageLite 助手。",
+    assert r.json() == {"answer": "你好，我是 Clew 助手。",
                         "tool_trace": []}
     # system 提示由后端固定，且本轮请求携带八个工具（含画布高亮/建议/影响/草稿）
     assert seen["messages"][0]["role"] == "system"

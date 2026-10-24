@@ -234,7 +234,7 @@ export interface AiHighlightItem {
   field: string;
 }
 
-/** suggest_lineage 落库的候选边（画布蓝色虚线，待人工确认） */
+/** suggest_lineage 落库的候选边（画布靛蓝虚线，待人工确认） */
 export interface AiSuggestionCandidate {
   from_dataset: string;
   from_field: string | null;

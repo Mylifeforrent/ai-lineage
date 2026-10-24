@@ -440,7 +440,7 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
     [showToast],
   );
 
-  /** 对话内 suggest_lineage 落库候选后：刷新画布（蓝色虚线候选边）并提示。 */
+  /** 对话内 suggest_lineage 落库候选后：刷新画布（靛蓝虚线候选边）并提示。 */
   const handleAiSuggested = useCallback(
     (count: number) => {
       refreshGraph();

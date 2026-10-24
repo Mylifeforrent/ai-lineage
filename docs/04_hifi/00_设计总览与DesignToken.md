@@ -1,6 +1,8 @@
 # 00 · 设计总览与 Design Token
 
-> 定位：`docs/04_hifi/` 高保真设计规范的地基文档。定义 LineageLite 前端的色彩、字体、间距、动效、层级与通用组件规格，供 01–06 页面设计文档直接引用，供 `prototype/frontend/` 开发直接执行。本文所有 token 精确到「可抄进代码」：色值、字号、时长、类名组合均为最终值，页面文档与实现不得偏离；如需变更，先改本文再同步下游。
+> 定位：`docs/04_hifi/` 高保真设计规范的地基文档。定义 Clew 前端的色彩、字体、间距、动效、层级与通用组件规格，供 01–06 页面设计文档直接引用，供正式前端 `frontend/` 开发直接执行。本文所有 token 精确到「可抄进代码」：色值、字号、时长、类名组合均为最终值，页面文档与实现不得偏离；如需变更，先改本文再同步下游。
+>
+> **2026-10 Clew 品牌改版**（用户确认）：产品名 LineageLite → **Clew**（线团/线索隐喻）；品牌主色 blue 色阶整体切换为 `brand`（Tailwind orange 线团橙）；字段追踪链 focus 由红改品牌橙（「点亮线索」品牌时刻），danger 红只保留给删除/校验失败；血缘 manual 边由琥珀改 teal（让位品牌橙）；warning 加深一档与品牌橙拉开。实心按钮档位因 orange-600 白字对比不足而整体由 600/700/800 上移为 **700/800/900**。本文涉及色值处均已按此改写，旧 blue 档位仅存于「依据与来源」的历史行。
 >
 > 适配范围：React 19 + TypeScript + Vite + Tailwind CSS v3 + `@xyflow/react`，无 UI 组件库、组件源码内置、禁止新增依赖。仅浅色模式（白底），不做暗色。
 
@@ -10,7 +12,7 @@
 
 | 依据 | 用途 |
 |---|---|
-| 用户约束（最高优先级） | 白色背景 + 蓝色主色调；Data-Dense Dashboard 风格（density 8/10，克制、专业、数据可读性优先）；无障碍硬性要求（正文对比度 ≥4.5:1、可见 focus ring、prefers-reduced-motion、150–300ms 过渡） |
+| 用户约束（最高优先级） | 白色背景 + 线团橙主色（2026-10 经用户确认由蓝色升级，见文首改版注记）；Data-Dense Dashboard 风格（density 8/10，克制、专业、数据可读性优先）；无障碍硬性要求（正文对比度 ≥4.5:1、可见 focus ring、prefers-reduced-motion、150–300ms 过渡） |
 | ui-ux-pro-max 检索色彩基线 | Primary `#1E40AF`、Secondary `#3B82F6`、Background `#F8FAFC`、Card `#FFFFFF`、Muted `#E9EEF6`、Muted Foreground `#475569`、Border `#DBEAFE`、Destructive `#DC2626`、Accent/CTA `#D97706`、Ring `#1E40AF`（本文在基线内微调处均标注决策理由） |
 | `prototype/frontend/tailwind.config.cjs`、`src/index.css` | 现有 token 结构与命名（canvas/surface/ink/line/pine/ember/ochre/ai/rosewood、boxShadow、keyframes），本文产出其完整替换版与旧→新映射（§8、§9） |
 | `docs/03_dev/02_前端开发文档.md` | §一技术栈、§六组件清单（22 个）、§七画布实现（`getEdgeVisual` 四形态、节点卡片结构、handle 体系） |
@@ -26,15 +28,15 @@
 
 ### 1.1 产品气质
 
-LineageLite 是 **B 端内部数据工具**：数据团队每天打开它核对「数据从哪来」。界面气质是**专业数据工具**——像精密仪器，不像营销页。用户连续注视画布与表格数十分钟，视觉系统必须低噪音、高信噪比、可长时间注视不疲劳。
+Clew 是 **B 端内部数据工具**：数据团队每天打开它核对「数据从哪来」。界面气质是**专业数据工具**——像精密仪器，不像营销页。用户连续注视画布与表格数十分钟，视觉系统必须低噪音、高信噪比、可长时间注视不疲劳。
 
-风格锚点：**Data-Dense Dashboard**（density 8/10）。信息密度高但井然有序：白底、细边框分层、克制的蓝色主色、无装饰性渐变与光晕、无衬线字体、紧凑控件。
+风格锚点：**Data-Dense Dashboard**（density 8/10）。信息密度高但井然有序：白底、细边框分层、克制的线团橙主色、无装饰性渐变与光晕、无衬线字体、紧凑控件。
 
 ### 1.2 设计原则（可执行，5 条）
 
 1. **数据墨水优先**：屏幕像素优先分配给数据本身（血缘图、字段、定位器）。边框、阴影、图标都是分层的手段而非装饰；禁止大面积渐变、光晕、插画化装饰（现有登录页的 blur 光球装饰在高保真中删除）。
 2. **白色表面 + 一层浅灰页面**：内容永远落在白卡片上，页面背景 `#F8FAFC` 只负责把卡片「衬」出来。嵌套不超过两层表面（page → card → subtle 行底）。
-3. **蓝色只给交互与身份**：蓝色（blue 色阶）表达「可点击、选中、当前项、品牌」，数据内容一律中性灰墨。蓝色面积占屏幕不超过 ~10%。
+3. **品牌橙只给交互与身份**：品牌橙（brand 色阶）表达「可点击、选中、当前项、品牌」，数据内容一律中性灰墨。品牌橙面积占屏幕不超过 ~10%；追踪链是唯一例外（见 §2.4 focus）。
 4. **状态必须可分辨**：血缘来源（imported/manual/ai）、角色、成功/警告/危险，各有一组固定三档色（DEFAULT/soft/deep），不混用；soft 底上写正文一律用 deep 档。
 5. **动效服务反馈，不做表演**：过渡只用于状态变化（hover、展开、弹层进场），时长 150–300ms；持续动画只保留两种语义（AI 建议边流动、骨架屏脉动），并尊重 `prefers-reduced-motion`。
 
@@ -46,22 +48,22 @@ LineageLite 是 **B 端内部数据工具**：数据团队每天打开它核对�
 
 ## 二、色彩系统（Design Token 核心）
 
-### 2.1 主色 blue（50–900）
+### 2.1 主色 brand（Clew 线团橙，50–900）
 
-锚点：`#1E40AF` = **blue-800**（检索基线 Primary）、`#3B82F6` = **blue-500**（检索基线 Secondary）。两者恰为 Tailwind v3 标准 blue 色阶成员，故直接采用标准 blue 色阶——与基线零偏差、与生态工具（图表库、React Flow 默认样式）视觉一致。**主按钮用 600，hover 700**；500 及以上仅作图形色（白底文字对比度不足 4.5:1，见 §2.6）。
+Clew 改版（2026-10，用户确认）：品牌主色由 blue 色阶整体切换为 Tailwind v3 标准 orange 色阶（token 名 `brand`），与 slate 中性面构成「冷灰底 + 暖橙点缀」，在蓝紫扎堆的数据工具里有辨识度。**实心按钮与品牌正文用 700（白字 5.18:1），600 只做图形色**——orange-600 白字仅 3.56:1（旧 brand-600 为 5.17:1），这是本次换色最关键的档位规则变化。
 
 | Token | 色值 | 用途（唯一或主用途） |
 |---|---|---|
-| `blue-50` | `#EFF6FF` | hover 背景、列表选中行底、info soft 底 |
-| `blue-100` | `#DBEAFE` | 浅底强调：徽章边框、选中项描边、表格高亮列底 |
-| `blue-200` | `#BFDBFE` | 种子节点头部边框、浅蓝描边、进度条轨道 |
-| `blue-300` | `#93C5FD` | 画布装饰线、spinner 轨道（`border-blue-200` 的替代强调档） |
-| `blue-400` | `#60A5FA` | 图形次级：图标 hover、次要图形点缀（不做文字） |
-| `blue-500` | `#3B82F6` | **Secondary 锚点**。图形主色：focus ring、节点选中描边、链接下划线装饰（白底文字仅 ≥3:1，禁止正文） |
-| `blue-600` | `#2563EB` | **主交互**：主按钮 default、链接文字、边 hover、active 描边 |
-| `blue-700` | `#1D4ED8` | 主按钮 hover、深图形强调 |
-| `blue-800` | `#1E40AF` | **Primary 锚点**。品牌深蓝：徽章深字、深底色块、`ring` 色（基线 Ring 同值） |
-| `blue-900` | `#1E3A8A` | 登录页左侧深色面板底、最大对比标题文字 |
+| `brand-50` | `#FFF7ED` | 字段追踪行底、种子节点头部底、浅橙 hover 强调 |
+| `brand-100` | `#FFEDD5` | 浅底强调：表级 handle hover 底、`::selection` 底、浅橙描边 |
+| `brand-200` | `#FED7AA` | 种子节点头部边框、浅橙描边 |
+| `brand-300` | `#FDBA74` | 画布装饰线（登录页插画）、深底面板上的次级文字 |
+| `brand-400` | `#FB923C` | 图形次级：线团 logo 缠绕线、次要图形点缀（不做文字） |
+| `brand-500` | `#F97316` | 纯装饰点缀（词标线头圆点、列表点）；**禁止承载信息**（白底 2.8:1） |
+| `brand-600` | `#EA580C` | **图形主色**：字段追踪链（lineage-focus）、handle hover、种子顶条、图标 tile、ring 描边（白字 3.56:1 → 禁止正文与实心按钮） |
+| `brand-700` | `#C2410C` | **主交互**：主按钮 default、品牌/链接文字、追踪字段名文字 |
+| `brand-800` | `#9A3412` | 主按钮 hover、品牌深强调（logo 容器底、徽章深字） |
+| `brand-900` | `#7C2D12` | 登录页左侧深色面板底、主按钮 active |
 
 ### 2.2 中性色：表面与文字
 
@@ -96,7 +98,7 @@ LineageLite 是 **B 端内部数据工具**：数据团队每天打开它核对�
 | `line-strong` | `#CBD5E1` | 强边框：输入框/卡片 hover、表格外框、滚动条（slate-300） |
 | `line-soft` | `#F1F5F9` | 弱分隔：卡片内行分隔、分区线（= subtle 同值，保留独立命名便于语义替换） |
 
-> 基线 Border `#DBEAFE`（blue-100）微调为 slate-200 作默认边框：`#DBEAFE` 对白底仅 1.22:1，作为全局边框过浅且会让界面整体过蓝；`#DBEAFE` 保留在 blue-100 档位，用于「蓝色语义」的浅描边（徽章、选中描边）。
+> 基线 Border `#DBEAFE`（brand-100）微调为 slate-200 作默认边框：`#DBEAFE` 对白底仅 1.22:1，作为全局边框过浅且会让界面整体过蓝（Clew 改版后 blue 档位删除，原「蓝色语义」浅描边改由 brand-100/200 承担）。
 
 ### 2.3 语义色（每组 DEFAULT / soft / deep 三档）
 
@@ -105,9 +107,9 @@ LineageLite 是 **B 端内部数据工具**：数据团队每天打开它核对�
 | 语义 | DEFAULT | soft | deep | 场景 |
 |---|---|---|---|---|
 | `success` | `#15803D` | `#F0FDF4` | `#166534` | 成功 toast、已确认状态、校验通过（green-600/50/800） |
-| `warning` | `#D97706` | `#FFFBEB` | `#B45309` | 置信度低、登录过期提示、人工血缘边（= 基线 Accent/CTA，amber-600/50/700） |
-| `danger` | `#DC2626` | `#FEF2F2` | `#B91C1C` | 错误、删除确认、定位失效（= 基线 Destructive，red-600/50/700） |
-| `info` | `#2563EB` | `#EFF6FF` | `#1E40AF` | 常规提示、导入批次状态（= blue-600/50/800） |
+| `warning` | `#B45309` | `#FFFBEB` | `#92400E` | 置信度低、登录过期提示（Clew 改版：DEFAULT 由 amber-600 #D97706 加深为 amber-700，避免与品牌橙同屏混淆；人工血缘边已改用 teal，见 §2.4） |
+| `danger` | `#DC2626` | `#FEF2F2` | `#B91C1C` | 错误、删除确认、定位失效（= 基线 Destructive，red-600/50/700；Clew 改版后红色只做危险语义，不再承担追踪） |
+| `info` | `#2563EB` | `#EFF6FF` | `#1E40AF` | 常规提示、导入批次状态（Clew 改版后 info 保留蓝色，仅作语义色，不再承担品牌） |
 
 ### 2.4 功能色：AI 徽标色与血缘边来源色
 
@@ -119,7 +121,7 @@ LineageLite 是 **B 端内部数据工具**：数据团队每天打开它核对�
 | `ai-soft` | `#EEF2FF` | AI 徽章底、AI 相关面板浅底（indigo-50） |
 | `ai-deep` | `#3730A3` | AI 徽章文字、soft 底上的 AI 相关正文（indigo-800） |
 
-> 决策：**不与主蓝共用**。旧值 `#2F64D8` 与新主蓝 `#2563EB` 亮度几乎相同、并排不可分辨；而「AI 建议 = 未确认」是本产品最关键的状态语义，虚线+流动动画之外需要色彩冗余编码。选定靛蓝（indigo）家族：与主蓝拉开可辨差异，又属蓝紫冷调，不破坏「蓝色主色调」的整体印象（AI 色仅小面积点缀）。对比度：`#4F46E5` on white 6.29:1、on `#EEF2FF` 5.62:1，均可作正文。
+> 决策：**不与主色共用**。旧值 `#2F64D8` 与当时主蓝 `#2563EB` 亮度几乎相同、并排不可分辨；而「AI 建议 = 未确认」是本产品最关键的状态语义，虚线+流动动画之外需要色彩冗余编码。选定靛蓝（indigo）家族（AI 色仅小面积点缀）。对比度：`#4F46E5` on white 6.29:1、on `#EEF2FF` 5.62:1，均可作正文。Clew 改版后主色为橙，靛蓝 AI 色与主色的区分度进一步拉大，维持不变。
 
 **血缘边来源色（`lineage` 组，对齐 `LineageEdge.tsx` 的 `getEdgeVisual` 四形态）**
 
@@ -128,15 +130,15 @@ LineageLite 是 **B 端内部数据工具**：数据团队每天打开它核对�
 | 形态（getEdgeVisual 分支） | 旧色 | 新 Token / 色值 | 线型 | 宽度 | on page 对比度（图形 ≥3:1） |
 |---|---|---|---|---|---|
 | `source='ai'`（AI 建议） | `#2f64d8` | `lineage-ai` = `#4F46E5` | 虚线 `6 5` | 1.8 | 6.0:1 ✓（保留 `animated` 流动） |
-| `source='manual'`（人工确认） | `#a36b11` | `lineage-manual` = `#D97706` | 字段级实线；表级虚线 `4 5` | 1.7 | 3.05:1 ✓ |
+| `source='manual'`（人工确认） | `#a36b11` → `#D97706` | `lineage-manual` = `#0D9488`（teal-600，Clew 改版：原琥珀让位品牌橙） | 字段级实线；表级虚线 `4 5` | 1.7 | 3.58:1 ✓ |
 | imported 字段级 | `#52645c` | `lineage-imported` = `#475569` | 实线 | 1.55 | 7.2:1 ✓ |
 | imported 表级 | `#8b958f` | `lineage-imported-weak` = `#64748B` | 虚线 `4 5` | 1.4 | 4.55:1 ✓ |
 | 同名字段匹配（derived，视图派生） | —（新增） | `lineage-derived` = `#94A3B8` | 点状虚线 `2 4` | 1.3 | 2.46:1 ✗（见下方注 2） |
-| 字段追踪高亮（focusState='chain'） | —（新增） | `lineage-focus` = `#DC2626` | 沿用原形态线型 | 2.6 | 4.64:1 ✓（`animated` 流动） |
+| 字段追踪高亮（focusState='chain'） | `#DC2626` | `lineage-focus` = `#EA580C`（= brand-600，「点亮线索」品牌时刻） | 沿用原形态线型 | 2.6 | 3.40:1 ✓（`animated` 流动） |
 
 > imported 表级旧色 `#8b958f` 对 `#F8FAFC` 仅 2.45:1（低于图形 3:1），改用 `#64748B`，靠「虚线 + 更细」保持弱于字段级边。
 >
-> 注 2：`lineage-derived` 为「表级血缘两端同名字段匹配」的**视图派生辅助线**（不落库、不可选中），刻意弱于全部库内边。2.46:1 低于图形 3:1 属**已知取舍**：同名匹配关系可由两端字段名、tooltip 文本与图例完整读出，线体不承载唯一信息（WCAG 1.4.11 适用于「理解内容所必需」的图形）。若评审要求达标，需在本表增设更深一档色值后再改 `lib/edgeColors.ts`【TBD-UX，确认阶段处理】。`lineage-focus` 与 danger 语义色同值（追踪 = 临时强调，非错误语义），通过红色 + 流动动画与 danger 静态用法区分。
+> 注 2：`lineage-derived` 为「表级血缘两端同名字段匹配」的**视图派生辅助线**（不落库、不可选中），刻意弱于全部库内边。2.46:1 低于图形 3:1 属**已知取舍**：同名匹配关系可由两端字段名、tooltip 文本与图例完整读出，线体不承载唯一信息（WCAG 1.4.11 适用于「理解内容所必需」的图形）。若评审要求达标，需在本表增设更深一档色值后再改 `lib/edgeColors.ts`【TBD-UX，确认阶段处理】。`lineage-focus` Clew 改版起与品牌主色同值：追踪 = 「点亮线索」的品牌时刻（正向操作），非错误语义；danger 红仅保留给删除/校验失败。橙（追踪）与红（危险）为相邻色，靠形态区分——追踪链 2.6 宽 + 流动动画 + 其余边压暗 0.15，danger 只出现在小面积控件与文案。
 
 ### 2.5 图谱画布专用
 
@@ -144,13 +146,13 @@ LineageLite 是 **B 端内部数据工具**：数据团队每天打开它核对�
 |---|---|
 | 画布背景 | `bg-page`（`#F8FAFC`）+ 点阵网格：`backgroundImage: radial-gradient(circle, rgba(148,163,184,0.35) 1px, transparent 1px)`，`backgroundSize: 24px 24px`（token：`bg-dot-grid bg-grid-24`；替代旧方格线 `fine-grid`——点阵比线格更轻，Data-Dense 画布噪音更低） |
 | 节点卡片 | `bg-card` + `border-line-strong`（hover 收敛为 `shadow-card`）；宽 288px、圆角 `rounded-xl`(12px) 不变（`lib/layout.ts` 常量不动） |
-| 种子节点 | 顶部 2px 强调条 `bg-blue-600/80`；头部底 `bg-blue-50`、头部边框 `border-blue-200`；「种子」徽章 `text-blue-800`；`shadow-node-active` |
-| 节点选中 | `shadow-node-active`（1.5px blue-600 外圈 + 深蓝投影，见 §4.4）；键盘 focus 用 2px `blue-600/65` outline + offset 3px |
+| 种子节点 | 顶部 2px 强调条 `bg-brand-600/80`；头部底 `bg-brand-50`、头部边框 `border-brand-200`；「种子」徽章 `text-brand-800`；`shadow-node-active` |
+| 节点选中 | `shadow-node-active`（1.5px brand-600 外圈 + 深橙投影，见 §4.4）；键盘 focus 用 2px `brand-600/65` outline + offset 3px |
 | 节点头部（非种子） | 底 `bg-subtle`、下边框 `border-line-soft` |
-| 字段行 | hover 底 `bg-blue-50/70`，字段名 hover 变 `text-blue-800` |
-| 表级 handle | 9px 方形（r2）：白底 + `border-line-strong`，hover `border-blue-700 bg-blue-100` + blue ring |
-| 字段级 handle | 7px 圆点：白底 + `border-line-strong`、opacity 0.55；节点 hover / 自身 hover 时 `border-blue-600 bg-blue-50` opacity 1 |
-| Controls / MiniMap | 白底、`border-line`、`rounded-lg`、`shadow-float`；按钮 hover `bg-page text-blue-700` |
+| 字段行 | hover 底 `bg-subtle/70`（Clew 改版：普通 hover 用中性灰，`brand-50` 只保留给追踪行，避免未命中行误读为链路），字段名 hover 变 `text-brand-800`；追踪行底 `bg-brand-50`（聚焦 `ring-1 ring-brand-300/80`） |
+| 表级 handle | 9px 方形（r2）：白底 + `border-line-strong`，hover `border-brand-700 bg-brand-100` + brand ring |
+| 字段级 handle | 7px 圆点：白底 + `border-line-strong`、opacity 0.55；节点 hover / 自身 hover 时 `border-brand-600 bg-brand-50` opacity 1；追踪态 `field-handle-traced` 同为 brand-600/brand-50 |
+| Controls / MiniMap | 白底、`border-line`、`rounded-lg`、`shadow-float`；按钮 hover `bg-page text-brand-700`；MiniMap 种子节点色 `#EA580C`、普通 `#CBD5E1` |
 | 边 tooltip 卡 | 白底、`border-line`、`rounded-lg`、`shadow-float`（替代原 React Flow 默认样式） |
 
 ### 2.6 对比度验证表（WCAG 2.1 计算）
@@ -169,15 +171,17 @@ LineageLite 是 **B 端内部数据工具**：数据团队每天打开它核对�
 | `ink-faint` #64748B | #FFFFFF | 4.76 | ✓ |
 | `ink-faint` | #F8FAFC | 4.55 | ✓（最低限，只用于占位/元信息） |
 | `ink-faint` | subtle #F1F5F9 | 4.34 | ✗ 禁止该组合，subtle 底改用 ink-muted |
-| blue-600 #2563EB（链接文字） | #FFFFFF | 5.17 | ✓ |
-| blue-700 #1D4ED8 | #FFFFFF | 6.70 | ✓ |
-| blue-800 #1E40AF | #FFFFFF | 8.72 | ✓ |
-| blue-800 | blue-50 #EFF6FF | 8.01 | ✓（徽章/选中行） |
-| white | blue-600（主按钮） | 5.17 | ✓ |
-| white | blue-700（主按钮 hover） | 6.70 | ✓ |
-| white | blue-800 | 8.72 | ✓ |
+| brand-600 #EA580C | #FFFFFF | 3.56 | ✗ 禁文字/实心按钮（仅图形、图标 tile） |
+| brand-700 #C2410C（链接/品牌文字） | #FFFFFF | 5.18 | ✓ |
+| brand-800 #9A3412 | #FFFFFF | 7.31 | ✓ |
+| brand-700 | brand-50 #FFF7ED | 4.88 | ✓（追踪字段名） |
+| brand-800 | brand-50 #FFF7ED | 6.88 | ✓（徽章/hover 字段名） |
+| white | brand-700（主按钮 default） | 5.18 | ✓ |
+| white | brand-800（主按钮 hover） | 7.31 | ✓ |
+| white | brand-900（主按钮 active） | 9.37 | ✓ |
 | white | danger #DC2626（危险按钮） | 4.83 | ✓ |
 | success #15803D | #FFFFFF | 5.02 | ✓ |
+| warning #B45309 | #FFFFFF | 5.02 | ✓（Clew 改版后新 DEFAULT） |
 | ai #4F46E5 | #FFFFFF | 6.29 | ✓ |
 
 **soft 底徽章/提示条（deep 档正文，要求 ≥4.5:1）**
@@ -185,7 +189,7 @@ LineageLite 是 **B 端内部数据工具**：数据团队每天打开它核对�
 | 前景 | 背景 | 比值 | 结论 |
 |---|---|---|---|
 | success-deep #166534 | success-soft #F0FDF4 | 6.81 | ✓ |
-| warning-deep #B45309 | warning-soft #FFFBEB | 4.84 | ✓ |
+| warning-deep #92400E | warning-soft #FFFBEB | 6.84 | ✓ |
 | danger-deep #B91C1C | danger-soft #FEF2F2 | 5.91 | ✓ |
 | info-deep #1E40AF | info-soft #EFF6FF | 8.01 | ✓ |
 | ai-deep #3730A3 | ai-soft #EEF2FF | 8.88 | ✓ |
@@ -198,12 +202,12 @@ LineageLite 是 **B 端内部数据工具**：数据团队每天打开它核对�
 |---|---|---|---|
 | lineage-imported #475569 | #F8FAFC | 7.24 | ✓ |
 | lineage-imported-weak #64748B | #F8FAFC | 4.55 | ✓ |
-| lineage-manual #D97706 | #F8FAFC | 3.05 | ✓（1.7px 线，达标下限） |
+| lineage-manual #0D9488 | #F8FAFC | 3.58 | ✓（Clew 改版：teal-600） |
 | lineage-ai #4F46E5 | #F8FAFC | 6.01 | ✓ |
-| lineage-focus #DC2626 | #F8FAFC | 4.64 | ✓（2.6px 线 + 流动动画） |
+| lineage-focus #EA580C | #F8FAFC | 3.40 | ✓（2.6px 线 + 流动动画；Clew 改版 = brand-600） |
 | lineage-derived #94A3B8 | #F8FAFC | 2.46 | ✗ 已知取舍：视图派生辅助线，信息由字段名/tooltip/图例冗余承载（§2.4 注 2） |
-| blue-500 #3B82F6（ring/选中描边） | #FFFFFF | 3.68 | ✓ 图形；✗ 不得作白底文字 |
-| input 边框 line #E2E8F0 | #FFFFFF | 1.23 | 已知权衡：静止态输入框辨识依赖 placeholder 与形状（业界通行，GitHub/Linear 同类）；focus 态边框 blue-600 达 5.17:1。无障碍检查单如实登记（§10） |
+| brand-600 #EA580C（ring/选中描边） | #FFFFFF | 3.56 | ✓ 图形；✗ 不得作白底文字（正文用 brand-700） |
+| input 边框 line #E2E8F0 | #FFFFFF | 1.23 | 已知权衡：静止态输入框辨识依赖 placeholder 与形状（业界通行，GitHub/Linear 同类）；focus 态边框 brand-600 达 3.56:1（图形级达标）。无障碍检查单如实登记（§10） |
 
 > 禁用态（disabled）元素 WCAG 不要求对比度，统一 `opacity-50` 或中性灰（见 §7.1）。
 
@@ -292,13 +296,13 @@ Tailwind 默认 spacing 刻度即 4px 节奏，不扩展。约定：
 
 ### 4.4 阴影（5 档，key 名保留 + 新增 modal）
 
-全部为**蓝色系冷灰投影**（rgba 基于 slate-900 #0F172A / blue-800 #1E40AF），替换旧墨绿投影：
+中性投影 rgba 基于 slate-900 `#0F172A`（冷灰投影不变）；`shadow-node-active` 的外圈与投影基于品牌橙（brand-600/brand-700），与节点选中态呼应：
 
 | Token | 值 | 用途 |
 |---|---|---|
 | `shadow-card` | `0 1px 2px rgba(15, 23, 42, 0.05), 0 2px 8px -4px rgba(15, 23, 42, 0.08)` | 静止卡片、节点 hover |
 | `shadow-node` | `0 1px 2px rgba(15, 23, 42, 0.06), 0 4px 12px -6px rgba(15, 23, 42, 0.10)` | 画布节点默认 |
-| `shadow-node-active` | `0 0 0 1.5px rgba(37, 99, 235, 0.55), 0 8px 24px -12px rgba(30, 64, 175, 0.35)` | 节点选中/种子（自带 blue-600 外圈） |
+| `shadow-node-active` | `0 0 0 1.5px rgba(234, 88, 12, 0.55), 0 8px 24px -12px rgba(194, 65, 12, 0.35)` | 节点选中/种子（自带 brand-600 外圈） |
 | `shadow-float` | `0 2px 6px rgba(15, 23, 42, 0.06), 0 12px 32px -12px rgba(15, 23, 42, 0.18)` | 下拉菜单、tooltip、toast、抽屉、Controls/MiniMap |
 | `shadow-modal` | `0 8px 24px rgba(15, 23, 42, 0.12), 0 24px 64px -16px rgba(15, 23, 42, 0.25)` | 模态框（新增强调层级） |
 
@@ -365,35 +369,35 @@ Tailwind 默认 spacing 刻度即 4px 节奏，不扩展。约定：
 
 ### 7.1 按钮（4 变体 × 5 状态）
 
-统一骨架：`inline-flex items-center justify-center gap-1.5 rounded-lg text-[13px] font-medium transition-colors duration-150` + 变体类 + 尺寸（默认 `h-8 px-3`）。**统一 focus 规格（全部交互元素）**：`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white`；深蓝底（blue-800+）上改 `ring-white/60`。
+统一骨架：`inline-flex items-center justify-center gap-1.5 rounded-lg text-[13px] font-medium transition-colors duration-150` + 变体类 + 尺寸（默认 `h-8 px-3`）。**统一 focus 规格（全部交互元素）**：`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white`；深橙底（brand-800+）上改 `ring-white/60`。
 
 | 变体 | default | hover | active | disabled | focus |
 |---|---|---|---|---|---|
-| **primary** `btn-primary` | `bg-blue-600 text-white` | `hover:bg-blue-700` | `active:bg-blue-800` | `disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed`（中性化，不用半透明蓝） | 统一 focus |
-| **secondary** | `border border-line-strong bg-card text-ink-soft` | `hover:border-blue-400 hover:text-blue-700` | `active:bg-blue-50` | `disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-line-strong` | 统一 focus |
+| **primary** `btn-primary` | `bg-brand-700 text-white`（Clew 改版：brand-600 白字仅 3.56:1，实心按钮整体上移一档） | `hover:bg-brand-800` | `active:bg-brand-900` | `disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed`（中性化，不用半透明橙） | 统一 focus |
+| **secondary** | `border border-line-strong bg-card text-ink-soft` | `hover:border-brand-400 hover:text-brand-700` | `active:bg-brand-50` | `disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-line-strong` | 统一 focus |
 | **ghost** | `text-ink-muted`（无边框无底） | `hover:bg-subtle hover:text-ink` | `active:bg-line` | 同 secondary | 统一 focus |
 | **danger** | `bg-danger text-white` | `hover:bg-danger-deep` | `active:bg-danger-deep` | 同 primary 的 disabled | 统一 focus |
 
 完整示例（primary，可直接抄）：
 
 ```html
-class="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+class="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-brand-700 px-3 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-brand-800 active:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
 ```
 
 danger ghost 变体（列表内删除入口）：`border border-danger/25 bg-danger-soft text-danger-deep hover:border-danger/45`。带图标按钮：图标 14px，与文字同色；仅图标按钮热区 ≥24×24 + `aria-label`。
 
 ### 7.2 输入框与 label 布局
 
-`.field-input` 组件类保留在 `index.css`（更新为蓝系，§8.2），默认 `h-9`；紧凑场景加 `h-8`。
+`.field-input` 组件类保留在 `index.css`（更新为橙系，§8.2），默认 `h-9`；紧凑场景加 `h-8`。
 
 - label：`mb-1.5 block text-[12px] font-medium text-ink-soft`（`htmlFor` 必填；搜索类用 `sr-only`）。
-- 输入框内状态（由组件类实现）：静止 `border-line bg-card/60` → hover `border-line-strong` → focus `border-blue-600 bg-card + ring-2 ring-blue-600/15`；placeholder `text-ink-faint`；disabled `opacity-50 cursor-not-allowed`。
-- 左图标输入框（搜索）：图标 `absolute left-3 text-ink-faint`，focus-within 时变 `text-blue-600`；输入框 `pl-9`。
+- 输入框内状态（由组件类实现）：静止 `border-line bg-card/60` → hover `border-line-strong` → focus `border-brand-600 bg-card + ring-2 ring-brand-600/15`；placeholder `text-ink-faint`；disabled `opacity-50 cursor-not-allowed`。
+- 左图标输入框（搜索）：图标 `absolute left-3 text-ink-faint`，focus-within 时变 `text-brand-600`；输入框 `pl-9`。
 
 ### 7.3 下拉选择
 
 - 原生 select（侧栏过滤器等）：`.field-input h-8 pr-8 appearance-none` + 右侧 chevron 图标 14px。
-- 自定义菜单（用户菜单、角色选择）：容器 `rounded-lg border border-line bg-card py-1 shadow-float animate-fade-in`（z 按层级表）；菜单项 `flex h-8 items-center gap-2 px-3 text-[13px] text-ink-soft hover:bg-subtle focus-visible:bg-subtle`；当前项 `bg-blue-50 text-blue-800 font-medium`；分组标题 `px-3 py-1.5 text-[11px] text-ink-faint`；分隔线 `my-1 border-t border-line-soft`。
+- 自定义菜单（用户菜单、角色选择）：容器 `rounded-lg border border-line bg-card py-1 shadow-float animate-fade-in`（z 按层级表）；菜单项 `flex h-8 items-center gap-2 px-3 text-[13px] text-ink-soft hover:bg-subtle focus-visible:bg-subtle`；当前项 `bg-brand-50 text-brand-800 font-medium`；分组标题 `px-3 py-1.5 text-[11px] text-ink-faint`；分隔线 `my-1 border-t border-line-soft`。
 
 ### 7.4 徽章（badge）
 
@@ -403,8 +407,8 @@ danger ghost 变体（列表内删除入口）：`border border-danger/25 bg-dan
 
 | source | 类组合 | 圆点 |
 |---|---|---|
-| imported（文件导入） | `border-blue-200 bg-blue-50 text-blue-800` | `bg-blue-600` |
-| manual（人工确认） | `border-warning/25 bg-warning-soft text-warning-deep` | `bg-warning` |
+| imported（文件导入） | `border-slate-200 bg-slate-100 text-slate-700`（Clew 改版：原蓝色改中性灰，与 imported 石墨边呼应） | `bg-slate-600` |
+| manual（人工确认） | `border-teal-200 bg-teal-50 text-teal-700`（Clew 改版：原琥珀改 teal，与 manual 边同族） | `bg-teal-600` |
 | ai（AI 建议） | `border-ai/25 bg-ai-soft text-ai-deep` | `bg-ai` |
 | 未知兜底 | `border-line bg-card/70 text-ink-muted` | `bg-ink-faint` |
 
@@ -412,15 +416,15 @@ danger ghost 变体（列表内删除入口）：`border border-danger/25 bg-dan
 
 | 角色 | 类组合 |
 |---|---|
-| admin（管理员） | `border-transparent bg-blue-800 text-white` |
-| editor（编辑） | `border-blue-200 bg-blue-50 text-blue-800` |
+| admin（管理员） | `border-transparent bg-brand-800 text-white` |
+| editor（编辑） | `border-brand-200 bg-brand-50 text-brand-800` |
 | viewer（只读） | `border-line bg-subtle text-ink-muted` |
 
 **状态徽章**（导入批次状态、版本状态）复用语义色：成功 `bg-success-soft text-success-deep`、失败 `bg-danger-soft text-danger-deep`、进行中 `bg-info-soft text-info-deep`、待确认 `bg-warning-soft text-warning-deep`（均 `border-transparent`）。
 
 ### 7.5 标签 chip
 
-过滤条件、AI 工具名、定位器锚点：`inline-flex h-6 items-center gap-1 rounded-md border border-line bg-card px-2 font-mono text-[11px] text-ink-muted`；可删除 chip 尾接 `h-4 w-4` close 图标按钮（`hover:bg-subtle`）；激活 chip `border-blue-300 bg-blue-50 text-blue-800`。
+过滤条件、AI 工具名、定位器锚点：`inline-flex h-6 items-center gap-1 rounded-md border border-line bg-card px-2 font-mono text-[11px] text-ink-muted`；可删除 chip 尾接 `h-4 w-4` close 图标按钮（`hover:bg-subtle`）；激活 chip `border-brand-300 bg-brand-50 text-brand-800`。
 
 ### 7.6 模态框
 
@@ -438,7 +442,7 @@ danger ghost 变体（列表内删除入口）：`border border-danger/25 bg-dan
 
 ### 7.8 Toast
 
-`fixed right-4 bottom-4 z-[60] flex h-10 items-center gap-2 rounded-lg border px-3.5 text-[13px] shadow-float animate-fade-up`；三态：success `border-success/25 bg-success-soft text-success-deep`、error `border-danger/25 bg-danger-soft text-danger-deep`、info `border-blue-200 bg-blue-50 text-blue-800`；左侧状态图标 14px 与文字同色；自动消失 4.2s（现值保留）；`role="alert"/"status"` 保留。
+`fixed right-4 bottom-4 z-[60] flex h-10 items-center gap-2 rounded-lg border px-3.5 text-[13px] shadow-float animate-fade-up`；三态：success `border-success/25 bg-success-soft text-success-deep`、error `border-danger/25 bg-danger-soft text-danger-deep`、info `border-info/25 bg-info-soft text-info-deep`（info 语义保留蓝色，不随品牌换色）；左侧状态图标 14px 与文字同色；自动消失 4.2s（现值保留）；`role="alert"/"status"` 保留。
 
 ### 7.9 空态
 
@@ -446,9 +450,9 @@ danger ghost 变体（列表内删除入口）：`border border-danger/25 bg-dan
 
 ### 7.10 加载态
 
-- Spinner：`h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600`（小号 `h-3.5 w-3.5 border-[1.5px]`，深色底上 `border-white/40 border-t-white`）。
+- Spinner：`h-4 w-4 animate-spin rounded-full border-2 border-brand-200 border-t-brand-600`（小号 `h-3.5 w-3.5 border-[1.5px]`，深色底上 `border-white/40 border-t-white`）。
 - 骨架屏：`animate-soft-pulse rounded-md bg-subtle`（数据集列表加载，替代现有实现）。
-- 顶栏子图加载小 spinner：`h-2.5 w-2.5 border-[1.5px] border-blue-300 border-t-blue-700`。
+- 顶栏子图加载小 spinner：`h-2.5 w-2.5 border-[1.5px] border-brand-300 border-t-brand-700`。
 
 ### 7.11 图标规范
 
@@ -486,34 +490,35 @@ module.exports = {
           strong: '#CBD5E1',  // 强边框/hover（slate-300）
           soft: '#F1F5F9',    // 弱分隔（= subtle）
         },
-        /* 主色（锚点：800=#1E40AF，500=#3B82F6） */
-        blue: {
-          50: '#EFF6FF',
-          100: '#DBEAFE',
-          200: '#BFDBFE',
-          300: '#93C5FD',
-          400: '#60A5FA',
-          500: '#3B82F6',
-          600: '#2563EB',
-          700: '#1D4ED8',
-          800: '#1E40AF',
-          900: '#1E3A8A',
+        /* 品牌主色（Clew 线团橙，锚点：600=#EA580C，700=#C2410C；与 slate 中性面构成冷灰+暖橙） */
+        brand: {
+          50: '#FFF7ED',
+          100: '#FFEDD5',
+          200: '#FED7AA',
+          300: '#FDBA74',
+          400: '#FB923C',
+          500: '#F97316',
+          600: '#EA580C',
+          700: '#C2410C',
+          800: '#9A3412',
+          900: '#7C2D12',
         },
-        /* 语义色（DEFAULT=图标/白底文字/实心底，soft=浅底，deep=soft 底正文） */
+        /* 语义色（DEFAULT=图标/白底文字/实心底，soft=浅底，deep=soft 底正文）
+           warning 自 Clew 改版起用深琥珀（比品牌橙深一档），避免与品牌橙同屏混淆 */
         success: { DEFAULT: '#15803D', soft: '#F0FDF4', deep: '#166534' },
-        warning: { DEFAULT: '#D97706', soft: '#FFFBEB', deep: '#B45309' },
+        warning: { DEFAULT: '#B45309', soft: '#FFFBEB', deep: '#92400E' },
         danger: { DEFAULT: '#DC2626', soft: '#FEF2F2', deep: '#B91C1C' },
         info: { DEFAULT: '#2563EB', soft: '#EFF6FF', deep: '#1E40AF' },
-        /* AI 功能色（indigo，与主蓝区分；soft 底正文用 deep） */
+        /* AI 功能色（indigo，与品牌橙区分；soft 底正文用 deep） */
         ai: { DEFAULT: '#4F46E5', soft: '#EEF2FF', deep: '#3730A3' },
-        /* 血缘边来源色（getEdgeVisual 形态专用，SVG stroke） */
+        /* 血缘边来源色（getEdgeVisual 形态专用，SVG stroke；与 lib/edgeColors.ts 保持一致） */
         lineage: {
           imported: '#475569',        // imported 字段级（实线 1.55）
           'imported-weak': '#64748B', // imported 表级（虚线 1.4）
-          manual: '#D97706',          // 人工确认
+          manual: '#0D9488',          // 人工确认（teal-600，原琥珀让位品牌橙）
           ai: '#4F46E5',              // AI 建议（虚线+流动）
           derived: '#94A3B8',         // 视图派生：表级血缘同名字段匹配推断线（点状 2 4）
-          focus: '#DC2626',           // 字段追踪高亮（= danger，流动）
+          focus: '#EA580C',           // 字段追踪高亮（= 品牌橙，「点亮线索」；danger 红仅用于删除/校验失败）
         },
       },
       fontFamily: {
@@ -524,7 +529,7 @@ module.exports = {
         card: '0 1px 2px rgba(15, 23, 42, 0.05), 0 2px 8px -4px rgba(15, 23, 42, 0.08)',
         node: '0 1px 2px rgba(15, 23, 42, 0.06), 0 4px 12px -6px rgba(15, 23, 42, 0.10)',
         'node-active':
-          '0 0 0 1.5px rgba(37, 99, 235, 0.55), 0 8px 24px -12px rgba(30, 64, 175, 0.35)',
+          '0 0 0 1.5px rgba(234, 88, 12, 0.55), 0 8px 24px -12px rgba(194, 65, 12, 0.35)',
         float: '0 2px 6px rgba(15, 23, 42, 0.06), 0 12px 32px -12px rgba(15, 23, 42, 0.18)',
         modal: '0 8px 24px rgba(15, 23, 42, 0.12), 0 24px 64px -16px rgba(15, 23, 42, 0.25)',
       },
@@ -590,12 +595,12 @@ body {
 }
 ```
 
-**(3) 选区色与滚动条（蓝系替换）**
+**(3) 选区色与滚动条（橙系替换）**
 
 ```css
 ::selection {
-  background: #dbeafe;  /* blue-100 */
-  color: #1e3a8a;       /* blue-900 */
+  background: #ffedd5;  /* brand-100 */
+  color: #7c2d12;       /* brand-900 */
 }
 
 * {
@@ -614,9 +619,9 @@ body {
 }
 .field-input:hover:not(:disabled) { border-color: #cbd5e1; }
 .field-input:focus {
-  border-color: #2563eb;   /* blue-600 */
+  border-color: #ea580c;   /* brand-600 */
   background: #ffffff;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.15);
 }
 .field-input:disabled { cursor: not-allowed; opacity: 0.5; }
 ```
@@ -626,12 +631,12 @@ body {
 **(5) React Flow 画布段（`.lineage-flow` 及以下）**——结构保留、色值替换：
 
 - `.lineage-flow` 背景：删去米色径向渐变，改 `background: #f8fafc;` + 点阵由容器类 `bg-dot-grid bg-grid-24` 提供（画布组件上加类）。
-- `.react-flow__node-dataset.selected .dataset-card`：选中阴影改 `0 0 0 1.5px rgba(37,99,235,.55), 0 8px 24px -12px rgba(30,64,175,.35)`（= `shadow-node-active`）。
+- `.react-flow__node-dataset.selected .dataset-card`：选中阴影改 `0 0 0 1.5px rgba(234,88,12,.55), 0 8px 24px -12px rgba(194,65,12,.35)`（= `shadow-node-active`）。
 - `.dataset-card` 进场动画 `dataset-card-in` 时长 360ms→250ms。
-- `.react-flow__node-dataset:focus-visible .dataset-card`：outline 改 `2px solid rgba(37, 99, 235, 0.65)`。
-- `.table-handle`：边框 `#cbd5e1`、底 `#ffffff`、外圈 `0 0 0 2px rgba(248,250,252,.9)`；hover `border-color:#1d4ed8; background:#dbeafe; box-shadow:0 0 0 3px rgba(37,99,235,.15)`。
-- `.field-handle`：边框 `#cbd5e1`、底 `#f8fafc`、opacity 0.55；激活 `border-color:#2563eb; background:#eff6ff` + blue ring。
-- `.lineage-controls` / `.lineage-minimap`：底 `#ffffff`、边框 `#e2e8f0`、圆角 `8px`、`shadow-float` 值；按钮 hover `background:#f8fafc; color:#1d4ed8`。
+- `.react-flow__node-dataset:focus-visible .dataset-card`：outline 改 `2px solid rgba(234, 88, 12, 0.65)`。
+- `.table-handle`：边框 `#cbd5e1`、底 `#ffffff`、外圈 `0 0 0 2px rgba(248,250,252,.9)`；hover `border-color:#c2410c; background:#ffedd5; box-shadow:0 0 0 3px rgba(234,88,12,.15)`。
+- `.field-handle`：边框 `#cbd5e1`、底 `#f8fafc`、opacity 0.55；激活 `border-color:#ea580c; background:#fff7ed` + brand ring；追踪态 `.field-handle-traced` 同值且 opacity 1。
+- `.lineage-controls` / `.lineage-minimap`：底 `#ffffff`、边框 `#e2e8f0`、圆角 `8px`、`shadow-float` 值；按钮 hover `background:#f8fafc; color:#c2410c`。
 - `@media (prefers-reduced-motion: reduce)` 规则**原样保留**（关闭一切动画/过渡）。
 
 ---
@@ -639,6 +644,8 @@ body {
 ## 九、旧 → 新 Token 映射表（开发照此全局替换）
 
 ### 9.1 色彩
+
+> 本表记录**首版高保真**（旧原型 pine 墨绿系 → 当时 blue 蓝系）的迁移映射，行内「新值」为 blue 时代的历史色值，仅作追溯。**2026-10 Clew 改版**已在全库执行第二段迁移：`blue-*` → `brand-*`（orange 值见 §2.1）、`lineage-manual` → teal、`lineage-focus` → 品牌橙、warning 加深；当前代码中已不存在 blue 档位，新代码一律引用 §2.1 的 brand 档位。
 
 | 旧 token（旧值） | 新 token（新值） | 说明 |
 |---|---|---|
@@ -652,16 +659,16 @@ body {
 | `border-line`（#dcd6c9） | `border-line`（#E2E8F0） | 同名换值 |
 | `border-line-strong`（#c9c2b3） | `border-line-strong`（#CBD5E1） | 同名换值 |
 | `border-line-soft`（#ece8de） | `border-line-soft`（#F1F5F9） | 同名换值 |
-| `pine-50`（#eef7f2） | `blue-50`（#EFF6FF） | hover 背景/浅底 |
-| `pine-100`（#d7ece1） | `blue-100`（#DBEAFE） | 浅描边/徽章边 |
-| `pine-200`（#b3d9c7） | `blue-200`（#BFDBFE） | 种子头部边框 |
-| `pine-300`（#83bfa6） | `blue-300`（#93C5FD） | 图形点缀 |
-| `pine-400`（#519f83） | `blue-400`（#60A5FA） | 图形次级 |
-| `pine-500`（#2f8268） | `blue-500`（#3B82F6） | ring/选中描边（图形） |
-| `pine-600`（#1f6753） | `blue-600`（#2563EB） | 主按钮/链接文字 |
-| `pine-700`（#1a5344） | `blue-700`（#1D4ED8） | 主按钮 hover |
-| `pine-800`（#174237） | `blue-800`（#1E40AF） | 深底/徽章深字 |
-| `pine-900`（#13362e） | `blue-900`（#1E3A8A） | 登录深色面板 |
+| `pine-50`（#eef7f2） | `brand-50`（#EFF6FF） | hover 背景/浅底 |
+| `pine-100`（#d7ece1） | `brand-100`（#DBEAFE） | 浅描边/徽章边 |
+| `pine-200`（#b3d9c7） | `brand-200`（#BFDBFE） | 种子头部边框 |
+| `pine-300`（#83bfa6） | `brand-300`（#93C5FD） | 图形点缀 |
+| `pine-400`（#519f83） | `brand-400`（#60A5FA） | 图形次级 |
+| `pine-500`（#2f8268） | `brand-500`（#3B82F6） | ring/选中描边（图形） |
+| `pine-600`（#1f6753） | `brand-600`（#2563EB） | 主按钮/链接文字 |
+| `pine-700`（#1a5344） | `brand-700`（#1D4ED8） | 主按钮 hover |
+| `pine-800`（#174237） | `brand-800`（#1E40AF） | 深底/徽章深字 |
+| `pine-900`（#13362e） | `brand-900`（#1E3A8A） | 登录深色面板 |
 | `ember`（DEFAULT #b9552f / soft #f8e9df / deep #8d3e20） | `danger`（#DC2626 / #FEF2F2 / #B91C1C） | 合并入 danger |
 | `rosewood`（#9b3a43 / #f8e8e9 / #742b32） | `danger`（同上） | 与 ember 合并（同为错误/危险语义） |
 | `ochre`（#a36b11 / #fbf1d9 / #78500c） | `warning`（#D97706 / #FFFBEB / #B45309） | 警告/人工边 |
@@ -671,7 +678,7 @@ body {
 | 边色 `#52645c`（imported 字段级） | `lineage-imported`（#475569） | 走常量 |
 | 边色 `#8b958f`（imported 表级） | `lineage-imported-weak`（#64748B） | 走常量 |
 
-> 使用统计（供评估替换面）：`text-ink-faint` 195 处、`border-line` 132、`bg-surface` 110、rosewood 104、pine-* 合计约 260、ember 31、ochre 24、`font-display` 12。ink/line 因同名换值，多数文件**零改动**；机械替换集中在 pine→blue、rosewood/ember→danger、ochre→warning 三组。
+> 使用统计（供评估替换面）：`text-ink-faint` 195 处、`border-line` 132、`bg-surface` 110、rosewood 104、pine-* 合计约 260、ember 31、ochre 24、`font-display` 12。ink/line 因同名换值，多数文件**零改动**；机械替换集中在 pine→blue（首版）、rosewood/ember→danger、ochre→warning 三组；Clew 改版又整体执行 blue→brand 一组。
 
 ### 9.2 字体 / 阴影 / 背景 / 动效
 
@@ -691,7 +698,7 @@ body {
 | index.css：滚动条 #c9c2b3/#a9a192 | #CBD5E1 / hover #94A3B8 | |
 | index.css：`.lineage-flow` 米色渐变底 | #F8FAFC + `bg-dot-grid bg-grid-24` | |
 | index.css：`dataset-card-in` 360ms | 250ms | |
-| 硬编码装饰色（登录页 `#203f36`、`#8fb0a3`、`#173b31` 等深绿系） | 登录页深色面板统一 `blue-900` 系 | 按 01 页面文档执行 |
+| 硬编码装饰色（登录页 `#203f36`、`#8fb0a3`、`#173b31` 等深绿系） | 登录页深色面板统一 `brand-900` 系 | 按 01 页面文档执行 |
 | `rounded-[14px]`（节点） | `rounded-xl`（12px） | |
 | TopBar `min-h-[68px]` | `h-14`（56px） | |
 | 碎片字号 7.5/8/8.5/9/9.5/10.5px | `text-[11px]` / `text-xs`（12px） | §3.2 收敛 |
@@ -703,7 +710,7 @@ body {
 
 1. **文字对比度**：正文组合全部 ≥4.5:1（以 §2.6 验证表为准）；soft 底徽章/提示条正文必须用 deep 档；禁止 `ink-faint` 出现在 subtle 底正文。用取色器抽查每页 ≥3 处实际渲染组合。
 2. **图形对比度**：血缘边、focus ring、选中描边、图标 ≥3:1（§2.6 图形表）。已知登记项：输入框静止态边框 1.23:1（业界通行权衡，靠 placeholder + focus 态补偿）——保持登记，不改设计。
-3. **可见 focus**：所有可交互元素（按钮/输入/菜单项/节点/边/关闭钮）有 `:focus-visible` 样式（统一 ring 规格 §7.1），且不被 `overflow` 裁切；画布节点键盘 focus 的 outline（2px blue-600/65 + offset 3px）可达。Tab 遍历登录页、顶栏、侧栏、画布工具面板无焦点丢失。
+3. **可见 focus**：所有可交互元素（按钮/输入/菜单项/节点/边/关闭钮）有 `:focus-visible` 样式（统一 ring 规格 §7.1），且不被 `overflow` 裁切；画布节点键盘 focus 的 outline（2px brand-600/65 + offset 3px）可达。Tab 遍历登录页、顶栏、侧栏、画布工具面板无焦点丢失。
 4. **prefers-reduced-motion**：系统开启减少动态时，`fade-*`/`modal-in`/`soft-pulse`/AI 边流动/节点进场全部静止（index.css 全局规则覆盖，改动动画时不得绕过该规则）。
 5. **键盘可达**：搜索框 `/` 快捷聚焦（保留）；模态 Esc 关闭 + 焦点圈定 + 关闭后焦点还原（ConfirmDialog 行为推广到全部模态）；抽屉 Esc 关闭；`aria-expanded`/`aria-haspopup`/`role` 沿用现有组件实现，不因视觉改版丢失。
 6. **色彩不做唯一编码**：血缘来源在颜色之外有虚线线型差异 + 徽章文字；AI 边额外有流动动画；危险操作有文字说明。
@@ -723,4 +730,4 @@ body {
 | `05_AI对话与用户管理.md` | AI 对话（AiAssistantDrawer）+ 用户管理（UserManagementModal） |
 | `06_版本与变更历史.md` | 版本抽屉（VersionDrawer）+ 变更历史（HistoryDrawer）+ 二次确认（ConfirmDialog） |
 
-> 页面文档写作约定：引用本文 token 时写 token 名（如 `blue-600`、`shadow-float`），不重复定义值；组件规格直接引 §7 小节号；新出现的页面级样式必须先回写本文再使用。
+> 页面文档写作约定：引用本文 token 时写 token 名（如 `brand-600`、`shadow-float`），不重复定义值；组件规格直接引 §7 小节号；新出现的页面级样式必须先回写本文再使用。

@@ -256,7 +256,7 @@ export function LineageEdgeView({
                       event.stopPropagation();
                       onSelect?.();
                     }}
-                    className="inline-flex h-7 items-center rounded-md border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60"
+                    className="inline-flex h-7 items-center rounded-md border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60"
                   >
                     查看详情
                   </button>
@@ -268,7 +268,7 @@ export function LineageEdgeView({
                           event.stopPropagation();
                           onEdit?.();
                         }}
-                        className="inline-flex h-7 items-center gap-1 rounded-md border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60"
+                        className="inline-flex h-7 items-center gap-1 rounded-md border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60"
                       >
                         <Icon name="edit" size={12} />
                         编辑

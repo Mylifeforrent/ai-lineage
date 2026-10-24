@@ -90,7 +90,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="inline-flex h-8 items-center justify-center rounded-lg border border-line-strong bg-card px-3 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 active:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-line-strong"
+            className="inline-flex h-8 items-center justify-center rounded-lg border border-line-strong bg-card px-3 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 active:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-line-strong"
           >
             {cancelLabel}
           </button>
@@ -101,7 +101,7 @@ export function ConfirmDialog({
             className={`flex h-8 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium text-white transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-wait disabled:opacity-70 ${
               danger
                 ? 'bg-danger hover:bg-danger-deep active:bg-danger-deep focus-visible:ring-white/60'
-                : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 focus-visible:ring-blue-600/60'
+                : 'bg-brand-700 hover:bg-brand-800 active:bg-brand-900 focus-visible:ring-brand-600/60'
             }`}
           >
             {busy && (

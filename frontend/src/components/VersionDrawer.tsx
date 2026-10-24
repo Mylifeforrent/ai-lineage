@@ -234,7 +234,7 @@ export function VersionDrawer({
       >
         <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-line-soft px-4">
           <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-brand-50 text-brand-700">
               <Icon name="tag" size={16} />
             </span>
             <h2
@@ -248,7 +248,7 @@ export function VersionDrawer({
             <button
               type="button"
               onClick={() => setReloadKey((value) => value + 1)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               aria-label="刷新版本信息"
               title="刷新"
             >
@@ -258,7 +258,7 @@ export function VersionDrawer({
               ref={closeButtonRef}
               type="button"
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               aria-label="关闭版本抽屉"
             >
               <Icon name="close" size={16} />
@@ -284,7 +284,7 @@ export function VersionDrawer({
               <button
                 type="button"
                 onClick={() => setReloadKey((value) => value + 1)}
-                className="mt-2 inline-flex h-7 items-center gap-1 rounded-lg border border-line-strong bg-card px-2 text-[11px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+                className="mt-2 inline-flex h-7 items-center gap-1 rounded-lg border border-line-strong bg-card px-2 text-[11px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               >
                 <Icon name="refresh" size={11} />
                 重新加载
@@ -370,7 +370,7 @@ export function VersionDrawer({
                     {tags.map((tag) => (
                       <div key={tag.id} className="px-3 py-2.5">
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                          <span className="font-mono text-[13px] font-semibold text-blue-800">
+                          <span className="font-mono text-[13px] font-semibold text-brand-800">
                             {tag.name}
                           </span>
                           <span className="rounded border border-line bg-page px-1.5 py-px font-mono text-[11px] tabular-nums text-ink-faint">
@@ -386,7 +386,7 @@ export function VersionDrawer({
                                 setRollbackNotice(null);
                                 setPendingRollback(tag);
                               }}
-                              className="ml-auto inline-flex h-7 items-center gap-1 rounded-md border border-danger/25 bg-danger-soft px-2 text-[11px] font-medium text-danger-deep transition-colors duration-150 hover:border-danger/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+                              className="ml-auto inline-flex h-7 items-center gap-1 rounded-md border border-danger/25 bg-danger-soft px-2 text-[11px] font-medium text-danger-deep transition-colors duration-150 hover:border-danger/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                             >
                               <Icon name="rollback" size={11} />
                               回滚到此标签
@@ -439,7 +439,7 @@ export function VersionDrawer({
                       <button
                         type="submit"
                         disabled={creating || !tagName.trim()}
-                        className="flex h-8 shrink-0 items-center gap-1 rounded-lg bg-blue-600 px-2.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                        className="flex h-8 shrink-0 items-center gap-1 rounded-lg bg-brand-700 px-2.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-brand-800 active:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                       >
                         <Icon name="plus" size={11} />
                         {creating ? '创建中…' : '打标签'}
@@ -523,7 +523,7 @@ export function VersionDrawer({
                         type="button"
                         onClick={handleDiff}
                         disabled={diffLoading || !diffFrom || !diffTo}
-                        className="flex h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-3 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-wait disabled:opacity-50"
+                        className="flex h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-3 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-wait disabled:opacity-50"
                       >
                         <Icon name="diff" size={11} />
                         {diffLoading ? '计算中…' : '计算差异'}

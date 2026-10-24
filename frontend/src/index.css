@@ -34,8 +34,8 @@
   }
 
   ::selection {
-    background: #dbeafe; /* blue-100 */
-    color: #1e3a8a; /* blue-900 */
+    background: #ffedd5; /* brand-100 */
+    color: #7c2d12; /* brand-900 */
   }
 
   * {
@@ -84,9 +84,9 @@
   }
 
   .field-input:focus {
-    border-color: #2563eb; /* blue-600 */
+    border-color: #ea580c; /* brand-600 */
     background: #ffffff;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.15);
   }
 
   .field-input:disabled {
@@ -110,10 +110,10 @@
   cursor: grabbing;
 }
 
-/* 02 文档改造点 #27：框选矩形（blue-600/15 填充 + blue-600/55 描边，待回写 00 §2.5） */
+/* 02 文档改造点 #27：框选矩形（brand-600/15 填充 + brand-600/55 描边，待回写 00 §2.5） */
 .lineage-flow .react-flow__selection {
-  background: rgba(37, 99, 235, 0.15);
-  border: 1px solid rgba(37, 99, 235, 0.55);
+  background: rgba(234, 88, 12, 0.15);
+  border: 1px solid rgba(234, 88, 12, 0.55);
 }
 
 .react-flow__node-dataset {
@@ -129,14 +129,14 @@
 }
 
 .react-flow__node-dataset:focus-visible .dataset-card {
-  outline: 2px solid rgba(37, 99, 235, 0.65);
+  outline: 2px solid rgba(234, 88, 12, 0.65);
   outline-offset: 3px;
 }
 
 .react-flow__node-dataset.selected .dataset-card {
   box-shadow:
-    0 0 0 1.5px rgba(37, 99, 235, 0.55),
-    0 8px 24px -12px rgba(30, 64, 175, 0.35);
+    0 0 0 1.5px rgba(234, 88, 12, 0.55),
+    0 8px 24px -12px rgba(194, 65, 12, 0.35);
 }
 
 .dataset-card {
@@ -170,9 +170,9 @@
 }
 
 .react-flow__handle.table-handle:hover {
-  border-color: #1d4ed8;
-  background: #dbeafe;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  border-color: #c2410c;
+  background: #ffedd5;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
 }
 
 .react-flow__handle.field-handle {
@@ -192,21 +192,21 @@
 
 .react-flow__node-dataset:hover .react-flow__handle.field-handle,
 .react-flow__handle.field-handle:hover {
-  border-color: #2563eb;
-  background: #eff6ff;
+  border-color: #ea580c;
+  background: #fff7ed;
   opacity: 1;
 }
 
 .react-flow__handle.field-handle:hover {
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
 }
 
-/* 字段追踪链路命中的字段行：handle 转为红色追踪态 */
+/* 字段追踪链路命中的字段行：handle 转为品牌橙追踪态（Clew「点亮线索」） */
 .react-flow__handle.field-handle.field-handle-traced {
   opacity: 1;
-  border-color: #dc2626;
-  background: #fef2f2;
-  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.14);
+  border-color: #ea580c;
+  background: #fff7ed;
+  box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.16);
 }
 
 .react-flow__edge .react-flow__edge-path {
@@ -245,7 +245,7 @@
 
 .lineage-controls .react-flow__controls-button:hover {
   background: #f8fafc;
-  color: #1d4ed8;
+  color: #c2410c;
 }
 
 .lineage-controls .react-flow__controls-button svg {

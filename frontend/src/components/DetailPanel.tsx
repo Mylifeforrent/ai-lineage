@@ -57,7 +57,7 @@ function EmptyDetail() {
   return (
     <div className="flex min-h-0 flex-1 flex-col justify-center px-5 py-8">
       <div className="mx-auto w-full max-w-[248px] text-center">
-        <div className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-line bg-page text-blue-600">
+        <div className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-line bg-page text-brand-600">
           <Icon name="file-search" size={24} />
           <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-line bg-card font-mono text-[11px] text-ink-faint">
             1
@@ -354,12 +354,12 @@ function FieldEditor({
 
   return (
     <form onSubmit={handleSubmit} className="mt-4 space-y-3" noValidate>
-      <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2.5">
-        <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-blue-700">
+      <div className="rounded-lg border border-brand-100 bg-brand-50 px-3 py-2.5">
+        <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-brand-700">
           <Icon name="edit" size={11} />
           编辑字段属性
         </div>
-        <p className="mt-1 text-[12px] leading-4 text-blue-800">
+        <p className="mt-1 text-[12px] leading-4 text-brand-800">
           保存定位器时后端会重新做结构校验与实文件核查，失败返回 409 并保留原值。
         </p>
       </div>
@@ -399,7 +399,7 @@ function FieldEditor({
       <div className="rounded-xl border border-line bg-card">
         <div className="flex items-center justify-between border-b border-line-soft px-3 py-2">
           <span className="flex items-center gap-1.5 text-[12px] font-medium text-ink-soft">
-            <Icon name="code" size={11} className="text-blue-600" />
+            <Icon name="code" size={11} className="text-brand-600" />
             源定位器
           </span>
           <FileTypeBadge type={locatorType} />
@@ -569,7 +569,7 @@ function FieldEditor({
         <button
           type="submit"
           disabled={saving}
-          className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-600 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+          className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand-700 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-brand-800 active:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
         >
           {saving ? (
             <>
@@ -587,7 +587,7 @@ function FieldEditor({
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="h-8 rounded-lg border border-line-strong bg-card px-3 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
+          className="h-8 rounded-lg border border-line-strong bg-card px-3 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           取消
         </button>
@@ -810,14 +810,14 @@ export function DetailPanel({
             <Icon name="database" size={12} className="shrink-0" />
             <span className="truncate">{dataset.id}</span>
             <Icon name="chevron-right" size={12} className="shrink-0" />
-            <span className="truncate text-blue-700">{field.name}</span>
+            <span className="truncate text-brand-700">{field.name}</span>
           </div>
         </div>
         <div className="ml-2 flex shrink-0 items-center gap-0.5">
           <button
             type="button"
             onClick={() => setHistoryOpen(true)}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-faint transition-colors duration-150 hover:border-line hover:bg-card hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-faint transition-colors duration-150 hover:border-line hover:bg-card hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
             aria-label="查看字段变更历史"
             title="变更历史"
           >
@@ -827,7 +827,7 @@ export function DetailPanel({
             <button
               type="button"
               onClick={() => setEditing((value) => !value)}
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-faint transition-colors duration-150 hover:border-line hover:bg-card hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-faint transition-colors duration-150 hover:border-line hover:bg-card hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               aria-label={editing ? '退出字段编辑' : '编辑字段属性'}
               title={editing ? '退出编辑' : '编辑字段'}
             >
@@ -837,7 +837,7 @@ export function DetailPanel({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-faint transition-colors duration-150 hover:border-line hover:bg-card hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-faint transition-colors duration-150 hover:border-line hover:bg-card hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
             aria-label="关闭字段详情"
             title="关闭字段详情"
           >
@@ -880,7 +880,7 @@ export function DetailPanel({
           <>
             <div className="mt-5 rounded-xl border border-line bg-card">
               <div className="flex items-center gap-2 border-b border-line-soft px-3 py-2">
-                <Icon name="file" size={12} className="text-blue-600" />
+                <Icon name="file" size={12} className="text-brand-600" />
                 <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-faint">
                   源文件
                 </span>
@@ -912,18 +912,18 @@ export function DetailPanel({
                   可读定位
                 </span>
               </div>
-              <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
-                <p className="text-[13px] leading-relaxed text-blue-800">
+              <div className="rounded-xl border border-brand-100 bg-brand-50 p-3">
+                <p className="text-[13px] leading-relaxed text-brand-800">
                   {locatorText}
                 </p>
-                <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-blue-100 pt-2">
-                  <span className="font-mono text-[11px] text-blue-700">
+                <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-brand-100 pt-2">
+                  <span className="font-mono text-[11px] text-brand-700">
                     定位器信封 · {field.src_locator.type || '未知'}
                   </span>
                   <button
                     type="button"
                     onClick={copyLocator}
-                    className="flex items-center gap-1 rounded px-1 py-0.5 font-mono text-[11px] text-blue-700 transition-colors duration-150 hover:bg-blue-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+                    className="flex items-center gap-1 rounded px-1 py-0.5 font-mono text-[11px] text-brand-700 transition-colors duration-150 hover:bg-brand-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                   >
                     <Icon name="copy" size={10} />
                     {copied ? '已复制' : copyError ? '复制失败' : '复制定位'}
@@ -936,7 +936,7 @@ export function DetailPanel({
               <button
                 type="button"
                 onClick={() => onPreview(selection)}
-                className="flex h-9 flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+                className="flex h-9 flex-1 items-center justify-center gap-2 rounded-lg bg-brand-700 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-brand-800 active:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               >
                 <Icon name="file-search" size={14} />
                 回源预览
@@ -945,7 +945,7 @@ export function DetailPanel({
                 <button
                   type="button"
                   onClick={() => setEditing(true)}
-                  className="flex h-9 items-center justify-center gap-1.5 rounded-lg border border-line-strong bg-card px-3 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+                  className="flex h-9 items-center justify-center gap-1.5 rounded-lg border border-line-strong bg-card px-3 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                 >
                   <Icon name="edit" size={14} />
                   编辑
@@ -977,7 +977,7 @@ export function DetailPanel({
                       type="button"
                       onClick={handleSuggest}
                       disabled={suggesting || busySuggestionKey !== null}
-                      className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-ai/25 bg-card px-2 text-[12px] font-medium text-ai-deep transition-colors duration-150 hover:border-ai/40 hover:bg-ai-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60"
+                      className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-ai/25 bg-card px-2 text-[12px] font-medium text-ai-deep transition-colors duration-150 hover:border-ai/40 hover:bg-ai-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {suggesting ? (
                         <span className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-ai/25 border-t-ai" />
@@ -1027,7 +1027,7 @@ export function DetailPanel({
                                   />
                                   <span className="min-w-0 break-all">
                                     <span>{item.to_dataset}.</span>
-                                    <span className="font-medium text-blue-700">
+                                    <span className="font-medium text-brand-700">
                                       {item.to_field ?? '*'}
                                     </span>
                                   </span>
@@ -1047,7 +1047,7 @@ export function DetailPanel({
                                   type="button"
                                   onClick={() => handleConfirmSuggestion(item)}
                                   disabled={anyBusy}
-                                  className="flex h-7 items-center gap-1 rounded-lg bg-blue-600 px-2 text-[12px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                                  className="flex h-7 items-center gap-1 rounded-lg bg-brand-700 px-2 text-[12px] font-medium text-white transition-colors duration-150 hover:bg-brand-800 active:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                                 >
                                   <Icon name="check" size={12} />
                                   {busy ? '确认中…' : '确认'}
@@ -1056,7 +1056,7 @@ export function DetailPanel({
                                   type="button"
                                   onClick={() => handleRejectSuggestion(item)}
                                   disabled={anyBusy}
-                                  className="flex h-7 items-center gap-1 rounded-lg border border-line-strong bg-card px-2 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-danger/30 hover:text-danger-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60"
+                                  className="flex h-7 items-center gap-1 rounded-lg border border-line-strong bg-card px-2 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-danger/30 hover:text-danger-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                   <Icon name="trash" size={12} />
                                   {busy ? '拒绝中…' : '拒绝'}
@@ -1119,7 +1119,7 @@ export function DetailPanel({
               <button
                 type="button"
                 onClick={() => setHistoryOpen(true)}
-                className="flex w-full items-center justify-between rounded-xl border border-line bg-card px-3 py-2.5 text-[13px] font-medium text-ink-muted transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+                className="flex w-full items-center justify-between rounded-xl border border-line bg-card px-3 py-2.5 text-[13px] font-medium text-ink-muted transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               >
                 <span className="flex items-center gap-1.5">
                   <Icon name="history" size={12} />
@@ -1130,7 +1130,7 @@ export function DetailPanel({
             </section>
 
             <details className="group mt-4 rounded-xl border border-line-soft bg-card">
-              <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[13px] font-medium text-ink-muted outline-none transition-colors duration-150 hover:text-ink focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white">
+              <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[13px] font-medium text-ink-muted outline-none transition-colors duration-150 hover:text-ink focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white">
                 查看原始定位器
                 <Icon
                   name="chevron-down"

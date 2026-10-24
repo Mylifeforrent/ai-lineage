@@ -159,7 +159,7 @@ export function DatasetSidebar({
             type="checkbox"
             checked={hideAiEdges}
             onChange={(event) => onHideAiEdgesChange(event.target.checked)}
-            className="h-3 w-3 rounded border-line accent-blue-600"
+            className="h-3 w-3 rounded border-line accent-brand-600"
           />
           隐藏 AI 建议边
         </label>
@@ -168,7 +168,7 @@ export function DatasetSidebar({
             type="checkbox"
             checked={confirmedOnly}
             onChange={(event) => onConfirmedOnlyChange(event.target.checked)}
-            className="h-3 w-3 rounded border-line accent-blue-600"
+            className="h-3 w-3 rounded border-line accent-brand-600"
           />
           仅显示确认血缘
         </label>
@@ -198,7 +198,7 @@ export function DatasetSidebar({
                 <button
                   type="button"
                   onClick={onRetry}
-                  className="mt-2 inline-flex h-7 items-center gap-1 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1"
+                  className="mt-2 inline-flex h-7 items-center gap-1 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1"
                 >
                   <Icon name="refresh" size={12} />
                   重试
@@ -220,7 +220,7 @@ export function DatasetSidebar({
               <button
                 type="button"
                 onClick={onClearSearch}
-                className="mt-2 text-[12px] font-medium text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-800"
+                className="mt-2 text-[12px] font-medium text-brand-700 underline decoration-brand-300 underline-offset-2 hover:text-brand-800"
               >
                 清空搜索
               </button>
@@ -242,24 +242,24 @@ export function DatasetSidebar({
                     type="button"
                     onClick={() => onSelect(dataset.id)}
                     aria-current={active ? 'true' : undefined}
-                    className={`group relative w-full overflow-hidden rounded-lg border px-3 py-2 text-left transition-colors duration-150 hover:border-line hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 ${
+                    className={`group relative w-full overflow-hidden rounded-lg border px-3 py-2 text-left transition-colors duration-150 hover:border-line hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 ${
                       active
-                        ? 'border-blue-100 bg-blue-50'
+                        ? 'border-brand-100 bg-brand-50'
                         : 'border-transparent'
                     }`}
                   >
                     <span
                       className={`absolute inset-y-2 left-0 w-[2.5px] rounded-r-full transition-all duration-150 ${
                         active
-                          ? 'bg-blue-600 opacity-100'
-                          : 'bg-blue-400 opacity-0 group-hover:opacity-45'
+                          ? 'bg-brand-600 opacity-100'
+                          : 'bg-brand-400 opacity-0 group-hover:opacity-45'
                       }`}
                       aria-hidden="true"
                     />
                     <div className="flex items-center justify-between gap-2 pl-1">
                       <span
                         className={`min-w-0 truncate text-[13px] font-medium ${
-                          active ? 'text-blue-800' : 'text-ink'
+                          active ? 'text-brand-800' : 'text-ink'
                         }`}
                         title={dataset.name}
                       >
@@ -272,14 +272,14 @@ export function DatasetSidebar({
                     <div className="mt-1 flex items-center gap-1.5 pl-1">
                       <span
                         className={`truncate font-mono text-[11px] ${
-                          active ? 'text-blue-700' : 'text-ink-faint'
+                          active ? 'text-brand-700' : 'text-ink-faint'
                         }`}
                         title={dataset.id}
                       >
                         {dataset.id}
                       </span>
                       {active && (
-                        <span className="shrink-0 rounded bg-blue-100 px-1.5 py-px font-mono text-[11px] uppercase text-blue-800">
+                        <span className="shrink-0 rounded bg-brand-100 px-1.5 py-px font-mono text-[11px] uppercase text-brand-800">
                           种子
                         </span>
                       )}
@@ -288,7 +288,7 @@ export function DatasetSidebar({
                         size={12}
                         className={`ml-auto shrink-0 transition-all duration-150 ${
                           active
-                            ? 'text-blue-500'
+                            ? 'text-brand-500'
                             : '-translate-x-1 text-ink-faint opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
                         }`}
                       />
@@ -308,7 +308,7 @@ export function DatasetSidebar({
               <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
                 当前子图
               </span>
-              <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+              <span className="h-1.5 w-1.5 rounded-full bg-brand-600" />
             </div>
             <div className="mt-1.5 flex items-center gap-3 font-mono text-[12px] tabular-nums text-ink-soft">
               <span>
@@ -342,7 +342,7 @@ export function DatasetSidebar({
           </div>
           <div className="flex items-center gap-2">
             <EdgeLegendLine variant="focus" />
-            <span className="text-danger-deep">点击字段的追踪链路</span>
+            <span className="text-brand-700">点击字段的追踪链路</span>
           </div>
           <div className="flex items-center gap-2">
             <EdgeLegendLine variant="ai" />

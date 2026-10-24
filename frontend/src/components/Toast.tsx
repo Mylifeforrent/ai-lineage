@@ -11,7 +11,7 @@ export interface ToastMessage {
 const TONE_STYLES: Record<ToastTone, string> = {
   success: 'border-success/25 bg-success-soft text-success-deep',
   error: 'border-danger/25 bg-danger-soft text-danger-deep',
-  info: 'border-blue-200 bg-blue-50 text-blue-800',
+  info: 'border-brand-200 bg-brand-50 text-brand-800',
 };
 
 const TONE_ICONS = {

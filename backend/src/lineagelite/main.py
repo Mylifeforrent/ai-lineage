@@ -33,8 +33,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="LineageLite", version="0.1.0",
-                  description="轻量级 AI 数据血缘工具（M4：AI 对话与血缘建议）",
+    app = FastAPI(title="Clew", version="0.1.0",
+                  description="字段级 AI 数据血缘工具（M4：AI 对话与血缘建议）",
                   lifespan=lifespan)
     # M2：前端已接入，跨域来源由 CORS_ORIGINS 显式配置；认证走 Bearer
     # 而非 Cookie，无需 allow_credentials（避免通配来源下的凭证回显）。

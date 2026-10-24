@@ -9,14 +9,14 @@ const SOURCE_META: Record<string, SourceMeta> = {
   imported: {
     label: 'imported',
     description: '文件导入',
-    classes: 'border-blue-200 bg-blue-50 text-blue-800',
-    dot: 'bg-blue-600',
+    classes: 'border-slate-200 bg-slate-100 text-slate-700',
+    dot: 'bg-slate-600',
   },
   manual: {
     label: 'manual',
     description: '人工确认',
-    classes: 'border-warning/25 bg-warning-soft text-warning-deep',
-    dot: 'bg-warning',
+    classes: 'border-teal-200 bg-teal-50 text-teal-700',
+    dot: 'bg-teal-600',
   },
   ai: {
     label: 'ai',

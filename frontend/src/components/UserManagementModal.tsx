@@ -18,8 +18,8 @@ const ROLE_OPTIONS = [
 ];
 
 const ROLE_BADGE_STYLES: Record<string, string> = {
-  admin: 'border-transparent bg-blue-800 text-white',
-  editor: 'border-blue-200 bg-blue-50 text-blue-800',
+  admin: 'border-transparent bg-brand-800 text-white',
+  editor: 'border-brand-200 bg-brand-50 text-brand-800',
   viewer: 'border-line bg-subtle text-ink-muted',
 };
 
@@ -137,7 +137,7 @@ export function UserManagementModal({
       >
         <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-line-soft px-4">
           <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-brand-50 text-brand-700">
               <Icon name="users" size={16} />
             </span>
             <div className="min-w-0">
@@ -153,7 +153,7 @@ export function UserManagementModal({
             <button
               type="button"
               onClick={() => setReloadKey((value) => value + 1)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               aria-label="刷新用户列表"
               title="刷新"
             >
@@ -163,7 +163,7 @@ export function UserManagementModal({
               ref={closeRef}
               type="button"
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
               aria-label="关闭用户管理"
             >
               <Icon name="close" size={16} />
@@ -203,7 +203,7 @@ export function UserManagementModal({
               <div className="divide-y divide-line-soft overflow-hidden rounded-xl border border-line bg-card">
                 {(users ?? []).map((user) => (
                   <div key={user.username} className="flex items-center gap-2.5 px-3 py-2.5">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-800 font-mono text-[11px] font-semibold text-white">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-800 font-mono text-[11px] font-semibold text-white">
                       {Array.from(user.username).slice(0, 2).join('').toUpperCase()}
                     </span>
                     <div className="min-w-0 flex-1">
@@ -212,7 +212,7 @@ export function UserManagementModal({
                           {user.username}
                         </span>
                         {user.username === currentUsername && (
-                          <span className="rounded-full border border-blue-200 bg-blue-50 px-1.5 py-px font-mono text-[11px] text-blue-800">
+                          <span className="rounded-full border border-brand-200 bg-brand-50 px-1.5 py-px font-mono text-[11px] text-brand-800">
                             当前账号
                           </span>
                         )}
@@ -336,7 +336,7 @@ export function UserManagementModal({
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                  className="flex h-9 items-center gap-1.5 rounded-lg bg-brand-700 px-3 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-brand-800 active:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                 >
                   {submitting ? (
                     <>
@@ -366,7 +366,7 @@ export function UserManagementModal({
                 </p>
               )}
             </form>
-            <div className="mt-2 flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2.5 text-[12px] leading-5 text-blue-800">
+            <div className="mt-2 flex items-start gap-2 rounded-lg border border-brand-100 bg-brand-50 px-3 py-2.5 text-[12px] leading-5 text-brand-800">
               <Icon name="info" size={12} className="mt-0.5 shrink-0" />
               <span>
                 账号由 admin 创建；当前接口仅支持新增用户。角色变更与停用账号尚未提供接口；原型中的逐行角色下拉与

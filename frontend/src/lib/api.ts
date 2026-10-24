@@ -31,8 +31,8 @@ import type {
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 
-export const SESSION_STORAGE_KEY = 'lineagelite.session';
-export const AUTH_EXPIRED_EVENT = 'lineagelite:auth-expired';
+export const SESSION_STORAGE_KEY = 'clew.session';
+export const AUTH_EXPIRED_EVENT = 'clew:auth-expired';
 
 export class ApiError extends Error {
   readonly status: number;

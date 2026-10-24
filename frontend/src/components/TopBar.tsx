@@ -9,8 +9,8 @@ const HOP_OPTIONS = [1, 2, 3, 4, 5] as const;
 
 // 角色徽章三套（00 §7.4）：admin/editor/viewer，未知角色按 viewer 中性档兜底
 const ROLE_BADGE_CLASSES: Record<string, string> = {
-  admin: 'border-transparent bg-blue-800 text-white',
-  editor: 'border-blue-200 bg-blue-50 text-blue-800',
+  admin: 'border-transparent bg-brand-800 text-white',
+  editor: 'border-brand-200 bg-brand-50 text-brand-800',
   viewer: 'border-line bg-subtle text-ink-muted',
 };
 
@@ -126,7 +126,7 @@ export function TopBar({
           <label htmlFor="dataset-search" className="sr-only">
             搜索数据集或字段
           </label>
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint transition-colors duration-150 group-focus-within:text-blue-600">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint transition-colors duration-150 group-focus-within:text-brand-600">
             <Icon name="search" size={14} />
           </span>
           <input
@@ -148,7 +148,7 @@ export function TopBar({
                   onSearchChange('');
                   searchRef.current?.focus();
                 }}
-                className="pointer-events-auto flex h-6 w-6 items-center justify-center rounded text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1"
+                className="pointer-events-auto flex h-6 w-6 items-center justify-center rounded text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1"
                 aria-label="清空搜索"
               >
                 <Icon name="close" size={12} />
@@ -170,7 +170,7 @@ export function TopBar({
           <button
             type="button"
             onClick={onOpenImport}
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 px-2.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-brand-700 px-2.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-brand-800 active:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
             title="上传源文件并导入血缘清单（editor 及以上角色）"
           >
             <Icon name="upload" size={14} />
@@ -183,7 +183,7 @@ export function TopBar({
           onClick={onOpenAi}
           aria-haspopup="dialog"
           aria-expanded={aiOpen}
-          className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[13px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white ${
+          className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[13px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white ${
             aiOpen
               ? 'border-ai/25 bg-ai-soft text-ai-deep'
               : 'border-line bg-card text-ink-muted hover:border-ai/25 hover:text-ai-deep'
@@ -197,7 +197,7 @@ export function TopBar({
         <button
           type="button"
           onClick={onOpenVersions}
-          className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-blue-400 hover:text-blue-700 active:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+          className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 active:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
           title="查看导入批次、业务标签、版本差异与回滚"
         >
           <Icon name="tag" size={14} />
@@ -218,9 +218,9 @@ export function TopBar({
                 key={option}
                 type="button"
                 onClick={() => onHopsChange(option)}
-                className={`flex h-6 min-w-[25px] items-center justify-center rounded-md px-1.5 font-mono text-[11px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 ${
+                className={`flex h-6 min-w-[25px] items-center justify-center rounded-md px-1.5 font-mono text-[11px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 ${
                   option === hops
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-brand-700 text-white'
                     : 'text-ink-muted hover:bg-subtle hover:text-ink'
                 }`}
                 aria-pressed={option === hops}
@@ -232,7 +232,7 @@ export function TopBar({
           </div>
           {graphLoading && (
             <span
-              className="mr-1 h-2.5 w-2.5 animate-spin rounded-full border-[1.5px] border-blue-300 border-t-blue-700"
+              className="mr-1 h-2.5 w-2.5 animate-spin rounded-full border-[1.5px] border-brand-300 border-t-brand-700"
               aria-label="正在加载子图"
             />
           )}
@@ -245,13 +245,13 @@ export function TopBar({
           <button
             type="button"
             onClick={() => setUserMenuOpen((value) => !value)}
-            className="flex items-center gap-2 rounded-lg px-1 py-1 text-left transition-colors duration-150 hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+            className="flex items-center gap-2 rounded-lg px-1 py-1 text-left transition-colors duration-150 hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
             aria-haspopup="menu"
             aria-expanded={userMenuOpen}
             title="用户菜单"
           >
             <span
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-800 font-mono text-[11px] font-medium text-white"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-800 font-mono text-[11px] font-medium text-white"
               aria-hidden="true"
             >
               {initials}

@@ -1,4 +1,4 @@
-"""LineageLite MCP server（M5，演进规划 07 §4.6）。
+"""Clew MCP server（M5，演进规划 07 §4.6）。
 
 把血缘查询能力以 Model Context Protocol（stdio 传输）暴露给外部 AI 客户端
 （Claude Desktop / Cursor 等），复用与 REST API 相同的只读查询函数与同一 SQLite 库。
@@ -22,7 +22,7 @@ from mcp.server.mcpserver import MCPServer
 from ..db import get_db
 from .tools import get_field_details, get_field_history, search_fields, trace_lineage
 
-mcp = MCPServer("lineagelite")
+mcp = MCPServer("clew")
 
 
 @mcp.tool()
