@@ -20,3 +20,6 @@ __pycache__/
 # Node
 node_modules/
 dist/
+
+# 演示录制中间产物
+scripts/demo/.work/

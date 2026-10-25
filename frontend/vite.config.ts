@@ -1,7 +1,8 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-const backend = 'http://127.0.0.1:8000';
+// 演示录制等场景可用 VITE_API_TARGET 指向独立后端实例
+const backend = process.env.VITE_API_TARGET || 'http://127.0.0.1:8000';
 
 export default defineConfig({
   plugins: [react()],

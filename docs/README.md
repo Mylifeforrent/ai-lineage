@@ -2,11 +2,16 @@
 
 本目录按「设计 → 原型 → 实现」的层次组织项目文档，建议按编号顺序阅读。
 
+> 产品展示首页：[README](../README.md)（英文默认）· [README.zh](../README.zh.md)（中文）
+> 项目详细说明（原仓库根 README）：[PROJECT.md](./PROJECT.md)
+
 ## 目录结构
 
 ```
 docs/
 ├── README.md                          # 本索引
+├── PROJECT.md                         # 项目详细说明（原仓库根 README）
+├── assets/                            # 品牌图标与 README 演示 GIF（brand/、demo/）
 ├── 01_design/                         # 设计文档（评审与开发的唯一依据）
 │   ├── Clew-设计方案.md      # 总体方案：调研结论、架构、里程碑、决策记录
 │   ├── Clew-业务模型.md      # 业务层：定位、干系人、领域概念、业务规则与不变量

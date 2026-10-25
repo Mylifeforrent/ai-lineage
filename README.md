@@ -1,95 +1,281 @@
-# Clew
+<p align="center">
+  <img src="docs/assets/brand/clew-mark.svg" width="76" height="76" alt="Clew logo" />
+</p>
 
-字段级 AI 数据血缘工具（2026-10 起定名 **Clew**，取「线团/线索」之意——clue 的词源即 clew：走出迷宫的那团线；早期工作名 LineageLite）。
+<h1 align="center">Clew</h1>
 
-> Clew — field-level data lineage, visualized. Follow the thread out of the data maze.
+<p align="center">
+  <strong>Field-level data lineage that lands on the original file.</strong>
+</p>
 
-基于对两个开源血缘方案（OpenMetadata、DataHub）的源码调研，设计一个面向小团队的轻量级方案：**字段级血缘 + 源文件精确定位回源核查 + 版本化 + AI 辅助**。
+<p align="center">
+  Follow every field from the report back to the worksheet, row/column or JSONPath —
+  on a canvas, with source verification, versioning and an AI copilot.
+</p>
 
-## 文档导航
+<p align="center">
+  <b>English</b> · <a href="./README.zh.md">简体中文</a>
+</p>
 
-所有设计文档与原型统一组织在 [`docs/`](./docs/README.md) 下（阅读顺序与文档-代码对应关系见 [docs/README.md](./docs/README.md)）：
+<p align="center">
+  <a href="https://fastapi.tiangolo.com"><img alt="Backend: FastAPI" src="https://img.shields.io/badge/backend-FastAPI-009688?logo=fastapi&logoColor=white" /></a>
+  <a href="https://react.dev"><img alt="Frontend: React 19 + TypeScript" src="https://img.shields.io/badge/frontend-React%2019%20%2B%20TypeScript-3178C6?logo=react&logoColor=white" /></a>
+  <a href="https://www.sqlite.org"><img alt="Storage: SQLite" src="https://img.shields.io/badge/storage-SQLite%20%C2%B7%20Postgres%20path-003B57?logo=sqlite&logoColor=white" /></a>
+  <a href="https://python.org"><img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white" /></a>
+  <img alt="AI: OpenAI-compatible" src="https://img.shields.io/badge/AI-OpenAI--compatible-7C3AED" />
+  <img alt="UI: English / 中文" src="https://img.shields.io/badge/UI-English%20%2F%20%E4%B8%AD%E6%96%87-EA580C" />
+</p>
 
-| 文档 | 内容 |
-|---|---|
-| [设计方案](./docs/01_design/Clew-设计方案.md) | 总体技术方案：两大开源方案调研结论、导入格式规范、存储与版本管理、可视化、AI 对话、里程碑、已确认决策记录 |
-| [业务模型](./docs/01_design/Clew-业务模型.md) | 业务层模型：定位与价值主张、干系人与角色、核心领域概念、业务流程、业务规则与不变量 |
-| [数据模型](./docs/01_design/Clew-数据模型.md) | 数据层模型：ER 图、10 张表定义（含 M3 rollback_record）、派生视图、JSON 结构、标识命名规则、索引与版本重建规则 |
-| [低保真原型](./docs/02_prototype/clew-lofi-prototype.html) | 6 个界面的线框原型（浏览器直接打开，已确认的 UI 基线） |
+<p align="center">
+  <a href="docs/assets/demo/01-overview.gif"><img src="docs/assets/demo/hero.png" alt="Clew workspace: a five-dataset field-level lineage chain with the amount field traced" /></a>
+  <br />
+  <sub>▶ <a href="docs/assets/demo/01-overview.gif">Watch the 20-second tour</a> (GIF)</sub>
+</p>
 
-## 目录结构
+Most lineage tools stop at “table A feeds table B”. Clew starts where the debugging
+actually happens: a single field. Open it and you see its type, business description,
+human-readable locator, upstream chain, change history and the exact cells it came
+from — then ask the AI copilot to trace it for you.
 
+## Feature tour
+
+### A canvas built for fields, not just tables
+
+![Field-level and table-level lineage canvas](docs/assets/demo/01-overview.gif)
+
+- **Field-level and table-level edges side by side**, with distinct line styles and
+  provenance badges (`imported` / `manual` / `ai`).
+- **1–5 hop exploration** with a layered layout; collapse a node, fold its field list,
+  or box-select several nodes and collapse them into a group.
+- **Filters for confidence and edge source**, plus instant dataset/field search.
+  Clicking a field traces its upstream and downstream chain in orange.
+
+### Every field has a verifiable address
+
+![Field locator and read-only source preview with highlighted column](docs/assets/demo/02-source-preview.gif)
+
+- A locator is a first-class object: **CSV** column or header, **XLSX** sheet +
+  multi-level header path + row range, **JSON** JSONPath.
+- Locators are **checked against the hosted source file** at import time; files are
+  deduplicated by SHA-256 and served through a controlled download endpoint.
+- The source preview is read-only and highlights the exact column — including merged
+  header cells in XLSX — or shows the live JSONPath matches. Stale locators fail loudly
+  with a 409 instead of silently pointing at the wrong cell.
+
+### Edit with guardrails
+
+![Field editor, append-only annotation and AI suggestion confirmation](docs/assets/demo/03-edit-annotate.gif)
+
+- Edit a field's **description, type or source locator** in the inspector. Locator edits
+  are re-validated against the real file; a failure returns 409 and keeps the original
+  value.
+- **Add annotations without overwriting history** — annotations are append-only and
+  survive version rollbacks.
+- **Promote an AI candidate**: suggestions arrive as `source=ai` with a confidence and
+  reason, and become `manual` only when a human confirms them.
+- **Create and edit lineage directly**: drag field/table handles to add an edge, then
+  adjust its transform, confidence and note (or delete it) from the edge inspector. Every
+  change goes to the change log.
+
+### An AI copilot that stays on the canvas
+
+![AI assistant streaming an English answer and driving the canvas highlight](docs/assets/demo/04-ai-copilot.gif)
+
+- Ask in natural language and get a **streamed answer with a visible tool-call trace**.
+- The assistant has **read-only tools** for field search, field details, lineage tracing,
+  change history and impact analysis. Field references in the answer become clickable
+  evidence chips that focus the canvas.
+- A dedicated tool, `mark_highlight`, drives the **orange trace chain** on the canvas, so
+  the answer and the graph never drift apart.
+- AI suggestions and description drafts are **staged, never silent writes**: suggested
+  edges land as `source=ai` and become real lineage only after human confirmation;
+  drafts become annotations only after acceptance.
+
+### Imports with a paper trail
+
+![Three-step import wizard ending with a per-row batch report](docs/assets/demo/05-import.gif)
+
+- A guided **three-step import**: upload source files → upload a manifest → validate and
+  import. Manifests can be CSV, XLSX or JSON.
+- Every row is reported as **ok / merged / rejected**; rejected rows do not block
+  successful ones, and the full report is downloadable.
+- Each import creates a **version batch** that can be rolled back as a unit. Every change
+  is written to the change log.
+
+### Versions, audit trail and roles
+
+![Version drawer with tag diff, rollback dialog, change history and user management](docs/assets/demo/06-versions.gif)
+
+- Business tags anchor the change sequence; compare **tag-to-tag net changes** and roll
+  back to a tag or a batch (idempotent, audit-recorded).
+- Fields and edges have a **newest-first change history**; annotations are append-only
+  and are never deleted by a rollback.
+- **JWT authentication + RBAC** (`admin` / `editor` / `viewer`). Write entry points are
+  hidden from viewers, not just disabled. Admins can create users from the workspace.
+
+### Bilingual UI
+
+![Switching the UI between English and Chinese](docs/assets/demo/07-bilingual.gif)
+
+The entire workspace — canvas, inspector, import wizard, AI drawer, version and user
+drawers — is available in **English and Simplified Chinese**. The preference is
+persisted locally. The application defaults to Chinese; this README defaults to English.
+
+## How it works
+
+```mermaid
+flowchart LR
+  A["Source files<br/>CSV · XLSX · JSON"] --> B["Manifest import<br/>datasets + lineage"]
+  B --> C["Locator verification<br/>SHA-256 · live file check"]
+  C --> D[("SQLite<br/>+ change log")]
+  D --> E["Lineage canvas<br/>field & table edges"]
+  D --> F["AI copilot<br/>read-only tools"]
+  F -->|"mark_highlight / graph"| E
+  E --> G["Source preview<br/>highlighted cells"]
+  D --> H["Version tags<br/>diff & rollback"]
 ```
-clew/
-├── backend/       # 正式后端项目（自 prototype/backend 移植）：M1 数据底座 + M2 图查询/回源预览 + M3 编辑/标注/版本标签 + M4 AI（FastAPI + SQLite + uv）
-│   ├── src/clew/
-│   ├── tests/
-│   ├── pyproject.toml
-│   └── uv.lock
-├── frontend/      # 正式前端项目（自 prototype/frontend 移植）：hi-fi 视觉 + 导入向导（React + TS + Vite + Tailwind + @xyflow/react）
-│   ├── src/
-│   │   ├── components/
-│   │   └── lib/
-│   ├── package.json
-│   └── vite.config.ts
-├── docs/          # 设计文档（01_design）、低保真原型（02_prototype）、开发文档（03_dev）、高保真规范（04_hifi），索引见 docs/README.md
-├── prototype/     # 原型工作区（backend/frontend 的历史基线），仅作参照保留，后续功能在 backend/ 与 frontend/ 演进
-├── .env.example   # 环境配置模板（复制为仓库根 .env 使用，.env 不入库）
-└── README.md
-```
 
-正式前端 `frontend/` 的开发服务器通过 Vite proxy 将 `/auth`、`/datasets`、`/lineage`、`/fields`、`/edges`、`/annotations`、`/changes`、`/version-tags`、`/users`、`/files`、`/import`、`/ai` 转发到 `http://127.0.0.1:8000`。
+The import pipeline stores source files and verifies every locator against the real file
+before a field becomes queryable. The canvas and the AI assistant read from the same
+SQLite snapshot, while all mutations flow through the change log so that tags and batches
+can be rolled back deterministically. AI can propose edges and descriptions, but the
+human confirmation step is part of the data model, not just the UI.
 
-## 后端（M1-M4 已实现）
+## Quick start
 
-数据底座：JWT 认证 + RBAC（admin/editor/viewer）、源文件托管（sha256 去重）、CSV/XLSX/JSON 三格式导入（含 XLSX 合并单元格/多级表头定位解析与实文件核查）、版本批次 + change_log + 按批次回滚。
-
-M3 编辑与版本：标注（追加式）、字段描述/类型/定位器编辑（定位器重新实文件核查）、血缘边增删改（人工边 source='manual'）、变更历史、业务标签创建/列表/diff/回滚（回滚幂等，审计写 rollback_record）。
-
-M4 AI：只读工具集（`search_fields` / `get_field_details` / `trace_lineage` / `get_field_history`）+ OpenAI 兼容 function calling 对话；未配置 LLM 时 `/ai/status` 返回 `configured=false`，`/ai/chat` 返回 503。启发式血缘建议按同名字段（0.7）/包含关系（0.6）生成候选边，以 `source='ai'` 落库，必须人工确认后才转为 `manual`；拒绝即删除候选边。
+**Prerequisites:** Python 3.11+, [uv](https://docs.astral.sh/uv/), Node.js 20+ and npm.
 
 ```bash
-cp .env.example .env           # 仓库根配置（SECRET_KEY / ADMIN_PASSWORD 等）
+# 1. configuration (repository root)
+cp .env.example .env          # change SECRET_KEY and ADMIN_PASSWORD before sharing
+
+# 2. backend
 cd backend
-uv sync                        # 安装依赖
-uv run uvicorn clew.main:app --reload   # 启动，首次自动建库并创建初始管理员
-uv run pytest                  # 运行验收测试
+uv sync
+uv run uvicorn clew.main:app --reload
 ```
 
-API 一览（需 Bearer Token）：`POST /auth/login`、`POST/GET /users`（admin）、`POST/GET /files`、`GET /files/{id}/download`、`POST /import`（editor+，multipart：format + source_file_ids + 清单文件）、`GET /import/batches`、`POST /import/batches/{id}/rollback`（admin）、`GET /datasets`、`GET /lineage/subgraph?dataset=&field=&hops=&direction=`、`GET /fields/{dataset_id}/{field_name}/preview`；M3：`POST/GET /annotations`、`PATCH /fields/{dataset_id}/{field_name}`、`POST /edges`、`PATCH/DELETE /edges/{id}`、`GET /changes`、`POST/GET /version-tags`、`GET /version-tags/diff?from=&to=`、`POST /version-tags/{name}/rollback`（admin）；M4：`GET /ai/status`、`POST /ai/chat`（viewer+）、`POST /ai/suggest`、`POST /ai/suggest/confirm`、`POST /ai/suggest/reject`（editor+）。
-
-需要演示数据时，可在后端目录执行 `uv run python -m clew.seed_demo`，生成 5 个数据集、4 跳血缘链及 csv/xlsx/json 三类回源样例。
-
-## 前端（M4）
-
-字段级血缘画布：数据集筛选、dagre 左右分层布局、字段级/表级连线、节点字段折叠与「框选折叠为组」、跳数切换、字段详情与 CSV/XLSX/JSON 回源预览。
-
-M3 编辑与版本：按登录角色隐藏写入口（viewer 只读）；悬停/选中边可编辑转换与备注、删除；拖拽字段/表级 handle 新增血缘；字段描述/类型/定位器编辑（409 原因回显）；字段与边的追加式标注；字段/边变更历史抽屉；版本抽屉（导入批次、标签创建、标签间差异、admin 回滚）；admin 用户管理。登录使用 JWT，Bearer Token 存于 `localStorage`，任意已认证请求返回 401 时会回到登录页。
-
-M4 AI 助手：顶部栏「AI 助手」抽屉（对话、工具调用轨迹、`trace_lineage` 结果联动出图）；字段详情内一键生成启发式候选边；画布上任意 `source='ai'` 的边在边详情中都可「确认转为人工边」，不依赖候选卡片是否仍在内存中。
+In a second terminal:
 
 ```bash
+# 3. frontend
 cd frontend
 npm install
-npm run dev        # http://localhost:5173，API 由 Vite proxy 转至 :8000
-npm run build      # tsc -b && vite build
+npm run dev
 ```
 
-前端只使用 `fetch` 访问 API；画布依赖 `@xyflow/react`，分层布局依赖 `@dagrejs/dagre`。
+Open <http://localhost:5173>. On first boot the backend creates the admin account from
+`.env` (`admin` / `admin123` by default). To load a small demo workspace with five
+datasets and a four-hop field-level chain:
 
-前后端接口联调：启动后端后执行 `node scripts/api-e2e.mjs`（或 `E2E_BASE_URL=http://127.0.0.1:8001 node scripts/api-e2e.mjs`），镜像 `src/lib/api.ts` 全部请求做端到端校验（含 RBAC/错误语义），会写入 `e2e_` 前缀数据并自动回滚可回滚部分。
+```bash
+cd backend
+uv run python -m clew.seed_demo
+```
 
-## 已知差距
+The demo data generator creates CSV, XLSX (merged multi-level headers) and JSON source
+files and imports them through the real upload/import path.
 
-- **用户管理原型保真**：当前 `UserManagementModal` 只支持用户列表 + 新增用户（含创建时角色选择）；原型「版本与用户」屏中的逐行角色下拉与 RBAC 权限矩阵尚未实现。角色变更需要新增管理员接口，且涉及「是否允许管理员修改自己的角色/如何保证至少保留一名 admin」等业务规则（`[TBD-BIZ]`，需产品确认后再实现）；UI 已明确标注该限制。
-- **标注管理**：标注为追加式，当前无编辑/删除入口（与业务模型一致）。
+**AI assistant (optional):** set `LLM_BASE_URL`, `LLM_API_KEY` and `LLM_MODEL` in `.env`
+to any OpenAI-compatible provider (OpenAI, DeepSeek, DashScope, a local gateway, …).
+Without them the API reports `configured=false` and `/ai/chat` returns 503; the rest of
+the product keeps working.
 
-## 引用仓库说明
+**MCP server:** the read-only query tools are also exposed over the Model Context
+Protocol for external clients:
 
-`OpenMetadata/` 与 `datahub/` 为调研所用的两个开源项目源码副本，仅本地参考，**不纳入本仓库版本管理**（见 `.gitignore`）。
+```bash
+cd backend
+uv run python -m clew.ai.mcp_server
+```
 
-## 技术栈
+**Verification:**
 
-- 后端：Python + FastAPI + uv，SQLite 起步（预留 Postgres 升级路径）
-- 前端：React + TypeScript + Vite + Tailwind + @xyflow/react + @dagrejs/dagre（组件源码内置，无额外 UI 组件库）
-- AI：OpenAI 兼容 Chat API + function calling（密钥经 `.env` 配置，不入库）
+```bash
+cd backend && uv run pytest
+cd frontend && npm run build
+node scripts/api-e2e.mjs      # from the repository root, with the backend running
+```
+
+## Tech stack
+
+| Layer | Choices |
+|---|---|
+| Backend | Python 3.11+, FastAPI, SQLite, uv, PyJWT, openpyxl, jsonpath-ng |
+| Frontend | React 19, TypeScript, Vite 7, Tailwind CSS 3, `@xyflow/react`, `@dagrejs/dagre`, `react-markdown` |
+| AI | LangChain + OpenAI-compatible chat and embeddings; SSE streaming; MCP server |
+| Auth | JWT bearer tokens, salted password hashes, role-based access control |
+
+## Project layout
+
+```text
+clew/
+├── backend/        # FastAPI app, SQLite schema, import/lineage/version/AI services
+│   ├── src/clew/
+│   └── tests/
+├── frontend/       # React SPA: canvas, inspector, import wizard, AI and version drawers
+├── scripts/demo/   # English demo seed + Playwright recorder used for the GIFs above
+├── docs/
+│   ├── assets/     # logo and demo GIFs
+│   ├── 01_design/  # design, business model and data model
+│   ├── 03_dev/     # architecture, API contracts and AI evolution notes
+│   └── PROJECT.md  # detailed project README (Chinese)
+├── README.zh.md    # Chinese product page
+└── .env.example
+```
+
+## Documentation
+
+- [docs/PROJECT.md](./docs/PROJECT.md) — detailed project description (Chinese): milestone scope,
+  backend/frontend behavior, API list, known gaps.
+- [docs/README.md](./docs/README.md) — documentation index and reading order.
+- [API contract](./docs/03_dev/05_API接口文档.md) — all endpoints, permissions and error
+  semantics.
+- [Design documents](./docs/01_design/Clew-设计方案.md) — the research and architecture
+  behind the implementation.
+
+## Status and known gaps
+
+Clew is an actively developed M1–M5 implementation: data foundation, graph queries and
+source preview, editing/annotations/version tags, AI chat and suggestions, and the
+LangChain/streaming/MCP evolution. The current boundaries are explicit:
+
+- **SQLite first.** The data layer is kept simple for a single small team; a Postgres
+  migration path is planned, not implemented.
+- **User management is create-and-list only.** Changing roles or deactivating accounts
+  needs an admin API and a business rule for “always keep at least one admin”.
+- **Annotations are append-only** by design; there is no edit/delete endpoint.
+- **MCP is read-only.** External agents cannot trigger writes, suggestions or drafts.
+- The `OpenMetadata/` and `DataHub/` directories in the repository are local research
+  copies and are not part of the project.
+
+## Reproducing the demo GIFs
+
+The recordings use a dedicated demo database, not your working data:
+
+```bash
+# terminal 1
+cd backend
+DATA_DIR=/tmp/clew-demo/data uv run python ../scripts/demo/seed_demo_en.py
+DATA_DIR=/tmp/clew-demo/data uv run uvicorn clew.main:app --port 8010
+
+# terminal 2 (repository root)
+cd frontend && VITE_API_TARGET=http://127.0.0.1:8010 npx vite --port 5199
+
+# terminal 3
+cd scripts/demo
+npm install
+npm run setup      # annotations, change history and version tags through the API
+npm run record     # one WebM per feature, under scripts/demo/.work/video
+npm run gifs       # Playwright ffmpeg -> Pillow palette -> gifsicle
+```
+
+The recorder writes one WebM per feature. `npm run gifs` converts them with Playwright's
+bundled ffmpeg, a global Pillow palette and `gifsicle --lossy`, balancing readability
+against file size. Record the import segment against a fresh demo database.
+
+---
+
+<p align="center">
+  <sub>Built for small data teams who need to answer “where did this number come from?” in minutes, not days.</sub>
+</p>
