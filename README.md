@@ -1,6 +1,8 @@
-# ai-lineage
+# Clew
 
-轻量级 AI 数据血缘工具（工作名 LineageLite）的调研与设计文档仓库。
+字段级 AI 数据血缘工具（2026-10 起定名 **Clew**，取「线团/线索」之意——clue 的词源即 clew：走出迷宫的那团线；早期工作名 LineageLite）。
+
+> Clew — field-level data lineage, visualized. Follow the thread out of the data maze.
 
 基于对两个开源血缘方案（OpenMetadata、DataHub）的源码调研，设计一个面向小团队的轻量级方案：**字段级血缘 + 源文件精确定位回源核查 + 版本化 + AI 辅助**。
 
@@ -10,17 +12,17 @@
 
 | 文档 | 内容 |
 |---|---|
-| [设计方案](./docs/01_design/轻量级AI血缘工具-设计方案.md) | 总体技术方案：两大开源方案调研结论、导入格式规范、存储与版本管理、可视化、AI 对话、里程碑、已确认决策记录 |
-| [业务模型](./docs/01_design/轻量级AI血缘工具-业务模型.md) | 业务层模型：定位与价值主张、干系人与角色、核心领域概念、业务流程、业务规则与不变量 |
-| [数据模型](./docs/01_design/轻量级AI血缘工具-数据模型.md) | 数据层模型：ER 图、10 张表定义（含 M3 rollback_record）、派生视图、JSON 结构、标识命名规则、索引与版本重建规则 |
-| [低保真原型](./docs/02_prototype/lineagelite-lofi-prototype.html) | 6 个界面的线框原型（浏览器直接打开，已确认的 UI 基线） |
+| [设计方案](./docs/01_design/Clew-设计方案.md) | 总体技术方案：两大开源方案调研结论、导入格式规范、存储与版本管理、可视化、AI 对话、里程碑、已确认决策记录 |
+| [业务模型](./docs/01_design/Clew-业务模型.md) | 业务层模型：定位与价值主张、干系人与角色、核心领域概念、业务流程、业务规则与不变量 |
+| [数据模型](./docs/01_design/Clew-数据模型.md) | 数据层模型：ER 图、10 张表定义（含 M3 rollback_record）、派生视图、JSON 结构、标识命名规则、索引与版本重建规则 |
+| [低保真原型](./docs/02_prototype/clew-lofi-prototype.html) | 6 个界面的线框原型（浏览器直接打开，已确认的 UI 基线） |
 
 ## 目录结构
 
 ```
-ai-lineage/
+clew/
 ├── backend/       # 正式后端项目（自 prototype/backend 移植）：M1 数据底座 + M2 图查询/回源预览 + M3 编辑/标注/版本标签 + M4 AI（FastAPI + SQLite + uv）
-│   ├── src/lineagelite/
+│   ├── src/clew/
 │   ├── tests/
 │   ├── pyproject.toml
 │   └── uv.lock
@@ -50,13 +52,13 @@ M4 AI：只读工具集（`search_fields` / `get_field_details` / `trace_lineage
 cp .env.example .env           # 仓库根配置（SECRET_KEY / ADMIN_PASSWORD 等）
 cd backend
 uv sync                        # 安装依赖
-uv run uvicorn lineagelite.main:app --reload   # 启动，首次自动建库并创建初始管理员
+uv run uvicorn clew.main:app --reload   # 启动，首次自动建库并创建初始管理员
 uv run pytest                  # 运行验收测试
 ```
 
 API 一览（需 Bearer Token）：`POST /auth/login`、`POST/GET /users`（admin）、`POST/GET /files`、`GET /files/{id}/download`、`POST /import`（editor+，multipart：format + source_file_ids + 清单文件）、`GET /import/batches`、`POST /import/batches/{id}/rollback`（admin）、`GET /datasets`、`GET /lineage/subgraph?dataset=&field=&hops=&direction=`、`GET /fields/{dataset_id}/{field_name}/preview`；M3：`POST/GET /annotations`、`PATCH /fields/{dataset_id}/{field_name}`、`POST /edges`、`PATCH/DELETE /edges/{id}`、`GET /changes`、`POST/GET /version-tags`、`GET /version-tags/diff?from=&to=`、`POST /version-tags/{name}/rollback`（admin）；M4：`GET /ai/status`、`POST /ai/chat`（viewer+）、`POST /ai/suggest`、`POST /ai/suggest/confirm`、`POST /ai/suggest/reject`（editor+）。
 
-需要演示数据时，可在后端目录执行 `uv run python -m lineagelite.seed_demo`，生成 5 个数据集、4 跳血缘链及 csv/xlsx/json 三类回源样例。
+需要演示数据时，可在后端目录执行 `uv run python -m clew.seed_demo`，生成 5 个数据集、4 跳血缘链及 csv/xlsx/json 三类回源样例。
 
 ## 前端（M4）
 

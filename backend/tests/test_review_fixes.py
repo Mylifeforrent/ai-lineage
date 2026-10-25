@@ -4,7 +4,7 @@
 import json
 import sqlite3
 
-from lineagelite.config import db_path
+from clew.config import db_path
 
 from tests.conftest import csv_bytes, create_user, login, upload
 from tests.fixtures import order_xlsx_bytes, source_json_bytes, user_csv_bytes

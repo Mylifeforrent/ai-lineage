@@ -8,7 +8,7 @@
 
 运行::
 
-    cd prototype/backend && uv run python -m lineagelite.ai.mcp_server
+    cd prototype/backend && uv run python -m clew.ai.mcp_server
 
 客户端接入示例见 docs/03_dev/07_AI模块演进规划.md §4.6。
 """

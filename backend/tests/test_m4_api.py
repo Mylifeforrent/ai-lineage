@@ -8,7 +8,7 @@
 - POST /ai/suggest/confirm（editor+）：ai → manual + change_log(updated)
 - POST /ai/suggest/reject（editor+）：删除 + change_log(deleted)
 
-所有 LLM 调用均由 monkeypatch 替换（``lineagelite.ai.llm.complete``），
+所有 LLM 调用均由 monkeypatch 替换（``clew.ai.llm.complete``），
 另有一条用例 monkeypatch ``urllib.request.urlopen`` 验证请求构造，全程不联网。
 """
 
@@ -18,7 +18,7 @@ import sqlite3
 
 import pytest
 
-from lineagelite.config import db_path
+from clew.config import db_path
 
 from tests.conftest import create_user, login, upload
 from tests.fixtures import order_xlsx_bytes, source_json_bytes, user_csv_bytes
@@ -146,7 +146,7 @@ def test_llm_client_message_conversion_and_not_configured(monkeypatch):
     """M5 LangChain 化后：验证 OpenAI dict ↔ LangChain 消息转换与未配置语义。"""
     from langchain_core.messages import AIMessage, SystemMessage, ToolMessage
 
-    from lineagelite.ai import llm
+    from clew.ai import llm
 
     monkeypatch.setenv("LLM_BASE_URL", "https://llm.invalid/v1")
     monkeypatch.setenv("LLM_API_KEY", "sk-test")
@@ -164,7 +164,7 @@ def test_llm_client_message_conversion_and_not_configured(monkeypatch):
             return AIMessage(content="ok", tool_calls=[{
                 "name": "search_fields", "args": {"q": "order_no"}, "id": "c1"}])
 
-    monkeypatch.setattr("lineagelite.ai.llm.get_chat_model",
+    monkeypatch.setattr("clew.ai.llm.get_chat_model",
                         lambda settings=None: FakeChatModel())
 
     tools = [{"type": "function",
@@ -213,7 +213,7 @@ def test_ai_status_and_chat_requires_configuration(client, monkeypatch):
     def forbidden(*args, **kwargs):
         raise AssertionError("未配置 LLM 时不应调用 LLM")
 
-    monkeypatch.setattr("lineagelite.ai.llm.complete", forbidden)
+    monkeypatch.setattr("clew.ai.llm.complete", forbidden)
 
     r = client.get("/ai/status", headers=viewer_headers)
     assert r.status_code == 200, r.text
@@ -238,7 +238,7 @@ def test_ai_status_and_chat_requires_configuration(client, monkeypatch):
         seen["tools"] = tools
         return _final_answer("你好，我是 Clew 助手。")
 
-    monkeypatch.setattr("lineagelite.ai.llm.complete", fake_final)
+    monkeypatch.setattr("clew.ai.llm.complete", fake_final)
     r = client.post("/ai/chat", headers=viewer_headers,
                     json={"messages": [{"role": "user", "content": "你好"}]})
     assert r.status_code == 200, r.text
@@ -276,7 +276,7 @@ def test_ai_chat_tool_loop_returns_answer_and_graph(client, monkeypatch):
             ])
         return _final_answer("dwd_order.order_no 来自 ods_order.order_no。")
 
-    monkeypatch.setattr("lineagelite.ai.llm.complete", fake_complete)
+    monkeypatch.setattr("clew.ai.llm.complete", fake_complete)
 
     r = client.post("/ai/chat", headers=headers, json={
         "messages": [{"role": "user",
@@ -352,7 +352,7 @@ def test_ai_chat_mark_highlight_returns_highlights(client, monkeypatch):
             ])
         return _final_answer("已高亮 ods_order.order_no 的上下游。")
 
-    monkeypatch.setattr("lineagelite.ai.llm.complete", fake_complete)
+    monkeypatch.setattr("clew.ai.llm.complete", fake_complete)
 
     r = client.post("/ai/chat", headers=headers, json={
         "messages": [{"role": "user",
@@ -390,7 +390,7 @@ def test_ai_chat_mark_highlight_all_invalid_is_tool_error(client, monkeypatch):
             ])
         return _final_answer("没有找到可高亮的字段。")
 
-    monkeypatch.setattr("lineagelite.ai.llm.complete", fake_complete)
+    monkeypatch.setattr("clew.ai.llm.complete", fake_complete)
 
     r = client.post("/ai/chat", headers=headers, json={
         "messages": [{"role": "user", "content": "高亮一下"}],
@@ -418,7 +418,7 @@ def test_ai_chat_reports_tool_errors(client, monkeypatch):
             ])
         return _final_answer("没有找到该字段。")
 
-    monkeypatch.setattr("lineagelite.ai.llm.complete", fake_complete)
+    monkeypatch.setattr("clew.ai.llm.complete", fake_complete)
 
     r = client.post("/ai/chat", headers=headers, json={
         "messages": [{"role": "user", "content": "查一个不存在的字段"}]})
@@ -445,7 +445,7 @@ def test_ai_chat_stops_after_five_tool_rounds(client, monkeypatch):
         return _tool_round([
             _call(f"call_{len(calls)}", "search_fields", {"q": "x"})])
 
-    monkeypatch.setattr("lineagelite.ai.llm.complete", fake_complete)
+    monkeypatch.setattr("clew.ai.llm.complete", fake_complete)
 
     r = client.post("/ai/chat", headers=headers, json={
         "messages": [{"role": "user", "content": "一直查"}]})
@@ -463,12 +463,12 @@ def test_ai_chat_maps_llm_error_to_502(client, monkeypatch):
     headers = login(client)
     _configure_llm(monkeypatch)
 
-    from lineagelite.ai import llm
+    from clew.ai import llm
 
     def boom(messages, tools=None):
         raise llm.LLMError("上游超时")
 
-    monkeypatch.setattr("lineagelite.ai.llm.complete", boom)
+    monkeypatch.setattr("clew.ai.llm.complete", boom)
 
     r = client.post("/ai/chat", headers=headers, json={
         "messages": [{"role": "user", "content": "你好"}]})

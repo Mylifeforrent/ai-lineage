@@ -4,7 +4,7 @@ Clew 的正式后端项目：字段级数据血缘核查与协作工具的 FastA
 
 ## 与 prototype 的关系
 
-- `prototype/backend/` 是 M1–M4 的原型工作区；本目录以它为基线**整体移植**（`src/`、`tests/`、`pyproject.toml`、`uv.lock` 同源复制），移植后唯一代码差异是 `.env` 定位层级：包位于 `backend/src/lineagelite/`，向上 3 层即仓库根（prototype 中为 4 层），见 `src/lineagelite/config.py`。
+- `prototype/backend/` 是 M1–M4 的原型工作区；本目录以它为基线**整体移植**（`src/`、`tests/`、`pyproject.toml`、`uv.lock` 同源复制），移植后唯一代码差异是 `.env` 定位层级：包位于 `backend/src/clew/`，向上 3 层即仓库根（prototype 中为 4 层），见 `src/clew/config.py`。
 - 两目录当前并存；prototype 仅作为参照保留，后续功能在 `backend/` 演进。
 
 ## 开发命令
@@ -13,9 +13,9 @@ Clew 的正式后端项目：字段级数据血缘核查与协作工具的 FastA
 cp .env.example .env             # 仓库根配置（SECRET_KEY / ADMIN_PASSWORD / LLM_* 等，不入库）
 cd backend
 uv sync                          # 安装依赖（npm 之于前端，此处 uv；禁止 pip 手写 requirements.txt）
-uv run uvicorn lineagelite.main:app --reload   # 启动，默认 127.0.0.1:8000；首次自动建库并创建初始管理员
+uv run uvicorn clew.main:app --reload   # 启动，默认 127.0.0.1:8000；首次自动建库并创建初始管理员
 uv run pytest                    # 验收测试（54 个用例，隔离临时数据目录，不联网）
-uv run python -m lineagelite.seed_demo          # 演示数据（幂等）：5 数据集、4 跳血缘链、三格式回源样例
+uv run python -m clew.seed_demo          # 演示数据（幂等）：5 数据集、4 跳血缘链、三格式回源样例
 ```
 
 配置项（`SECRET_KEY` / `JWT_EXPIRE_HOURS` / `DATA_DIR` / `ADMIN_USERNAME` / `ADMIN_PASSWORD` / `MAX_UPLOAD_MB` / `CORS_ORIGINS` / `LLM_*`）全部经仓库根 `.env` 注入，环境变量优先。
@@ -32,7 +32,7 @@ uv run python -m lineagelite.seed_demo          # 演示数据（幂等）：5 �
 ```
 backend/
 ├── pyproject.toml / uv.lock      # 依赖声明与锁定（Python >=3.11，hatchling 构建）
-├── src/lineagelite/
+├── src/clew/
 │   ├── main.py / config.py / db.py / security.py / models.py
 │   ├── manifest.py / locator.py / import_service.py    # 导入流水线
 │   ├── lineage.py / preview.py / changes.py / versioning.py

@@ -15,7 +15,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("SECRET_KEY", "test-secret-key-with-32-bytes-length!!")
     monkeypatch.setenv("ADMIN_USERNAME", ADMIN["username"])
     monkeypatch.setenv("ADMIN_PASSWORD", ADMIN["password"])
-    from lineagelite.main import create_app
+    from clew.main import create_app
 
     app = create_app()
     with TestClient(app) as c:

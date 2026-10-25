@@ -302,6 +302,51 @@ wheels = [
 ]
 
 [[package]]
+name = "clew"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "fastapi" },
+    { name = "jsonpath-ng" },
+    { name = "langchain" },
+    { name = "langchain-openai" },
+    { name = "mcp" },
+    { name = "openpyxl" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "pyjwt" },
+    { name = "python-multipart" },
+    { name = "uvicorn" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "httpx" },
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", specifier = ">=0.115" },
+    { name = "jsonpath-ng", specifier = ">=1.6" },
+    { name = "langchain", specifier = ">=1.4.7" },
+    { name = "langchain-openai", specifier = ">=1.7.2" },
+    { name = "mcp", specifier = ">=2.3.0" },
+    { name = "openpyxl", specifier = ">=3.1" },
+    { name = "pydantic", specifier = ">=2.7" },
+    { name = "pydantic-settings", specifier = ">=2.2" },
+    { name = "pyjwt", specifier = ">=2.8" },
+    { name = "python-multipart", specifier = ">=0.0.9" },
+    { name = "uvicorn", specifier = ">=0.30" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "pytest", specifier = ">=8" },
+]
+
+[[package]]
 name = "click"
 version = "8.5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -831,51 +876,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a2/f7/07a02241b6e6ed3df4e31a64ed09cb522c47227816da3d71097e7cf94657/langsmith-0.14.12.tar.gz", hash = "sha256:b4d6a24ed74333095da476803ad9d22ee35f9dae1052cebf1e366d3889a9b675", size = 5038994, upload-time = "2026-10-21T20:16:22.565Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c6/6c/33e2de8d8d809895263e4f24ef7619e5535e3ece7de863ffbe49c1b7a60d/langsmith-0.14.12-py3-none-any.whl", hash = "sha256:9dafba7f615afa77204dc8afbb9c803e4ba1b55e96249f12c8f9aafb23fae6d0", size = 883644, upload-time = "2026-10-21T20:16:20.039Z" },
-]
-
-[[package]]
-name = "lineagelite"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "fastapi" },
-    { name = "jsonpath-ng" },
-    { name = "langchain" },
-    { name = "langchain-openai" },
-    { name = "mcp" },
-    { name = "openpyxl" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "pyjwt" },
-    { name = "python-multipart" },
-    { name = "uvicorn" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "httpx" },
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "fastapi", specifier = ">=0.115" },
-    { name = "jsonpath-ng", specifier = ">=1.6" },
-    { name = "langchain", specifier = ">=1.4.7" },
-    { name = "langchain-openai", specifier = ">=1.7.2" },
-    { name = "mcp", specifier = ">=2.3.0" },
-    { name = "openpyxl", specifier = ">=3.1" },
-    { name = "pydantic", specifier = ">=2.7" },
-    { name = "pydantic-settings", specifier = ">=2.2" },
-    { name = "pyjwt", specifier = ">=2.8" },
-    { name = "python-multipart", specifier = ">=0.0.9" },
-    { name = "uvicorn", specifier = ">=0.30" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "pytest", specifier = ">=8" },
 ]
 
 [[package]]

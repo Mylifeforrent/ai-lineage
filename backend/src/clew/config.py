@@ -4,7 +4,7 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# 仓库根 .env（包位于 backend/src/lineagelite/，故向上 3 层；符合 AGENTS.md 配置规范）
+# 仓库根 .env（包位于 backend/src/clew/，故向上 3 层；符合 AGENTS.md 配置规范）
 ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
 
 

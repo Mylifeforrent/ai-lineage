@@ -2,7 +2,7 @@
 
 执行方式::
 
-    cd backend && uv run python -m lineagelite.seed_demo
+    cd backend && uv run python -m clew.seed_demo
 
 现场生成 csv / xlsx（含合并单元格多级表头）/ json 三类源文件，先走上传
 服务（sha256 去重）登记，再走 ``read_json_manifest`` + ``run_import``

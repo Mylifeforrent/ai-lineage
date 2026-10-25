@@ -1,4 +1,4 @@
-# LineageLite 前后端交互 API 文档
+# Clew 前后端交互 API 文档
 
 > 本文档是 LineageLite（轻量级 AI 血缘工具）前后端交互的**唯一权威 API 契约**：全部端点、参数、请求/响应结构与错误语义逐条依据 `prototype/backend/src/lineagelite/` 路由代码核对编写（M1–M4 已实现范围），未实现的设想端点单独标注。系统架构见 ./01_架构设计.md，前端视角的调用方式见 ./02_前端开发文档.md，后端模块划分见 ./03_后端开发文档.md，前后端数据契约的责任边界见 ./04_前后端职责边界.md。
 
@@ -10,8 +10,8 @@
 | 入口/安全 | `prototype/backend/src/lineagelite/main.py`、`security.py` | 路由挂载、CORS、Bearer 认证、角色守卫 |
 | 模型 | `prototype/backend/src/lineagelite/models.py` | 请求/响应 pydantic 模型的字段、类型、约束（逐字核对） |
 | 支撑模块 | `prototype/backend/src/lineagelite/`（`db.py`、`lineage.py`、`preview.py`、`versioning.py`、`changes.py`、`import_service.py`、`manifest.py`、`locator.py`、`config.py`、`ai/chat.py`、`ai/llm.py`、`ai/suggest.py`、`ai/tools.py`） | 响应结构、错误原因、清单格式、定位器物化规则 |
-| 设计方案 | `docs/01_design/轻量级AI血缘工具-设计方案.md` | §3.5 导入校验、§3.6 源文件托管上传、§6.2 AI 工具集 |
-| 数据模型 | `docs/01_design/轻量级AI血缘工具-数据模型.md` | §四 JSON 结构（定位器信封 / before/after 快照 / 导入报告）、§5.2 entity_key 命名、§九 API 契约增量（M2/M3/M4） |
+| 设计方案 | `docs/01_design/Clew-设计方案.md` | §3.5 导入校验、§3.6 源文件托管上传、§6.2 AI 工具集 |
+| 数据模型 | `docs/01_design/Clew-数据模型.md` | §四 JSON 结构（定位器信封 / before/after 快照 / 导入报告）、§5.2 entity_key 命名、§九 API 契约增量（M2/M3/M4） |
 | README | 仓库根 `README.md` | API 一览交叉核对（差异见 §十七，以代码为准） |
 
 约定：文档与代码不一致时**以代码为准**；`[ASSUMPTION]` 表示无法从代码确定且必须写出的推断；`[TBD-BE]` 表示设计文档有、后端未实现的端点。示例数据为自拟，仅保证类型与业务含义正确。
@@ -22,7 +22,7 @@
 
 ### 1.1 Base URL 与代理
 
-- 开发环境后端：`http://127.0.0.1:8000`（`uv run uvicorn lineagelite.main:app --reload`，见根 `README.md`）。
+- 开发环境后端：`http://127.0.0.1:8000`（`uv run uvicorn clew.main:app --reload`，见根 `README.md`）。
 - 开发环境前端（Vite，`http://localhost:5173`）经 `prototype/frontend/vite.config.ts` 的 proxy 将 `/auth`、`/users`、`/files`、`/import`、`/datasets`、`/lineage`、`/fields`、`/edges`、`/annotations`、`/changes`、`/version-tags`、`/ai` 前缀转发到后端，即**同源访问**，浏览器侧无跨域问题。
 - 若前端绕过 proxy 直连后端（如独立部署），跨域来源由仓库根 `.env` 的 `CORS_ORIGINS` 配置（默认 `http://localhost:5173,http://127.0.0.1:5173`），`allow_credentials=False`（认证走 Bearer 头而非 Cookie，`main.py`）。
 

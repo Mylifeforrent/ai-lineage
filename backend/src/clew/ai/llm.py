@@ -15,7 +15,7 @@ M4 期为手写 urllib 客户端；M5 起统一走 LangChain：
 DeepSeek（chat 专用）/ 阿里云 DashScope / OpenAI。
 
 测试约定：``chat.py`` 通过模块属性 ``llm.complete`` 调用，测试用
-``monkeypatch.setattr("lineagelite.ai.llm.complete", fake)`` 完全避免真实联网；
+``monkeypatch.setattr("clew.ai.llm.complete", fake)`` 完全避免真实联网；
 流式测试同理 monkeypatch ``llm.stream_complete``。
 """
 

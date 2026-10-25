@@ -1,4 +1,4 @@
-"""SQLite 连接与建表 DDL。表结构对应《轻量级AI血缘工具-数据模型.md》。
+"""SQLite 连接与建表 DDL。表结构对应《Clew-数据模型.md》。
 
 与文档的 M1/M3 实现补充（均向后兼容）：
 - import_batch 增加 rolled_back_at / rolled_back_by：回滚留痕（业务规则#6），

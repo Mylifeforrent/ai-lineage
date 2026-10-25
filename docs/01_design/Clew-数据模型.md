@@ -1,6 +1,6 @@
-# LineageLite 数据模型（Data Model）
+# Clew 数据模型（Data Model）
 
-> 对应《轻量级AI血缘工具-业务模型.md》的数据层实现模型，细化自《轻量级AI血缘工具-设计方案.md》第四章。方言以 SQLite 为基准（SQLite 起步、预留 Postgres 升级路径，差异处标注）。
+> 对应《Clew-业务模型.md》的数据层实现模型，细化自《Clew-设计方案.md》第四章。方言以 SQLite 为基准（SQLite 起步、预留 Postgres 升级路径，差异处标注）。
 
 ---
 
@@ -132,7 +132,7 @@ erDiagram
 | created_by / updated_by | TEXT | REFERENCES user(username) | 操作留痕 |
 | created_at / updated_at | TEXT | NOT NULL | |
 
-**唯一约束（自然键）**：同一上下游对只允许一条边（不变量#3）。注意：SQLite 的 UNIQUE 对含 NULL 的组合按 `NULLS DISTINCT` 语义处理（任意 NULL 互不相等），表级边（from_field/to_field 均为 NULL）无法被 `UNIQUE(from_dataset, from_field, to_dataset, to_field)` 拦截。M1 实现改用两个部分唯一索引保证该不变量（见 `src/lineagelite/db.py` 的 DDL）：
+**唯一约束（自然键）**：同一上下游对只允许一条边（不变量#3）。注意：SQLite 的 UNIQUE 对含 NULL 的组合按 `NULLS DISTINCT` 语义处理（任意 NULL 互不相等），表级边（from_field/to_field 均为 NULL）无法被 `UNIQUE(from_dataset, from_field, to_dataset, to_field)` 拦截。M1 实现改用两个部分唯一索引保证该不变量（见 `src/clew/db.py` 的 DDL）：
 - 字段级边：`CREATE UNIQUE INDEX uq_edge_field ON edge(from_dataset, from_field, to_dataset, to_field) WHERE from_field IS NOT NULL AND to_field IS NOT NULL;`
 - 表级边：`CREATE UNIQUE INDEX uq_edge_table ON edge(from_dataset, to_dataset) WHERE from_field IS NULL AND to_field IS NULL;`
 

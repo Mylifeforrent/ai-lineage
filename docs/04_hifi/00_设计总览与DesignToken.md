@@ -16,7 +16,7 @@
 | ui-ux-pro-max 检索色彩基线 | Primary `#1E40AF`、Secondary `#3B82F6`、Background `#F8FAFC`、Card `#FFFFFF`、Muted `#E9EEF6`、Muted Foreground `#475569`、Border `#DBEAFE`、Destructive `#DC2626`、Accent/CTA `#D97706`、Ring `#1E40AF`（本文在基线内微调处均标注决策理由） |
 | `prototype/frontend/tailwind.config.cjs`、`src/index.css` | 现有 token 结构与命名（canvas/surface/ink/line/pine/ember/ochre/ai/rosewood、boxShadow、keyframes），本文产出其完整替换版与旧→新映射（§8、§9） |
 | `docs/03_dev/02_前端开发文档.md` | §一技术栈、§六组件清单（22 个）、§七画布实现（`getEdgeVisual` 四形态、节点卡片结构、handle 体系） |
-| `docs/02_prototype/lineagelite-lofi-prototype.html` | 低保真 6 屏信息架构基线（血缘画布 / 源文件预览 / 导入向导 / AI 对话 / 版本与用户 / 登录） |
+| `docs/02_prototype/clew-lofi-prototype.html` | 低保真 6 屏信息架构基线（血缘画布 / 源文件预览 / 导入向导 / AI 对话 / 版本与用户 / 登录） |
 | 代表性组件源码 | `LoginPage.tsx`、`DatasetNode.tsx`、`TopBar.tsx`、`LineageEdge.tsx`（getEdgeVisual）、`SourceBadge.tsx`、`Icon.tsx` |
 | WCAG 2.1 | 相对亮度公式人工计算，全部文字组合对比度见 §2.6 验证表 |
 

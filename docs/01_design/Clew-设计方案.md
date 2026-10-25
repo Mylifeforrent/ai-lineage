@@ -1,4 +1,4 @@
-# 轻量级 AI 血缘工具设计方案（工作名：LineageLite）
+# Clew 设计方案（字段级 AI 数据血缘工具；2026-10 起定名 Clew，早期工作名 LineageLite）
 
 > 基于 OpenMetadata 与 DataHub 两个开源方案的调研结论，面向「文件导入 + 字段级源文件定位 + AI 辅助」的轻量级数据血缘工具。
 > 文中未确认的业务事实以 `[ASSUMPTION]` / `[TBD-*]` 标注。

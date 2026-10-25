@@ -33,7 +33,7 @@ def test_ai_chat_stream_sse_events(client, monkeypatch):
         return {"choices": [{"message": {"role": "assistant",
                                          "content": "你好，世界"}}]}
 
-    monkeypatch.setattr("lineagelite.ai.llm.stream_complete",
+    monkeypatch.setattr("clew.ai.llm.stream_complete",
                         fake_stream_complete)
 
     r = client.post("/ai/chat/stream", headers=headers, json={
@@ -64,7 +64,7 @@ def test_mcp_server_exposes_readonly_query_tools():
     """MCP server 只暴露 5 个查询工具（不暴露任何写候选/草稿能力）。"""
     import asyncio
 
-    from lineagelite.ai.mcp_server import mcp
+    from clew.ai.mcp_server import mcp
 
     tools = asyncio.run(mcp.list_tools())
     names = {tool.name for tool in tools}
