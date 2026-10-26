@@ -1,0 +1,12 @@
+Clew
+Copyright 2026 The Clew Authors
+https://github.com/Mylifeforrent/clew
+
+This product is licensed under the Apache License, Version 2.0.
+See the LICENSE file for the full license text.
+
+Clew includes third-party open-source components. Each component remains
+under its own license and copyright; the full dependency lists are kept in
+backend/pyproject.toml and frontend/package.json. Redistributions that
+bundle those components must preserve their respective notices and license
+texts in addition to this NOTICE.

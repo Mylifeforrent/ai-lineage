@@ -24,6 +24,7 @@
   <a href="https://python.org"><img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white" /></a>
   <img alt="AI: OpenAI-compatible" src="https://img.shields.io/badge/AI-OpenAI--compatible-7C3AED" />
   <img alt="UI: English / 中文" src="https://img.shields.io/badge/UI-English%20%2F%20%E4%B8%AD%E6%96%87-EA580C" />
+  <a href="./LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-4B5563" /></a>
 </p>
 
 <p align="center">
@@ -246,8 +247,8 @@ LangChain/streaming/MCP evolution. The current boundaries are explicit:
   needs an admin API and a business rule for “always keep at least one admin”.
 - **Annotations are append-only** by design; there is no edit/delete endpoint.
 - **MCP is read-only.** External agents cannot trigger writes, suggestions or drafts.
-- The `OpenMetadata/` and `DataHub/` directories in the repository are local research
-  copies and are not part of the project.
+- The `OpenMetadata/` and `datahub/` directories are local research copies, excluded
+  from version control; they are not part of the project.
 
 ## Reproducing the demo GIFs
 
@@ -273,6 +274,21 @@ npm run gifs       # Playwright ffmpeg -> Pillow palette -> gifsicle
 The recorder writes one WebM per feature. `npm run gifs` converts them with Playwright's
 bundled ffmpeg, a global Pillow palette and `gifsicle --lossy`, balancing readability
 against file size. Record the import segment against a fresh demo database.
+
+## License
+
+Clew is released under the [Apache License 2.0](./LICENSE). You may use it
+commercially, modify it and redistribute it. Redistributions must keep the copyright
+and license notices and include the [NOTICE](./NOTICE) file; the license also grants an
+express patent license that terminates if you initiate patent litigation over the
+software.
+
+The license covers the source code only. It does not grant rights to the Clew name,
+wordmark or logo (Apache-2.0, section 6). If you publish a modified version, use your
+own name and branding.
+
+Contributions are welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md). Report security
+issues privately per [SECURITY.md](./SECURITY.md), not in a public issue.
 
 ---
 

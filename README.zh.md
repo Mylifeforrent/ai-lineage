@@ -23,6 +23,7 @@
   <a href="https://python.org"><img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white" /></a>
   <img alt="AI：OpenAI 兼容" src="https://img.shields.io/badge/AI-OpenAI--compatible-7C3AED" />
   <img alt="界面：English / 中文" src="https://img.shields.io/badge/UI-English%20%2F%20%E4%B8%AD%E6%96%87-EA580C" />
+  <a href="./LICENSE"><img alt="许可：Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-4B5563" /></a>
 </p>
 
 <p align="center">
@@ -216,7 +217,8 @@ AI 对话与建议，以及 LangChain/流式/MCP 演进。当前边界是明确�
   「至少保留一名 admin」的业务规则。
 - **标注按设计为追加式**，没有编辑/删除接口。
 - **MCP 只读。** 外部 agent 不能触发写入、建议或草稿。
-- 仓库中的 `OpenMetadata/` 与 `DataHub/` 是本地调研副本，不属于项目本身。
+- 本地的 `OpenMetadata/` 与 `datahub/` 是调研副本，已通过 `.gitignore` 排除，
+  不属于项目本身。
 
 ## 复现演示 GIF
 
@@ -242,6 +244,18 @@ npm run gifs       # Playwright ffmpeg -> Pillow 调色板 -> gifsicle
 录制脚本为每个功能输出一段 WebM；`npm run gifs` 使用 Playwright 自带 ffmpeg 抽帧、
 Pillow 全局调色板与 `gifsicle --lossy` 压缩，兼顾可读性与体积。导入片段需要针对
 全新的演示库录制。
+
+## 许可
+
+Clew 采用 [Apache License 2.0](./LICENSE) 发布，可用于商业用途，也可以修改与再分发。
+再分发时必须保留版权与许可声明，并附带 [NOTICE](./NOTICE) 文件；该协议同时提供明示的
+专利授权，并在你就本软件发起专利诉讼时终止该授权。
+
+许可仅覆盖源代码，不包含 Clew 的名称、词标与 logo（Apache-2.0 第 6 条）。如果你公开
+发布修改版，请使用自己的名称与品牌。
+
+欢迎贡献，见 [CONTRIBUTING.md](./CONTRIBUTING.md)。安全问题请按
+[SECURITY.md](./SECURITY.md) 私下报告，不要开公开 issue。
 
 ---
 

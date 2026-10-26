@@ -2,6 +2,8 @@
 name = "clew"
 version = "0.1.0"
 description = "Clew — 字段级 AI 数据血缘工具（M1：数据底座）"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115",
