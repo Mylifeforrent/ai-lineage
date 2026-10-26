@@ -33,6 +33,7 @@ export const zhHistory = {
   'history.empty': '暂无变更记录',
   'history.emptyHint': '该实体的创建与修改尚未写入变更日志。',
   'history.actor': '操作者 {actor}',
+  'history.truncated': '变更较多，仅显示最近 {count} 条。',
 } as const;
 
 export type HistoryKey = keyof typeof zhHistory;
@@ -71,4 +72,5 @@ export const enHistory: Record<HistoryKey, string> = {
   'history.empty': 'No changes yet',
   'history.emptyHint': 'Creation and edits of this entity have not been logged yet.',
   'history.actor': 'By {actor}',
+  'history.truncated': 'Showing only the {count} most recent entries.',
 };

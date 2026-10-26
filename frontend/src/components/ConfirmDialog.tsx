@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import type { ReactNode } from 'react';
 import { Icon } from './Icon';
+import { ModalShell } from './ModalShell';
 import { useI18n } from '../i18n';
 
 interface ConfirmDialogProps {
@@ -30,40 +31,21 @@ export function ConfirmDialog({
   const { t } = useI18n();
   const cancelRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    cancelRef.current?.focus();
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape' && !busy) {
-        event.preventDefault();
-        onCancel();
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [open, busy, onCancel]);
-
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 animate-fade-in"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !busy) onCancel();
-      }}
-    >
-      <div
-        className="relative z-[51] mx-auto w-full max-w-[400px] overflow-hidden rounded-xl border border-line bg-card shadow-modal animate-modal-in"
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="confirm-dialog-title"
-      >
+    <ModalShell
+      variant="modal"
+      open={open}
+      title={title}
+      titleId="confirm-dialog-title"
+      role="alertdialog"
+      onRequestClose={onCancel}
+      dismissable={!busy}
+      overlayClassName="p-4"
+      className="max-w-[400px]"
+      // alertdialog 的「徽章+标题+正文同块、无关闭钮」布局整体接管 header（视觉零变化）
+      header={
         <div className="flex items-start gap-3 px-4 py-4">
           <span
             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
@@ -86,7 +68,10 @@ export function ConfirmDialog({
             </div>
           </div>
         </div>
-        <div className="flex h-12 items-center justify-end gap-2 border-t border-line-soft px-4">
+      }
+      initialFocusRef={cancelRef}
+      footer={
+        <>
           <button
             ref={cancelRef}
             type="button"
@@ -111,8 +96,8 @@ export function ConfirmDialog({
             )}
             {busy ? t('confirmDialog.busy') : (confirmLabel ?? t('common.confirm'))}
           </button>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    />
   );
 }

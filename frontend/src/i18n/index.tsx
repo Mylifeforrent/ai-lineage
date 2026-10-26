@@ -35,6 +35,11 @@ const DOCUMENT_TITLES: Record<Locale, string> = {
 /** 非 React 模块（如 lib/api.ts）可用的静态翻译：跟随最近一次 Provider 挂载/切换的 locale。 */
 let activeLocale: Locale = 'zh';
 
+/** 非 React 模块读取当前 locale（与 tStatic 同源，跟随最近一次 Provider 挂载/切换）。 */
+export function getStaticLocale(): Locale {
+  return activeLocale;
+}
+
 export function tStatic(key: MessageKey, params?: TranslateParams): string {
   const template = DICTS[activeLocale][key] ?? zh[key] ?? key;
   if (!params) return template;

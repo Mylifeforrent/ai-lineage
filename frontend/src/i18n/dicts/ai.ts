@@ -24,7 +24,7 @@ export const zhAi = {
 
   // 聚焦栏
   'ai.focusCurrent': '当前聚焦',
-  'ai.readonlyTools': '只读工具',
+  'ai.readonlyTools': '查询实时可用；建议/草稿等写操作需 editor',
   'ai.noFocus': '未聚焦数据集',
 
   // 状态条与告警横幅
@@ -55,11 +55,31 @@ export const zhAi = {
   'ai.graphSummary': '{datasets} 个数据集 · {edges} 条连线',
   'ai.closeAndView': '关闭并查看',
   'ai.serviceError': 'AI 服务返回 {status}：{detail}',
+  'ai.rateLimited': 'AI 请求过于频繁，请稍后再试',
+  'ai.stoppedLocally': '已停止本次回答',
   'ai.cancelled': '（已取消）',
   'ai.connectFailed': '无法连接 AI 服务，请稍后重试',
 
   // 证据锚点 chip
   'ai.traceOnCanvas': '在画布上追踪 {dataset}.{field}',
+
+  // 停止与清空对话（评审 R17）
+  'ai.stop': '停止',
+  'ai.clearChat': '清空对话',
+  'ai.clearConfirmTitle': '清空对话？',
+  'ai.clearConfirmMessage':
+    '将清空当前会话的全部消息、工具轨迹与候选卡；已落库的建议边与描述草稿不受影响。',
+
+  // 内联候选确认卡（评审 R17，hi-fi 04 §3.6）
+  'ai.suggestConfidence': '置信 {value}',
+  'ai.suggestConfirming': '处理中…',
+  'ai.suggestReject': '拒绝',
+  'ai.suggestConfirmed': '已确认 · 已转为人工边',
+  'ai.suggestRejected': '已拒绝',
+  'ai.suggestNeedEditor': '需要 editor 角色',
+  'ai.suggestViewOnCanvas': '在画布中查看',
+  'ai.suggestCardHint': '确认后边来源改写为 manual · 需 editor 及以上角色 · 全程写入 change_log',
+  'ai.suggestActionFailed': '操作失败，请重试',
 
   // 描述草稿卡
   'ai.draftBadge': '描述草稿',
@@ -77,7 +97,6 @@ export const zhAi = {
   'ai.placeholderReady': '问点什么…（工具调用仅只读，AI 建议需人工确认）',
   'ai.placeholderNotConfigured': '配置 LLM 后即可提问',
   'ai.send': '发送',
-  'ai.sending': '发送中',
   'ai.inputHint': 'Enter 发送 · Shift + Enter 换行 · 仅回传最近 50 条',
 } as const;
 
@@ -108,7 +127,7 @@ export const enAi: Record<AiKey, string> = {
 
   // 聚焦栏
   'ai.focusCurrent': 'Current focus',
-  'ai.readonlyTools': 'Read-only tools',
+  'ai.readonlyTools': 'Queries run live; suggests/drafts need an editor',
   'ai.noFocus': 'No focused dataset',
 
   // 状态条与告警横幅
@@ -140,11 +159,32 @@ export const enAi: Record<AiKey, string> = {
   'ai.graphSummary': '{datasets} datasets · {edges} edges',
   'ai.closeAndView': 'Close and view',
   'ai.serviceError': 'AI service returned {status}: {detail}',
+  'ai.rateLimited': 'Too many AI requests. Please try again later.',
+  'ai.stoppedLocally': 'This answer was stopped.',
   'ai.cancelled': '(Cancelled)',
   'ai.connectFailed': 'Cannot connect to the AI service. Please try again later.',
 
   // 证据锚点 chip
   'ai.traceOnCanvas': 'Trace {dataset}.{field} on canvas',
+
+  // Stop & clear conversation (R17)
+  'ai.stop': 'Stop',
+  'ai.clearChat': 'Clear conversation',
+  'ai.clearConfirmTitle': 'Clear this conversation?',
+  'ai.clearConfirmMessage':
+    'This clears all messages, tool traces and candidate cards in the current conversation. Saved candidate edges and description drafts are not affected.',
+
+  // Inline suggestion card (R17, hifi 04 §3.6)
+  'ai.suggestConfidence': 'Confidence {value}',
+  'ai.suggestConfirming': 'Working…',
+  'ai.suggestReject': 'Reject',
+  'ai.suggestConfirmed': 'Confirmed · now a manual edge',
+  'ai.suggestRejected': 'Rejected',
+  'ai.suggestNeedEditor': 'Requires the editor role',
+  'ai.suggestViewOnCanvas': 'View on canvas',
+  'ai.suggestCardHint':
+    'Confirming rewrites the edge source to manual · requires editor and above · recorded in the change log',
+  'ai.suggestActionFailed': 'Action failed. Please try again.',
 
   // 描述草稿卡
   'ai.draftBadge': 'Description draft',
@@ -163,7 +203,6 @@ export const enAi: Record<AiKey, string> = {
     'Ask anything… (tool calls are read-only; AI suggestions need confirmation)',
   'ai.placeholderNotConfigured': 'Configure the LLM to start asking',
   'ai.send': 'Send',
-  'ai.sending': 'Sending',
   'ai.inputHint':
     'Enter to send · Shift + Enter for a new line · Only the last 50 messages are sent',
 };

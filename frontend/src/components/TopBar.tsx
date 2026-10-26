@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import type { Session } from '../types';
 import { isAdmin, roleLabel } from '../lib/roles';
 import { Brand } from './Brand';
@@ -46,6 +47,12 @@ function isTypingTarget(target: EventTarget | null): boolean {
   );
 }
 
+/** 用户菜单中的语言切换项（md 以下替代顶栏 LanguageToggle）：语言名用原文名 */
+const LOCALE_MENU_OPTIONS: ReadonlyArray<{ value: 'zh' | 'en'; nameKey: 'langToggle.zhName' | 'langToggle.enName' }> = [
+  { value: 'zh', nameKey: 'langToggle.zhName' },
+  { value: 'en', nameKey: 'langToggle.enName' },
+];
+
 export function TopBar({
   session,
   search,
@@ -63,9 +70,10 @@ export function TopBar({
   onOpenUsers,
   onLogout,
 }: TopBarProps) {
-  const { t } = useI18n();
+  const { t, locale, setLocale } = useI18n();
   const searchRef = useRef<HTMLInputElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const hopButtonRefs = useRef(new Map<number, HTMLButtonElement>());
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -109,8 +117,26 @@ export function TopBar({
   const initials = Array.from(session.username).slice(0, 2).join('').toUpperCase();
   const admin = isAdmin(session.role);
 
+  /** radiogroup 键盘协议：方向键在 1–5 间移动并立即选中（roving tabindex，选中项持有 Tab 位） */
+  function handleHopKeyDown(
+    event: ReactKeyboardEvent<HTMLButtonElement>,
+    option: number,
+  ) {
+    const options: readonly number[] = HOP_OPTIONS;
+    const index = options.indexOf(option);
+    let delta = 0;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') delta = 1;
+    else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') delta = -1;
+    else return;
+    event.preventDefault();
+    const next = options[Math.min(options.length - 1, Math.max(0, index + delta))];
+    if (next === undefined || next === option) return;
+    onHopsChange(next);
+    hopButtonRefs.current.get(next)?.focus();
+  }
+
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-line bg-card px-4 xl:px-6">
+    <header className="sticky top-0 z-30 flex h-14 min-w-0 shrink-0 items-center gap-3 border-b border-line bg-card px-4 xl:px-6">
       <div className="flex min-w-0 items-center gap-4">
         <Brand />
         <span className="hidden h-8 w-px bg-line xl:block" />
@@ -168,16 +194,18 @@ export function TopBar({
         </div>
       </div>
 
-      <div className="ml-auto flex items-center gap-2.5 sm:gap-3">
+      <div className="ml-auto flex min-w-0 items-center gap-2.5 sm:gap-3">
         {canImport && (
           <button
             type="button"
             onClick={onOpenImport}
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-brand-700 px-2.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-brand-800 active:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-brand-700 px-2.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-brand-800 active:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
             title={t('topbar.importTitle')}
+            aria-label={t('topbar.import')}
           >
             <Icon name="upload" size={14} />
-            {t('topbar.import')}
+            {/* R14：lg 以下降为 icon-only，文案仅保留在 ≥lg 档 */}
+            <span className="hidden lg:inline">{t('topbar.import')}</span>
           </button>
         )}
 
@@ -186,7 +214,8 @@ export function TopBar({
           onClick={onOpenAi}
           aria-haspopup="dialog"
           aria-expanded={aiOpen}
-          className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[13px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white ${
+          aria-label={t('topbar.ai')}
+          className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-[13px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white ${
             aiOpen
               ? 'border-ai/25 bg-ai-soft text-ai-deep'
               : 'border-line bg-card text-ink-muted hover:border-ai/25 hover:text-ai-deep'
@@ -194,39 +223,48 @@ export function TopBar({
           title={t('topbar.aiTitle')}
         >
           <Icon name="sparkles" size={14} className={aiOpen ? 'text-ai' : ''} />
-          {t('topbar.ai')}
+          <span className="hidden lg:inline">{t('topbar.ai')}</span>
         </button>
 
         <button
           type="button"
           onClick={onOpenVersions}
-          className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 active:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+          aria-label={t('topbar.versions')}
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 active:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
           title={t('topbar.versionsTitle')}
         >
           <Icon name="tag" size={14} />
-          {t('topbar.versions')}
+          <span className="hidden lg:inline">{t('topbar.versions')}</span>
         </button>
 
-        <div className="flex items-center gap-2 rounded-lg border border-line bg-card p-1 pl-2.5">
+        {/* R14：md 及以上为 radiogroup 按钮组（单选语义 + roving tabindex）；md 以下收为单个下拉 */}
+        <div className="hidden shrink-0 items-center gap-2 rounded-lg border border-line bg-card p-1 pl-2.5 md:flex">
           <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
             {t('topbar.hops')}
           </span>
           <div
             className="flex items-center gap-0.5"
-            role="group"
+            role="radiogroup"
             aria-label={t('topbar.hopsGroup')}
           >
             {HOP_OPTIONS.map((option) => (
               <button
                 key={option}
                 type="button"
+                role="radio"
+                aria-checked={option === hops}
+                tabIndex={option === hops ? 0 : -1}
+                ref={(element) => {
+                  if (element) hopButtonRefs.current.set(option, element);
+                  else hopButtonRefs.current.delete(option);
+                }}
                 onClick={() => onHopsChange(option)}
-                className={`flex h-6 min-w-[25px] items-center justify-center rounded-md px-1.5 font-mono text-[11px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 ${
+                onKeyDown={(event) => handleHopKeyDown(event, option)}
+                className={`flex h-7 min-w-[25px] items-center justify-center rounded-md px-1.5 font-mono text-[11px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 ${
                   option === hops
                     ? 'bg-brand-700 text-white'
                     : 'text-ink-muted hover:bg-subtle hover:text-ink'
                 }`}
-                aria-pressed={option === hops}
                 aria-label={t('topbar.hopLabel', { count: option })}
               >
                 {option}
@@ -241,7 +279,31 @@ export function TopBar({
           )}
         </div>
 
-        <LanguageToggle />
+        <div className="flex shrink-0 items-center md:hidden">
+          <select
+            value={hops}
+            onChange={(event) => onHopsChange(Number(event.target.value))}
+            aria-label={t('topbar.hopsGroup')}
+            className="h-8 rounded-lg border border-line bg-card px-2 font-mono text-[12px] text-ink-soft transition-colors duration-150 hover:border-brand-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+          >
+            {HOP_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {t('topbar.hopLabel', { count: option })}
+              </option>
+            ))}
+          </select>
+          {graphLoading && (
+            <span
+              className="ml-1.5 h-2.5 w-2.5 animate-spin rounded-full border-[1.5px] border-brand-300 border-t-brand-700"
+              aria-label={t('topbar.loadingSubgraph')}
+            />
+          )}
+        </div>
+
+        {/* R14：md 以下语言切换并入用户菜单，顶栏不再占位 */}
+        <div className="hidden md:block">
+          <LanguageToggle />
+        </div>
 
         <div
           ref={userMenuRef}
@@ -303,6 +365,36 @@ export function TopBar({
                   <span className="font-mono text-[11px] text-ink-muted">
                     {session.role}
                   </span>
+                </div>
+              </div>
+              {/* R14：md 以下语言切换并入用户菜单（menuitemradio 单选语义） */}
+              <div className="px-3 py-2 md:hidden">
+                <div
+                  className="mb-1.5 text-[11px] text-ink-faint"
+                  aria-hidden="true"
+                >
+                  {t('langToggle.label')}
+                </div>
+                <div className="flex gap-1.5" role="group" aria-label={t('langToggle.label')}>
+                  {LOCALE_MENU_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={locale === option.value}
+                      onClick={() => setLocale(option.value)}
+                      className={`inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 ${
+                        locale === option.value
+                          ? 'border-brand-200 bg-brand-50 text-brand-800'
+                          : 'border-line bg-card text-ink-muted hover:bg-subtle hover:text-ink'
+                      }`}
+                    >
+                      {locale === option.value && (
+                        <Icon name="check" size={11} />
+                      )}
+                      {t(option.nameKey)}
+                    </button>
+                  ))}
                 </div>
               </div>
               {admin && (

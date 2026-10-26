@@ -15,6 +15,7 @@ import {
 import { formatFileSize } from '../lib/format';
 import { Icon } from './Icon';
 import { ConfirmDialog } from './ConfirmDialog';
+import { ModalShell } from './ModalShell';
 import type { ToastTone } from './Toast';
 import { useI18n, type TranslateFn } from '../i18n';
 import type { ImportWizKey } from '../i18n/dicts/importWiz';
@@ -310,12 +311,13 @@ export function ImportWizardModal({
   const [result, setResult] = useState<ImportResult | null>(null);
   const [nextVersion, setNextVersion] = useState<number | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // 步②切换格式的二次确认（评审 R18）：有会被丢弃的已选清单文件时先确认
+  const [formatConfirmOpen, setFormatConfirmOpen] = useState(false);
+  const pendingFormatRef = useRef<ImportFormat | null>(null);
 
   const rowSeq = useRef(1);
   const uploadAbort = useRef<AbortController | null>(null);
   const submitAbort = useRef<AbortController | null>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   const uploading = uploadRows.some(
     (row) => row.record === null && row.error === null,
@@ -343,45 +345,8 @@ export function ImportWizardModal({
     return () => controller.abort();
   }, [token]);
 
-  // 打开时焦点移入、关闭后焦点还原（00 §7.6 / §10.5，同 PreviewModal 行为）
-  useEffect(() => {
-    const previousFocus =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-    closeButtonRef.current?.focus();
-    return () => previousFocus?.focus();
-  }, []);
-
-  // Esc 关闭 + Tab 焦点圈定：不设依赖数组、每次渲染重绑，保证 busy/confirmOpen 判定始终新鲜
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        // busy 中锁定 Esc；确认弹窗打开时由 ConfirmDialog 自行处理
-        if (busy || confirmOpen) return;
-        event.preventDefault();
-        requestClose();
-        return;
-      }
-      if (event.key !== 'Tab') return;
-      const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])',
-      );
-      if (!focusable?.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  });
+  // 打开时焦点移入、关闭后焦点还原、Esc 栈顶协议、Tab 圈定、body 滚动锁
+  // 均由 ModalShell → useOverlayBehavior 统一承担（评审 R13）
 
   useEffect(() => {
     return () => {
@@ -498,12 +463,24 @@ export function ImportWizardModal({
     else setManifest(file);
   }
 
-  function handleFormatChange(next: ImportFormat) {
+  /** 实际切换格式：静默清空三类已选清单文件与格式级错误 */
+  function applyFormatChange(next: ImportFormat) {
     setFormat(next);
     setManifestDatasets(null);
     setManifestLineage(null);
     setManifest(null);
     setManifestError(null);
+  }
+
+  /** 步②切换格式（评审 R18）：确有会被丢弃的已选清单文件时先二次确认，取消则不切换 */
+  function handleFormatChange(next: ImportFormat) {
+    if (next === format) return;
+    if (manifestDatasets || manifestLineage || manifest) {
+      pendingFormatRef.current = next;
+      setFormatConfirmOpen(true);
+      return;
+    }
+    applyFormatChange(next);
   }
 
   const manifestReady =
@@ -1083,62 +1060,42 @@ export function ImportWizardModal({
 
   return (
     <>
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-3 animate-fade-in sm:p-6"
-        onMouseDown={(event) => {
-          if (event.target === event.currentTarget) requestClose();
-        }}
-      >
-        <div
-          ref={dialogRef}
-          className="relative z-[51] flex max-h-[85vh] w-full max-w-[880px] flex-col overflow-hidden rounded-xl border border-line bg-card shadow-modal animate-modal-in"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="import-wizard-title"
-        >
-          <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-line-soft px-4">
-            <div className="flex min-w-0 items-center gap-2.5">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-brand-50 text-brand-700">
-                <Icon name="upload" size={16} />
-              </span>
-              <h2
-                id="import-wizard-title"
-                className="min-w-0 text-[14px] font-semibold text-ink"
-              >
-                {t('importWiz.title')}
-              </h2>
-              {step >= 3 && versionBadgeValue !== null && (
-                <span className="hidden rounded-full border border-line bg-subtle px-2 py-px font-mono text-[11px] text-ink-muted sm:inline-flex">
-                  {result
-                    ? t('importWiz.badgeImported', {
-                        version: versionBadgeValue,
-                      })
-                    : t('importWiz.badgeWillImport', {
-                        version: versionBadgeValue,
-                      })}
-                </span>
-              )}
-            </div>
-            <button
-              ref={closeButtonRef}
-              type="button"
-              onClick={requestClose}
-              disabled={busy}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
-              aria-label={t('importWiz.closeAria')}
+      <ModalShell
+        variant="modal"
+        open
+        title={t('importWiz.title')}
+        titleId="import-wizard-title"
+        titleIcon="upload"
+        onRequestClose={requestClose}
+        dismissable={!busy}
+        overlayClassName="p-3 sm:p-6"
+        className="flex max-h-[85vh] max-w-[880px] flex-col"
+        closeLabel={t('importWiz.closeAria')}
+        titleNode={
+          <>
+            <h2
+              id="import-wizard-title"
+              className="min-w-0 text-[14px] font-semibold text-ink"
             >
-              <Icon name="close" size={16} />
-            </button>
-          </header>
-
-          <Stepper current={step} />
-
-          <div className="min-h-0 flex-1 overflow-y-auto bg-page px-4 py-4">
-            {/* key={step}：步骤切换时重建节点，让 animate-fade-in（200ms）重放（hi-fi 06 §六） */}
-            <div key={step}>{renderStepBody()}</div>
-          </div>
-
-          <footer className="flex h-12 shrink-0 items-center justify-between gap-2 border-t border-line-soft px-4">
+              {t('importWiz.title')}
+            </h2>
+            {step >= 3 && versionBadgeValue !== null && (
+              <span className="hidden rounded-full border border-line bg-subtle px-2 py-px font-mono text-[11px] text-ink-muted sm:inline-flex">
+                {result
+                  ? t('importWiz.badgeImported', {
+                      version: versionBadgeValue,
+                    })
+                  : t('importWiz.badgeWillImport', {
+                      version: versionBadgeValue,
+                    })}
+              </span>
+            )}
+          </>
+        }
+        subHeader={<Stepper current={step} />}
+        footerClassName="flex h-12 shrink-0 items-center justify-between gap-2 border-t border-line-soft px-4"
+        footer={
+          <>
             {step === 4 ? (
               <div className="flex min-w-0 items-center gap-2">
                 <button
@@ -1232,9 +1189,12 @@ export function ImportWizardModal({
                   : t('importWiz.nextStep')}
               </button>
             )}
-          </footer>
-        </div>
-      </div>
+          </>
+        }
+      >
+        {/* key={step}：步骤切换时重建节点，让 animate-fade-in（200ms）重放（hi-fi 06 §六） */}
+        <div key={step}>{renderStepBody()}</div>
+      </ModalShell>
 
       <ConfirmDialog
         open={confirmOpen}
@@ -1250,6 +1210,27 @@ export function ImportWizardModal({
           onClose();
         }}
         onCancel={() => setConfirmOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={formatConfirmOpen}
+        title={t('importWiz.formatSwitchTitle')}
+        confirmLabel={t('importWiz.formatSwitchConfirm')}
+        message={
+          <div className="space-y-1.5">
+            <p>{t('importWiz.formatSwitchMessage')}</p>
+          </div>
+        }
+        onConfirm={() => {
+          const next = pendingFormatRef.current;
+          pendingFormatRef.current = null;
+          setFormatConfirmOpen(false);
+          if (next) applyFormatChange(next);
+        }}
+        onCancel={() => {
+          pendingFormatRef.current = null;
+          setFormatConfirmOpen(false);
+        }}
       />
     </>
   );

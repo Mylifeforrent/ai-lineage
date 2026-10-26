@@ -19,14 +19,26 @@ from .llm import LLMError, LLMNotConfigured
 MAX_DRAFT_FIELDS = 10
 DRAFT_MAX_CHARS = 200
 
-_DRAFT_PROMPT = """你是数据目录的文档助手。为下面的数据字段写一句中文描述（不超过 60 字），\
+# 描述草稿语言（08 号 R12）：按语言参数化 prompt，避免英文对话产出中文草稿
+_DRAFT_PROMPTS = {
+    "zh": """你是数据目录的文档助手。为下面的数据字段写一句中文描述（不超过 60 字），\
 说明它是什么、怎么来的（如果给了上游信息）。只输出描述本身，不要任何前缀、引号或解释。
 
 字段：{dataset}.{name}（类型 {field_type}）
 现状描述：{description}
 上下游血缘：{lineage}
 其他数据集的同名字段：{siblings}
-"""
+""",
+    "en": """You are a data catalog writer. Write one sentence in English (at most 25 words) \
+describing the data field below — what it is and how it is derived (from upstream info, \
+if given). Output only the description itself: no prefix, quotes, or explanations.
+
+Field: {dataset}.{name} (type {field_type})
+Current description: {description}
+Upstream/downstream lineage: {lineage}
+Same-named fields in other datasets: {siblings}
+""",
+}
 
 
 class DescriptionError(RuntimeError):
@@ -66,13 +78,16 @@ def _field_context(conn: sqlite3.Connection, dataset: str, name: str) -> dict:
 
 
 def draft_descriptions(conn: sqlite3.Connection, dataset: str,
-                       fields: list[str], actor: str) -> list[dict]:
+                       fields: list[str], actor: str,
+                       lang: str = "zh") -> list[dict]:
     """为一组字段生成描述草稿并落 pending；返回可确认的草稿清单。
 
     - ``fields`` 为空时自动选取该数据集描述为空的字段（上限 MAX_DRAFT_FIELDS）；
     - 已有 pending 草稿的字段跳过；rejected 的字段也跳过（不再重复生成）；
-    - 单字段生成失败不阻断其余字段。
+    - 单字段生成失败不阻断其余字段；
+    - ``lang`` 控制草稿语言（zh/en，08 号 R12），未知取值按 zh 处理。
     """
+    prompt_template = _DRAFT_PROMPTS.get(lang, _DRAFT_PROMPTS["zh"])
     if conn.execute("SELECT 1 FROM dataset WHERE id=?", (dataset,)).fetchone() is None:
         raise LookupError(f"数据集「{dataset}」不存在")
 
@@ -112,7 +127,7 @@ def draft_descriptions(conn: sqlite3.Connection, dataset: str,
         try:
             response = llm.complete(
                 [{"role": "user",
-                  "content": _DRAFT_PROMPT.format(**context)}])
+                  "content": prompt_template.format(**context)}])
             content = response["choices"][0]["message"]["content"]
             draft = (content or "").strip().splitlines()[0][:DRAFT_MAX_CHARS]
         except (LLMError, LLMNotConfigured, KeyError, IndexError):

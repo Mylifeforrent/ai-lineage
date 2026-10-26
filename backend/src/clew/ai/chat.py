@@ -1,7 +1,7 @@
 """AI 对话编排：OpenAI 兼容 function calling 循环（最多 5 轮工具调用）。
 
 流程：
-1. 固定 system 提示（含可选的 focus 上下文）+ 前端传来的对话历史；
+1. 固定 system 提示（含可选的 focus 上下文与写类工具角色说明）+ 前端传来的对话历史；
 2. 调 ``llm.complete(messages, tools)``；模型返回 tool_calls 时逐个执行工具，
    把结果以 role=tool 的消息追加回去，继续下一轮；
 3. 模型不再请求工具时，取该条消息的 content 作为最终 answer；
@@ -14,6 +14,16 @@
 
 流式：``stream_run_chat`` 复用同一编排，仅把模型调用换成 ``llm.stream_complete``
 （逐 token 回调）并把工具轮事件经 ``on_event`` 实时抛给 SSE 路由。
+
+08 号修复（2026-10-26）：
+
+- R8 写类工具角色护栏：调用方 ``role`` 必传，viewer 触发 suggest_lineage /
+  draft_descriptions 时由 ``run_tool`` 抛 ToolError（不写库）；
+- R9 断开即停：``should_interrupt`` 在每轮开始与每个工具调用前检查，置位即抛
+  :class:`ChatInterrupted`，未执行的轮次与写操作不再进行；
+- R10 上下文预算：工具结果拼回前截断（``MAX_TOOL_RESULT_CHARS``）；
+  每轮拼回后按 token 预算（``CONTEXT_TOKEN_BUDGET``，``.env`` 的
+  ``LLM_CONTEXT_TOKEN_BUDGET`` 可覆盖）整块修剪最旧轮次。
 """
 
 from __future__ import annotations
@@ -23,10 +33,19 @@ from typing import Callable
 
 from ..config import get_settings
 from ..db import get_db
+from ..security import ROLE_ORDER
 from . import llm
 from .tools import MAX_HIGHLIGHT_FIELDS, TOOL_SCHEMAS, run_tool
 
 MAX_TOOL_ROUNDS = 5
+# R10：工具结果对模型可见文本的字符上限（graph/highlights 抽取发生在截断之前）
+MAX_TOOL_RESULT_CHARS = 4000
+DEFAULT_CONTEXT_TOKEN_BUDGET = 96_000
+
+
+class ChatInterrupted(Exception):
+    """客户端已断开：编排有序收敛（R9），未开始的轮次与写操作不再执行。"""
+
 
 SYSTEM_PROMPT = """你是 Clew（字段级 AI 数据血缘工具）的助手。
 
@@ -55,9 +74,16 @@ SYSTEM_PROMPT = """你是 Clew（字段级 AI 数据血缘工具）的助手。
 6. 回答语言必须与用户最新一条提问的语言一致：英文提问必须用英文回答，
    中文提问用中文回答；不要因为本系统提示是中文就默认用中文。"""
 
+VIEWER_TOOL_PROMPT = (
+    "7. 当前对话用户是 viewer 角色：suggest_lineage / draft_descriptions 写类工具"
+    "对你不可用（被角色护栏拒绝）。当用户请求「补充血缘/生成描述建议」时，"
+    "说明该操作需要 editor 角色账号在画布详情面板执行，不要反复尝试这两个工具。")
 
-def _system_prompt(focus: dict | None) -> str:
+
+def _system_prompt(focus: dict | None, role: str = "editor") -> str:
     lines = [SYSTEM_PROMPT]
+    if ROLE_ORDER.get(role, -1) < ROLE_ORDER["editor"]:
+        lines.append(VIEWER_TOOL_PROMPT)
     if focus:
         dataset = str(focus.get("dataset") or "").strip()
         field = str(focus.get("field") or "").strip()
@@ -124,11 +150,76 @@ def _is_graph_payload(value) -> bool:
             and isinstance(value.get("edges"), list))
 
 
-def _drive(messages: list[dict], focus: dict | None, actor: str,
-           complete_fn: Callable, on_event: Callable[[dict], None] | None) -> dict:
-    """function calling 主循环；``complete_fn`` 可替换为流式实现。"""
+# ---------- R10：上下文预算 ----------
+
+
+def _estimate_tokens(text: str) -> float:
+    """粗略 token 估算：非 ASCII ≈ 1 token/字符，ASCII ≈ 0.25 token/字符。"""
+    if not text:
+        return 0.0
+    non_ascii = sum(1 for ch in text if ord(ch) > 0x7F)
+    return non_ascii + (len(text) - non_ascii) / 4
+
+
+def _conversation_tokens(conversation: list[dict]) -> float:
+    """整段对话（含 tool_calls 参数）的估算 token 总量。"""
+    return sum(
+        _estimate_tokens(json.dumps(message, ensure_ascii=False, default=str))
+        for message in conversation)
+
+
+def _context_budget() -> int:
+    try:
+        budget = int(get_settings().llm_context_token_budget)
+    except (TypeError, ValueError):
+        return DEFAULT_CONTEXT_TOKEN_BUDGET
+    return budget if budget > 0 else DEFAULT_CONTEXT_TOKEN_BUDGET
+
+
+def _trim_context(conversation: list[dict]) -> list[dict]:
+    """超预算时整块修剪最旧轮次（原地修改）。
+
+    「一整块」= 从 index 1 起到下一个 user 消息之前的全部消息——保证修剪后
+    对话仍以 user 消息开始、system 与当前轮次永不删除。
+    """
+    if len(conversation) <= 1:
+        return conversation
+
+    def user_starts() -> list[int]:
+        return [i for i, message in enumerate(conversation)
+                if i > 0 and message.get("role") == "user"]
+
+    starts = user_starts()
+    budget = _context_budget()
+    while len(starts) > 1 and _conversation_tokens(conversation) > budget:
+        del conversation[1:starts[1]]
+        starts = user_starts()
+    return conversation
+
+
+def _truncate_tool_result(result: dict) -> str:
+    """工具结果 JSON 序列化；超过 ``MAX_TOOL_RESULT_CHARS`` 截断并附标记。
+
+    仅影响拼回对话、供模型阅读的文本；graph/highlights/suggestions/drafts
+    的抽取在调用本函数之前完成，画布联动不受影响（08 号 R10）。
+    """
+    payload = json.dumps(result, ensure_ascii=False, default=str)
+    if len(payload) <= MAX_TOOL_RESULT_CHARS:
+        return payload
+    return (payload[:MAX_TOOL_RESULT_CHARS]
+            + f"…[工具结果已截断：完整数据共 {len(payload)} 字符，此处仅返回前段]")
+
+
+def _drive(messages: list[dict], focus: dict | None, actor: str, role: str,
+           complete_fn: Callable, on_event: Callable[[dict], None] | None,
+           should_interrupt: Callable[[], bool] | None = None) -> dict:
+    """function calling 主循环；``complete_fn`` 可替换为流式实现。
+
+    ``role`` 为调用方角色（随 ``run_tool`` 下发到写类工具，08 号 R8）；
+    ``should_interrupt`` 置位时抛 :class:`ChatInterrupted`（08 号 R9）。
+    """
     conversation: list[dict] = [
-        {"role": "system", "content": _system_prompt(focus)},
+        {"role": "system", "content": _system_prompt(focus, role)},
     ]
     for message in messages:
         conversation.append(
@@ -146,7 +237,13 @@ def _drive(messages: list[dict], focus: dict | None, actor: str,
         if on_event is not None:
             on_event(event)
 
+    def interrupted() -> bool:
+        if should_interrupt is not None and should_interrupt():
+            raise ChatInterrupted()
+        return False
+
     while True:
+        interrupted()
         # 第 6 次请求（rounds == 5）不再提供工具，强制模型给出最终回答
         tools = TOOL_SCHEMAS if rounds < MAX_TOOL_ROUNDS else None
         response = complete_fn(conversation, tools)
@@ -165,6 +262,7 @@ def _drive(messages: list[dict], focus: dict | None, actor: str,
         rounds += 1
 
         for call in calls:
+            interrupted()
             function = call.get("function") if isinstance(call, dict) else None
             if not isinstance(function, dict):
                 function = {}
@@ -182,7 +280,8 @@ def _drive(messages: list[dict], focus: dict | None, actor: str,
             if parse_error is None:
                 try:
                     with get_db() as conn:
-                        result = run_tool(conn, name, args, actor=actor)
+                        result = run_tool(conn, name, args, actor=actor,
+                                          role=role)
                     ok = True
                 except Exception as exc:  # 工具错误回传给模型，不中断整轮对话
                     result = {"error": str(exc) or exc.__class__.__name__}
@@ -224,8 +323,11 @@ def _drive(messages: list[dict], focus: dict | None, actor: str,
             conversation.append({
                 "role": "tool",
                 "tool_call_id": call_id or "",
-                "content": json.dumps(result, ensure_ascii=False, default=str),
+                "content": _truncate_tool_result(result),
             })
+
+        # 本轮工具结果拼回后检查上下文预算；超预算整块修剪最旧轮次（R10）
+        _trim_context(conversation)
 
     payload: dict = {"answer": answer, "tool_trace": tool_trace}
     if graph is not None:
@@ -240,22 +342,24 @@ def _drive(messages: list[dict], focus: dict | None, actor: str,
 
 
 def run_chat(messages: list[dict], focus: dict | None = None,
-             actor: str = "system") -> dict:
+             actor: str = "system", *, role: str) -> dict:
     """执行一轮 AI 对话（非流式），返回编排 payload。
 
     ``messages`` 已由路由层校验为 ``[{role, content}]``（role 仅 user/assistant）。
-    未配置 LLM 抛 :class:`llm.LLMNotConfigured`；上游 HTTP/结构错误抛
-    :class:`llm.LLMError`。
+    ``role`` 必传（调用方角色，R8）。未配置 LLM 抛 :class:`llm.LLMNotConfigured`；
+    上游 HTTP/结构错误抛 :class:`llm.LLMError`。
     """
     if not llm.is_configured(get_settings()):
         raise llm.LLMNotConfigured(llm.NOT_CONFIGURED_MESSAGE)
-    return _drive(messages, focus, actor, llm.complete, None)
+    return _drive(messages, focus, actor, role, llm.complete, None)
 
 
 def stream_run_chat(messages: list[dict], focus: dict | None, actor: str,
-                    on_event: Callable[[dict], None]) -> dict:
+                    role: str, on_event: Callable[[dict], None],
+                    should_interrupt: Callable[[], bool] | None = None) -> dict:
     """流式编排：最终回答经 ``llm.stream_complete`` 逐 token 回调，其余同构。
 
+    ``role`` 必传（调用方角色，R8）；``should_interrupt`` 断开即停（R9）。
     返回完整 payload（含 answer/graph/highlights/suggestions/drafts）。
     """
     if not llm.is_configured(get_settings()):
@@ -266,4 +370,5 @@ def stream_run_chat(messages: list[dict], focus: dict | None, actor: str,
             conversation, tools,
             on_delta=lambda delta: on_event({"type": "token", "delta": delta}))
 
-    return _drive(messages, focus, actor, complete_fn, on_event)
+    return _drive(messages, focus, actor, role, complete_fn, on_event,
+                  should_interrupt)

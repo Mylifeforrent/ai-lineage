@@ -1,13 +1,23 @@
-"""评审修复回归（R1-R7）：边唯一约束、混合字段边、回滚外键冲突、角色即时生效、
-清单行级解析错误、同上下游合并与重导入幂等、上传加固。"""
+"""评审修复回归（R1-R18）：边唯一约束、混合字段边、回滚外键冲突、角色即时生效、
+清单行级解析错误、同上下游合并与重导入幂等、上传加固（R1-R7，2026-10-24 轮）；
+AI 写类工具角色护栏、SSE 心跳与断开即停、上下文预算、AI 路由限流、草稿语言
+（R8-R12，2026-10-26 轮，见 docs/03_dev/08_评审修复批次2026-10-26.md）。"""
 
+import copy
 import json
 import sqlite3
+import time
 
+import pytest
+
+from clew.ai import chat as chat_mod
 from clew.config import db_path
+from clew.routes import ai as ai_routes
 
 from tests.conftest import csv_bytes, create_user, login, upload
 from tests.fixtures import order_xlsx_bytes, source_json_bytes, user_csv_bytes
+from tests.test_m4_api import (_call, _configure_llm, _final_answer, _seed,
+                               _tool_round)
 
 
 def _seed_sources(client, headers) -> None:
@@ -285,3 +295,256 @@ def test_r7_upload_oversize_413(client, monkeypatch):
     r = client.post("/files", headers=headers,
                     files=[("files", ("big.csv", big, "text/csv"))])
     assert r.status_code == 413, r.text
+
+
+# ---------- R8：写类工具的 editor 角色护栏（08 号） ----------
+
+def test_r8_suggest_lineage_denied_for_viewer_via_chat(client, monkeypatch):
+    admin_headers = login(client)
+    _seed(client, admin_headers)
+    viewer_headers = create_user(client, admin_headers, "viewer_r8a", "viewer")
+    editor_headers = create_user(client, admin_headers, "editor_r8a", "editor")
+    _configure_llm(monkeypatch)
+    ai_routes.ai_chat_limiter.reset()
+
+    def fake_complete(messages, tools=None):
+        if not any(m.get("role") == "tool" for m in messages):
+            return _tool_round(
+                [_call("call_suggest", "suggest_lineage",
+                       {"dataset": "ods_order"})])
+        return _final_answer("已请求血缘建议。")
+
+    monkeypatch.setattr("clew.ai.llm.complete", fake_complete)
+
+    # viewer：写类工具被角色护栏拒绝且不落库
+    r = client.post("/ai/chat", headers=viewer_headers, json={
+        "messages": [{"role": "user", "content": "帮我补充血缘"}]})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["tool_trace"][0]["tool"] == "suggest_lineage"
+    assert body["tool_trace"][0]["ok"] is False
+    conn = _db()
+    assert conn.execute("SELECT COUNT(*) FROM edge WHERE source='ai'")\
+        .fetchone()[0] == 0
+    conn.close()
+
+    # editor：同一输入正常落库（有同名字段 dim_user.user_name 可供建议）
+    r2 = client.post("/ai/chat", headers=editor_headers, json={
+        "messages": [{"role": "user", "content": "帮我补充血缘"}]})
+    assert r2.status_code == 200, r2.text
+    body2 = r2.json()
+    assert body2["tool_trace"][0]["ok"] is True
+    assert body2.get("suggestions"), body2
+    conn = _db()
+    assert conn.execute("SELECT COUNT(*) FROM edge WHERE source='ai'")\
+        .fetchone()[0] >= 1
+    conn.close()
+
+
+def test_r8_draft_descriptions_denied_for_viewer_via_chat(client, monkeypatch):
+    admin_headers = login(client)
+    viewer_headers = create_user(client, admin_headers, "viewer_r8b", "viewer")
+    _configure_llm(monkeypatch)
+    ai_routes.ai_chat_limiter.reset()
+
+    def fake_complete(messages, tools=None):
+        if not any(m.get("role") == "tool" for m in messages):
+            return _tool_round(
+                [_call("call_draft", "draft_descriptions",
+                       {"dataset": "ods_order"})])
+        return _final_answer("草稿需要更高权限。")
+
+    monkeypatch.setattr("clew.ai.llm.complete", fake_complete)
+
+    r = client.post("/ai/chat", headers=viewer_headers, json={
+        "messages": [{"role": "user", "content": "帮我生成描述"}]})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["tool_trace"][0]["tool"] == "draft_descriptions"
+    assert body["tool_trace"][0]["ok"] is False
+    assert "drafts" not in body
+    conn = _db()
+    assert conn.execute("SELECT COUNT(*) FROM description_draft")\
+        .fetchone()[0] == 0
+    conn.close()
+
+
+# ---------- R9：断开即停 + SSE 心跳（08 号） ----------
+
+def test_r9_cancel_stops_further_rounds(client):
+    """should_interrupt 置位后：不再发起下一次 LLM 调用并抛 ChatInterrupted。"""
+    client_fixture_guards_tmp_db = client  # noqa: F841——client 让 DATA_DIR 指向临时目录
+    calls: list[list] = []
+
+    def fake_complete(messages, tools=None):
+        calls.append(copy.deepcopy(messages))
+        return _tool_round([_call("call_mark", "mark_highlight",
+                                  {"fields": [{"dataset": "zz", "field": "yy"}]})])
+
+    with pytest.raises(chat_mod.ChatInterrupted):
+        chat_mod._drive(
+            [{"role": "user", "content": "持续给我查"}], None, "actor",
+            "viewer", fake_complete, None,
+            should_interrupt=lambda: len(calls) >= 1)
+
+    assert len(calls) == 1, "中断后仍发起了后续 LLM 调用"
+
+
+def test_r9_sse_ping_heartbeat(client, monkeypatch):
+    admin_headers = login(client)
+    _configure_llm(monkeypatch)
+    monkeypatch.setattr(ai_routes, "PING_INTERVAL_SECONDS", 0.02)
+    monkeypatch.setattr("clew.ai.llm.is_configured", lambda settings: True)
+    ai_routes.ai_chat_limiter.reset()
+
+    def fake_stream(messages, tools=None, on_delta=None):
+        time.sleep(0.3)  # 期间事件队列为空，应出现心跳注释帧
+        return _final_answer("流式回答完成。")
+
+    monkeypatch.setattr("clew.ai.llm.stream_complete", fake_stream)
+
+    with client.stream("POST", "/ai/chat/stream", headers=admin_headers,
+                       json={"messages": [{"role": "user", "content": "hi"}]})\
+            as response:
+        assert response.status_code == 200, response
+        body = response.read()
+    assert b": ping" in body, body
+    assert b"event: done" in body, body
+
+
+# ---------- R10：工具结果截断 + 上下文预算（08 号） ----------
+
+def test_r10_tool_result_truncated_before_feeding(client, monkeypatch):
+    admin_headers = login(client)
+    _seed(client, admin_headers)
+    _configure_llm(monkeypatch)
+    monkeypatch.setattr(chat_mod, "MAX_TOOL_RESULT_CHARS", 100)
+    ai_routes.ai_chat_limiter.reset()
+
+    captured: list[list] = []
+
+    def fake_complete(messages, tools=None):
+        captured.append(copy.deepcopy(messages))
+        if not any(m.get("role") == "tool" for m in messages):
+            return _tool_round([_call("call_details", "get_field_details",
+                                      {"dataset": "ods_order",
+                                       "field": "order_no"})])
+        return _final_answer("已截断返回。")
+
+    monkeypatch.setattr("clew.ai.llm.complete", fake_complete)
+
+    r = client.post("/ai/chat", headers=admin_headers, json={
+        "messages": [{"role": "user", "content": "看看 order_no 的详情"}]})
+    assert r.status_code == 200, r.text
+    assert r.json()["tool_trace"][0]["ok"] is True
+
+    tool_messages = [m for m in captured[1] if m.get("role") == "tool"]
+    assert tool_messages, captured[1]
+    content = tool_messages[0]["content"]
+    assert "已截断" in content, content
+    assert len(content) < 500, content  # 原始结果含 50 行预览，必然更长
+
+
+def test_r10_context_budget_prunes_oldest_block(client, monkeypatch):
+    monkeypatch.setenv("LLM_CONTEXT_TOKEN_BUDGET", "10")  # 极小，强制修剪
+    admin_headers = login(client)
+    _configure_llm(monkeypatch)
+    ai_routes.ai_chat_limiter.reset()
+
+    captured: list[list] = []
+
+    def fake_complete(messages, tools=None):
+        captured.append(copy.deepcopy(messages))
+        if not any(m.get("role") == "tool" for m in messages):
+            return _tool_round([_call("call_mark", "mark_highlight",
+                                      {"fields": [{"dataset": "zz",
+                                                   "field": "yy"}]})])
+        return _final_answer("已修剪历史。")
+
+    monkeypatch.setattr("clew.ai.llm.complete", fake_complete)
+
+    r = client.post("/ai/chat", headers=admin_headers, json={
+        "messages": [
+            {"role": "user", "content": "旧问题AAA这是一段足够长的旧上下文"},
+            {"role": "assistant", "content": "旧回答BBB"},
+            {"role": "user", "content": "新问题CCC"},
+        ]})
+    assert r.status_code == 200, r.text
+
+    # 第二次调用时：system + 新问题块（含本轮 assistant/tool），旧块已整块删除
+    second = captured[1]
+    serialized = json.dumps(second, ensure_ascii=False)
+    assert "旧问题AAA" not in serialized, serialized
+    assert "新问题CCC" in serialized, serialized
+    assert [m["role"] for m in second][0] == "system"
+    assert second[1]["role"] == "user"
+
+
+# ---------- R11：AI 路由限流（08 号） ----------
+
+def test_r11_chat_rate_limit_429(client, monkeypatch):
+    limiter_headers = create_user(client, login(client), "limit_user", "viewer")
+    ai_routes.ai_chat_limiter.reset()
+    # 限流依赖先于处理器执行：Handler 返回 503（未配置）的请求同样计数
+    monkeypatch.setattr("clew.ai.llm.is_configured", lambda settings: False)
+
+    for i in range(10):
+        r = client.post("/ai/chat", headers=limiter_headers,
+                        json={"messages": [{"role": "user",
+                                            "content": f"第{i}问"}]})
+        assert r.status_code == 503, (i, r.status_code, r.text)  # 未配置 LLM 优先于 429
+
+    r_extra = client.post("/ai/chat", headers=limiter_headers,
+                          json={"messages": [{"role": "user", "content": "第10问"}]})
+    assert r_extra.status_code == 429, r_extra.text
+    assert "频繁" in r_extra.json()["detail"]
+    assert int(r_extra.headers["Retry-After"]) >= 1
+
+
+def test_r11_suggest_rate_limit_429(client):
+    editor_headers = create_user(client, login(client), "limit_editor", "editor")
+    ai_routes.ai_suggest_limiter.reset()
+
+    for i in range(6):
+        r = client.post("/ai/suggest", headers=editor_headers,
+                        json={"dataset": "no_such_ds"})
+        assert r.status_code == 404, (i, r.status_code, r.text)  # 数据集不存在 → 404
+
+    r_extra = client.post("/ai/suggest", headers=editor_headers,
+                          json={"dataset": "no_such_ds"})
+    assert r_extra.status_code == 429, r_extra.text
+
+
+# ---------- R12：描述草稿 prompt 语言参数（08 号） ----------
+
+def test_r12_draft_prompt_follows_lang(client, monkeypatch):
+    admin_headers = login(client)
+    _seed(client, admin_headers)
+    editor_headers = create_user(client, admin_headers, "editor_r12", "editor")
+    _configure_llm(monkeypatch)
+    ai_routes.ai_chat_limiter.reset()
+
+    prompts: list[str] = []
+
+    def fake_complete(messages, tools=None):
+        if len(messages) == 1 and messages[0].get("role") == "user":
+            prompts.append(messages[0]["content"])  # 草稿生成调用（单条 user）
+            return _final_answer("User id, first column of the CSV source.")
+        if not any(m.get("role") == "tool" for m in messages):
+            return _tool_round([_call("call_draft", "draft_descriptions",
+                                      {"dataset": "ods_order",
+                                       "fields": ["order_no"],
+                                       "lang": "en"})])
+        return _final_answer("草稿已生成。")
+
+    monkeypatch.setattr("clew.ai.llm.complete", fake_complete)
+
+    r = client.post("/ai/chat", headers=editor_headers, json={
+        "messages": [{"role": "user", "content": "Draft a description in English"}]})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["drafts"], body
+    assert prompts, prompts
+    assert "Write one sentence in English" in prompts[0], prompts[0]
+    assert "data catalog writer" in prompts[0], prompts[0]
+    assert body["drafts"][0]["draft"] == "User id, first column of the CSV source."

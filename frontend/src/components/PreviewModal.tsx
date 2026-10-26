@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type {
   CsvPreview,
@@ -23,6 +23,7 @@ import {
   locatorTypeLabel,
 } from '../lib/format';
 import { Icon } from './Icon';
+import { ModalShell } from './ModalShell';
 import { useI18n } from '../i18n';
 
 interface PreviewModalProps {
@@ -597,8 +598,6 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   const datasetId = selection.dataset.id;
   const fieldName = selection.field.name;
@@ -632,44 +631,8 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
     return () => controller.abort();
   }, [token, datasetId, fieldName, reloadKey]);
 
-  useEffect(() => {
-    const previousFocus =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    closeButtonRef.current?.focus();
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onClose();
-        return;
-      }
-      if (event.key !== 'Tab') return;
-      const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      );
-      if (!focusable?.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-      previousFocus?.focus();
-    };
-  }, [onClose]);
+  // 打开时焦点移入、关闭后焦点还原、Esc 栈顶协议、Tab 圈定、body 滚动锁
+  // 均由 ModalShell → useOverlayBehavior 统一承担（评审 R13）
 
   const resolvedFile = data?.file ?? selection.field.source_file;
   const resolvedLocator = data?.locator ?? selection.field.src_locator;
@@ -709,66 +672,93 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-3 animate-fade-in sm:p-6"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <div
-        ref={dialogRef}
-        className="relative z-[51] flex max-h-[85vh] w-full max-w-[880px] flex-col overflow-hidden rounded-xl border border-line bg-card shadow-modal animate-modal-in"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="preview-title"
-      >
-        <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-line-soft px-4">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-brand-50 text-brand-700">
-              <Icon name="file-search" size={16} />
+    <ModalShell
+      variant="modal"
+      open
+      title={t('preview.title')}
+      titleId="preview-title"
+      titleIcon="file-search"
+      onRequestClose={onClose}
+      overlayClassName="p-3 sm:p-6"
+      className="flex max-h-[85vh] max-w-[880px] flex-col"
+      closeLabel={t('preview.closeAria')}
+      titleNode={
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
+              {t('preview.kicker')}
             </span>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
-                  {t('preview.kicker')}
-                </span>
-                <span className="rounded border border-line bg-card px-1.5 py-px font-mono text-[11px] uppercase text-ink-muted">
-                  {typeLabel}
-                </span>
-              </div>
-              <h2
-                id="preview-title"
-                className="mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-[14px] font-semibold text-ink"
-              >
-                <span>{t('preview.title')}</span>
-                <span className="truncate font-mono text-[12px] font-normal text-ink-muted">
-                  {selection.dataset.id}.{selection.field.name}
-                </span>
-              </h2>
-            </div>
+            <span className="rounded border border-line bg-card px-1.5 py-px font-mono text-[11px] uppercase text-ink-muted">
+              {typeLabel}
+            </span>
           </div>
-          <div className="flex shrink-0 items-center gap-1.5">
-            <button
-              type="button"
-              onClick={copyLocator}
-              className="hidden h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white sm:flex"
-            >
-              <Icon name="copy" size={12} />
-              {copied ? t('common.copied') : t('preview.copyLocator')}
-            </button>
-            <button
-              ref={closeButtonRef}
-              type="button"
-              onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-              aria-label={t('preview.closeAria')}
-            >
-              <Icon name="close" size={16} />
-            </button>
-          </div>
-        </header>
-
-        <div className="min-h-0 flex-1 overflow-y-auto bg-page px-4 py-4 sm:px-5">
+          <h2
+            id="preview-title"
+            className="mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-[14px] font-semibold text-ink"
+          >
+            <span>{t('preview.title')}</span>
+            <span className="truncate font-mono text-[12px] font-normal text-ink-muted">
+              {selection.dataset.id}.{selection.field.name}
+            </span>
+          </h2>
+        </div>
+      }
+      headerExtra={
+        <button
+          type="button"
+          onClick={copyLocator}
+          className="hidden h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white sm:flex"
+        >
+          <Icon name="copy" size={12} />
+          {copied ? t('common.copied') : t('preview.copyLocator')}
+        </button>
+      }
+      bodyClassName="min-h-0 flex-1 overflow-y-auto bg-page px-4 py-4 sm:px-5"
+      footerClassName="flex h-12 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-t border-line-soft bg-card px-4 text-[11px] text-ink-muted"
+      footer={
+        <>
+          <span className="flex items-center gap-1.5">
+            <Icon name="lock" size={12} />
+            {t('preview.readonlyNote')}
+          </span>
+          <span className="hidden h-3 w-px bg-line sm:block" />
+          <span className="font-mono">
+            {t('preview.resolveNote', { type: typeLabel })}
+          </span>
+          <button
+            type="button"
+            onClick={handleDownload}
+            disabled={downloading}
+            className="ml-auto inline-flex h-7 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
+            title={t('preview.downloadTitle')}
+          >
+            <Icon name="download" size={12} />
+            {downloading ? t('preview.downloading') : t('preview.downloadButton')}
+          </button>
+          {/* 移动端入口：header 复制按钮 `hidden sm:flex` 在小屏不可达（评审 R18），footer 补同逻辑副本 */}
+          <button
+            type="button"
+            onClick={copyLocator}
+            className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white sm:hidden"
+          >
+            <Icon name="copy" size={12} />
+            {copied ? t('common.copied') : t('preview.copyLocator')}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-7 items-center rounded-lg px-2.5 text-[12px] font-medium text-ink-muted transition-colors duration-150 hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+          >
+            {t('common.close')}
+          </button>
+          {downloadError && (
+            <span className="w-full text-danger-deep" role="alert">
+              {downloadError}
+            </span>
+          )}
+        </>
+      }
+    >
           <section className="mb-3.5 grid gap-3 rounded-xl border border-line bg-card p-3.5 sm:grid-cols-2">
             <div>
               <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
@@ -842,41 +832,6 @@ export function PreviewModal({ selection, token, onClose }: PreviewModalProps) {
 
             {!loading && !error && data && <PreviewBody data={data} />}
           </div>
-        </div>
-
-        <footer className="flex h-12 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-t border-line-soft bg-card px-4 text-[11px] text-ink-muted">
-          <span className="flex items-center gap-1.5">
-            <Icon name="lock" size={12} />
-            {t('preview.readonlyNote')}
-          </span>
-          <span className="hidden h-3 w-px bg-line sm:block" />
-          <span className="font-mono">
-            {t('preview.resolveNote', { type: typeLabel })}
-          </span>
-          <button
-            type="button"
-            onClick={handleDownload}
-            disabled={downloading}
-            className="ml-auto inline-flex h-7 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 text-[12px] font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
-            title={t('preview.downloadTitle')}
-          >
-            <Icon name="download" size={12} />
-            {downloading ? t('preview.downloading') : t('preview.downloadButton')}
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-7 items-center rounded-lg px-2.5 text-[12px] font-medium text-ink-muted transition-colors duration-150 hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-          >
-            {t('common.close')}
-          </button>
-          {downloadError && (
-            <span className="w-full text-danger-deep" role="alert">
-              {downloadError}
-            </span>
-          )}
-        </footer>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

@@ -25,6 +25,7 @@ import sqlite3
 from ..changes import load_snapshot
 from ..lineage import DIRECTIONS, MAX_HOPS, LineageNotFound, lineage_subgraph
 from ..preview import PreviewError, field_preview
+from ..security import ROLE_ORDER
 from .descriptions import MAX_DRAFT_FIELDS
 from .llm import LLMError, LLMNotConfigured
 
@@ -33,6 +34,9 @@ MAX_HISTORY_ROWS = 50
 MAX_HIGHLIGHT_FIELDS = 8
 MAX_IMPACT_HOPS = 5
 MAX_IMPACT_CHANGES = 10
+
+# 写类工具（08 号 R8）：调用方角色必须为 editor 及以上，其余以 ToolError 拒绝
+WRITE_TOOLS = frozenset({"suggest_lineage", "draft_descriptions"})
 
 TOOL_SCHEMAS: list[dict] = [
     {
@@ -204,6 +208,11 @@ TOOL_SCHEMAS: list[dict] = [
                 "type": "object",
                 "properties": {
                     "dataset": {"type": "string", "description": "数据集 ID"},
+                    "lang": {
+                        "type": "string",
+                        "enum": ["zh", "en"],
+                        "description": "草稿语言：zh=中文（默认），en=英文；与用户提问语言一致",
+                    },
                     "fields": {
                         "type": "array",
                         "items": {"type": "string"},
@@ -526,6 +535,9 @@ def draft_descriptions_tool(conn: sqlite3.Connection, args: dict,
                             actor: str) -> dict:
     """对话内描述草稿：生成 → description_draft(pending) → 前端确认卡。"""
     dataset = _text(args, "dataset")
+    lang = _text(args, "lang", required=False) or "zh"
+    if lang not in ("zh", "en"):
+        raise ToolError("lang 仅允许 zh / en")
     raw_fields = args.get("fields")
     if raw_fields is None:
         fields: list[str] = []
@@ -536,36 +548,44 @@ def draft_descriptions_tool(conn: sqlite3.Connection, args: dict,
     try:
         from . import descriptions
 
-        items = descriptions.draft_descriptions(conn, dataset, fields, actor)
+        items = descriptions.draft_descriptions(conn, dataset, fields, actor,
+                                                lang=lang)
     except LookupError as exc:
         raise ToolError(str(exc)) from None
     except LLMNotConfigured as exc:
         raise ToolError(str(exc)) from None
     except LLMError as exc:
         raise ToolError(str(exc)) from None
-    return {"dataset": dataset, "items": items, "count": len(items)}
+    return {"dataset": dataset, "items": items, "count": len(items),
+            "lang": lang}
 
 
 def run_tool(conn: sqlite3.Connection, name: str, args: dict | None,
-             actor: str = "system") -> dict:
-    """按名称执行工具；未知工具/非法参数抛 :class:`ToolError`。
+             actor: str = "system", *, role: str) -> dict:
+    """按名称执行工具；未知工具/非法参数/角色不足抛 :class:`ToolError`。
 
     ``actor`` 仅被会写候选/草稿的两个工具使用（change_log / created_by 需要
     真实用户；系统内部调用缺省 "system"）。
+
+    ``role`` 为调用方角色（``require_role`` 返回值），**必传**：写类工具
+    （``WRITE_TOOLS``）要求 editor 及以上，viewer 触发时以 :class:`ToolError`
+    回传模型且**不执行任何写库**（业务不变量#4，08 号 R8）。
     """
-    if name == "suggest_lineage":
+    if name in WRITE_TOOLS:
+        if ROLE_ORDER.get(role, -1) < ROLE_ORDER["editor"]:
+            raise ToolError(
+                "该工具需要 editor 及以上角色（当前为 viewer）：血缘候选与描述"
+                "草稿必须由 editor 执行，且产出仍需人工确认后才生效")
         if args is None:
             args = {}
-        return suggest_lineage(conn, args, actor)
-    if name == "draft_descriptions":
-        if args is None:
-            args = {}
+        if name == "suggest_lineage":
+            return suggest_lineage(conn, args, actor)
         return draft_descriptions_tool(conn, args, actor)
 
     func = TOOL_FUNCS.get(name)
     if func is None:
         raise ToolError(f"未知工具「{name}」，可用工具："
-                        f"{', '.join([*TOOL_FUNCS, 'suggest_lineage', 'draft_descriptions'])}")
+                        f"{', '.join([*TOOL_FUNCS, *WRITE_TOOLS])}")
     if args is None:
         args = {}
     if not isinstance(args, dict):

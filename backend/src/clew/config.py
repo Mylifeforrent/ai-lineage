@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     embedding_base_url: str = ""
     embedding_api_key: str = ""
     embedding_model: str = ""
+    # 08 号 R10：对话上下文 token 预算（粗略估算，超出整块修剪最旧轮次）
+    llm_context_token_budget: int = 96_000
 
 
 def get_settings() -> Settings:

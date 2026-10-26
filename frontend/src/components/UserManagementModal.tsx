@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import type { UserAccount } from '../types';
 import { ApiError, createUser, getUsers, isAbortError } from '../lib/api';
 import { roleLabel } from '../lib/roles';
 import { useI18n } from '../i18n';
 import { Icon } from './Icon';
+import { ModalShell } from './ModalShell';
 
 interface UserManagementModalProps {
   token: string;
@@ -45,8 +46,6 @@ export function UserManagementModal({
   const [formError, setFormError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const closeRef = useRef<HTMLButtonElement>(null);
-
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
@@ -69,22 +68,8 @@ export function UserManagementModal({
     return () => controller.abort();
   }, [token, reloadKey]);
 
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    closeRef.current?.focus();
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape' && !submitting) {
-        event.preventDefault();
-        onClose();
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [onClose, submitting]);
+  // 打开时焦点移入、关闭后焦点还原、Esc 栈顶协议、Tab 圈定、body 滚动锁
+  // 均由 ModalShell → useOverlayBehavior 统一承担（评审 R13）
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -127,55 +112,30 @@ export function UserManagementModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-3 animate-fade-in sm:p-6"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !submitting) onClose();
-      }}
+    <ModalShell
+      variant="modal"
+      open
+      title={t('userMgmt.title')}
+      titleId="user-management-title"
+      titleIcon="users"
+      eyebrow={t('userMgmt.eyebrow')}
+      onRequestClose={onClose}
+      dismissable={!submitting}
+      overlayClassName="p-3 sm:p-6"
+      className="flex max-h-[85vh] max-w-[560px] flex-col"
+      closeLabel={t('userMgmt.close')}
+      headerExtra={
+        <button
+          type="button"
+          onClick={() => setReloadKey((value) => value + 1)}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+          aria-label={t('userMgmt.refresh')}
+          title={t('userMgmt.refreshShort')}
+        >
+          <Icon name="refresh" size={14} />
+        </button>
+      }
     >
-      <div
-        className="relative z-[51] flex max-h-[85vh] w-full max-w-[560px] flex-col overflow-hidden rounded-xl border border-line bg-card shadow-modal animate-modal-in"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="user-management-title"
-      >
-        <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-line-soft px-4">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-brand-50 text-brand-700">
-              <Icon name="users" size={16} />
-            </span>
-            <div className="min-w-0">
-              <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
-                {t('userMgmt.eyebrow')}
-              </div>
-              <h2 id="user-management-title" className="mt-0.5 text-[14px] font-semibold text-ink">
-                {t('userMgmt.title')}
-              </h2>
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setReloadKey((value) => value + 1)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-              aria-label={t('userMgmt.refresh')}
-              title={t('userMgmt.refreshShort')}
-            >
-              <Icon name="refresh" size={14} />
-            </button>
-            <button
-              ref={closeRef}
-              type="button"
-              onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-              aria-label={t('userMgmt.close')}
-            >
-              <Icon name="close" size={16} />
-            </button>
-          </div>
-        </header>
-
-        <div className="min-h-0 flex-1 overflow-y-auto bg-page px-4 py-4">
           <section>
             <div className="mb-2 flex items-center justify-between">
               <h3 className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
@@ -230,7 +190,7 @@ export function UserManagementModal({
                         ROLE_BADGE_STYLES[user.role] ?? 'border-line bg-subtle text-ink-muted'
                       }`}
                     >
-                      {user.role}
+                      {roleLabel(user.role, t)}
                     </span>
                   </div>
                 ))}
@@ -375,8 +335,6 @@ export function UserManagementModal({
               <span>{t('userMgmt.scopeNote')}</span>
             </div>
           </section>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

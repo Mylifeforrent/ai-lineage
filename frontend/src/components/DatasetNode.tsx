@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import type { Node, NodeProps } from '@xyflow/react';
 import type { DatasetField, LineageDataset } from '../types';
@@ -31,7 +32,12 @@ export interface DatasetNodeData extends Record<string, unknown> {
 
 export type DatasetFlowNode = Node<DatasetNodeData, 'dataset'>;
 
-export function DatasetNode({ data }: NodeProps) {
+/**
+ * memo 包装（R15）：画布把「追踪态染色」拆为对命中节点的 data 浅补丁，
+ * 未命中节点的 node 对象引用保持不变，memo 让 React Flow 的 NodeWrapper
+ * 浅比较短路，避免每次点字段追踪都全量重渲染节点。
+ */
+export const DatasetNode = memo(function DatasetNode({ data }: NodeProps) {
   const nodeData = data as unknown as DatasetNodeData;
   const {
     dataset,
@@ -288,4 +294,4 @@ export function DatasetNode({ data }: NodeProps) {
       )}
     </article>
   );
-}
+});

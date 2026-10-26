@@ -24,6 +24,8 @@ export interface LineageEdgeData extends Record<string, unknown> {
   aggregateCount?: number;
   /** true = 表级血缘同名字段匹配的视图派生线（非库内边，不可选中/编辑） */
   derived?: boolean;
+  /** derived 线的稳定 key（lib/fieldChain.derivedLinkKey）；追踪染色按它查链路命中 */
+  derivedLinkKey?: string;
   /** 字段追踪焦点态：'chain' = 命中链路（红），'dim' = 被压暗 */
   focusState?: 'chain' | 'dim';
   canEdit?: boolean;

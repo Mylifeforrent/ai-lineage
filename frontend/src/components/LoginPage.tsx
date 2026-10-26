@@ -97,8 +97,13 @@ export function LoginPage({ notice, onLoggedIn }: LoginPageProps) {
     event.preventDefault();
     if (submitting) return;
     const name = username.trim();
-    if (!name || !password) {
-      setError(t('login.validationEmpty'));
+    // 分字段空值校验（评审 R18）：两者皆空报用户名（第一个字段），不啰嗦
+    if (!name) {
+      setError(t('login.validationUsername'));
+      return;
+    }
+    if (!password) {
+      setError(t('login.validationPassword'));
       return;
     }
 

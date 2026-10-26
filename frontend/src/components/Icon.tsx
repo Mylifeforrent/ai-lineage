@@ -43,6 +43,7 @@ export type IconName =
   | 'group'
   | 'diff'
   | 'send'
+  | 'stop'
   | 'upload';
 
 const paths: Record<IconName, ReactNode> = {
@@ -301,6 +302,8 @@ const paths: Record<IconName, ReactNode> = {
       <path d="M22 2 11 13" />
     </>
   ),
+  /* lucide 风格 stop（stroke 1.5 同体系）：AI 抽屉发送/停止切换键（评审 R17） */
+  stop: <rect x="6.5" y="6.5" width="11" height="11" rx="2" />,
   /* lucide 风格 upload（stroke 1.5 同体系）：导入向导 Dropzone 与 TopBar「导入数据」入口共用 */
   upload: (
     <>

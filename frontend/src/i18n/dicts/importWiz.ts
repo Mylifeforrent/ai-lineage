@@ -83,6 +83,9 @@ export const zhImportWiz = {
   'importWiz.discardConfirm': '关闭并放弃',
   'importWiz.discardMessage':
     '关闭将放弃当前导入进度；已上传的源文件已登记入库，再次导入时可按 sha256 去重复用。',
+  'importWiz.formatSwitchTitle': '切换清单格式？',
+  'importWiz.formatSwitchConfirm': '切换并清空',
+  'importWiz.formatSwitchMessage': '切换格式将清空已选清单文件，需重新上传新格式的清单。',
   'importWiz.summaryBoundSources': '绑定源文件',
   'importWiz.summaryManifestFiles': '清单文件',
   'importWiz.fileCount': '{count} 个',
@@ -178,6 +181,10 @@ export const enImportWiz: Record<ImportWizKey, string> = {
   'importWiz.discardConfirm': 'Close and discard',
   'importWiz.discardMessage':
     'Closing now discards the current progress. Uploaded source files are already registered and will be reused via sha256 dedup on your next import.',
+  'importWiz.formatSwitchTitle': 'Switch the manifest format?',
+  'importWiz.formatSwitchConfirm': 'Switch & clear',
+  'importWiz.formatSwitchMessage':
+    'Switching the format clears the selected manifest files; re-upload manifests in the new format.',
   'importWiz.summaryBoundSources': 'Bound source files',
   'importWiz.summaryManifestFiles': 'Manifest files',
   'importWiz.fileCount': '{count} files',

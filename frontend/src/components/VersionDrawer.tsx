@@ -20,6 +20,7 @@ import { formatDateTime } from '../lib/format';
 import { isAdmin, isEditor } from '../lib/roles';
 import { Icon } from './Icon';
 import { ConfirmDialog } from './ConfirmDialog';
+import { ModalShell } from './ModalShell';
 import type { ToastTone } from './Toast';
 import { useI18n } from '../i18n';
 import type { VersionKey } from '../i18n/dicts/version';
@@ -81,8 +82,18 @@ export function VersionDrawer({
   const [pendingRollback, setPendingRollback] = useState<VersionTag | null>(null);
   const [rollingBack, setRollingBack] = useState(false);
   const [rollbackNotice, setRollbackNotice] = useState<string | null>(null);
+  const [rollbackError, setRollbackError] = useState<string | null>(null);
 
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  // 三个写操作（建标签 / diff / 回滚）各持一个 controller，卸载即断（评审 R18）
+  const createAbortRef = useRef<AbortController | null>(null);
+  const diffAbortRef = useRef<AbortController | null>(null);
+  const rollbackAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => () => {
+    createAbortRef.current?.abort();
+    diffAbortRef.current?.abort();
+    rollbackAbortRef.current?.abort();
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -130,40 +141,35 @@ export function VersionDrawer({
     );
   }, [tags]);
 
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    closeButtonRef.current?.focus();
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape' && !pendingRollback) {
-        event.preventDefault();
-        onClose();
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [onClose, pendingRollback]);
+  // 打开时焦点移入、关闭后焦点还原、Esc 栈顶协议、Tab 圈定、body 滚动锁
+  // 均由 ModalShell → useOverlayBehavior 统一承担（评审 R13）；
+  // pendingRollback（回滚确认弹窗打开）期间拒关，与原行为一致。
 
   const handleCreateTag = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       const name = tagName.trim();
       if (!name || creating) return;
+      createAbortRef.current?.abort();
+      const controller = new AbortController();
+      createAbortRef.current = controller;
       setCreating(true);
       setCreateError(null);
       try {
-        const created = await createVersionTag(token, {
-          name,
-          note: tagNote.trim() || null,
-        });
+        const created = await createVersionTag(
+          token,
+          {
+            name,
+            note: tagNote.trim() || null,
+          },
+          controller.signal,
+        );
         setTagName('');
         setTagNote('');
         setReloadKey((value) => value + 1);
         onNotify(t('version.tagCreated', { name: created.name }), 'success');
       } catch (reason) {
+        if (isAbortError(reason)) return;
         setCreateError(
           reason instanceof ApiError
             ? reason.message
@@ -178,13 +184,22 @@ export function VersionDrawer({
 
   const handleDiff = useCallback(async () => {
     if (!diffFrom || !diffTo || diffLoading) return;
+    diffAbortRef.current?.abort();
+    const controller = new AbortController();
+    diffAbortRef.current = controller;
     setDiffLoading(true);
     setDiffError(null);
     setDiff(null);
     try {
-      const result = await getVersionTagDiff(token, diffFrom, diffTo);
+      const result = await getVersionTagDiff(
+        token,
+        diffFrom,
+        diffTo,
+        controller.signal,
+      );
       setDiff(result);
     } catch (reason) {
+      if (isAbortError(reason)) return;
       setDiffError(
         reason instanceof ApiError
           ? reason.message
@@ -197,9 +212,17 @@ export function VersionDrawer({
 
   const handleRollback = useCallback(async () => {
     if (!pendingRollback || rollingBack) return;
+    rollbackAbortRef.current?.abort();
+    const controller = new AbortController();
+    rollbackAbortRef.current = controller;
     setRollingBack(true);
+    setRollbackError(null);
     try {
-      const result = await rollbackVersionTag(token, pendingRollback.name);
+      const result = await rollbackVersionTag(
+        token,
+        pendingRollback.name,
+        controller.signal,
+      );
       setRollbackNotice(
         t('version.rollbackDone', { name: pendingRollback.name, count: result.reverted }),
       );
@@ -209,67 +232,42 @@ export function VersionDrawer({
       setDiff(null);
       onDataChanged();
     } catch (reason) {
-      onNotify(
-        reason instanceof ApiError
-          ? reason.message
-          : t('version.rollbackFailed'),
-        'error',
-      );
+      if (isAbortError(reason)) return;
+      // 失败信息在回滚正文区保留 persistent 副本，不再只靠 4s toast（评审 R18）
+      const message = reason instanceof ApiError
+        ? reason.message
+        : t('version.rollbackFailed');
+      setRollbackError(message);
+      onNotify(message, 'error');
     } finally {
       setRollingBack(false);
     }
   }, [onDataChanged, onNotify, pendingRollback, rollingBack, token]);
 
   return (
-    <div
-      className="fixed inset-0 z-40 flex justify-end bg-slate-900/25 animate-fade-in"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !pendingRollback) {
-          onClose();
+    <>
+      <ModalShell
+        variant="drawer"
+        open
+        title={t('version.title')}
+        titleId="version-drawer-title"
+        titleIcon="tag"
+        onRequestClose={onClose}
+        dismissable={!pendingRollback}
+        className="sm:w-[480px]"
+        closeLabel={t('version.close')}
+        headerExtra={
+          <button
+            type="button"
+            onClick={() => setReloadKey((value) => value + 1)}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+            aria-label={t('version.refresh')}
+            title={t('version.refreshShort')}
+          >
+            <Icon name="refresh" size={14} />
+          </button>
         }
-      }}
-    >
-      <aside
-        className="relative z-[41] flex h-full w-full flex-col overflow-hidden border-l border-line bg-card shadow-float animate-drawer-in sm:w-[480px]"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="version-drawer-title"
       >
-        <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-line-soft px-4">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-brand-50 text-brand-700">
-              <Icon name="tag" size={16} />
-            </span>
-            <h2
-              id="version-drawer-title"
-              className="min-w-0 text-[14px] font-semibold text-ink"
-            >
-              {t('version.title')}
-            </h2>
-          </div>
-          <div className="flex shrink-0 items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setReloadKey((value) => value + 1)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-              aria-label={t('version.refresh')}
-              title={t('version.refreshShort')}
-            >
-              <Icon name="refresh" size={14} />
-            </button>
-            <button
-              ref={closeButtonRef}
-              type="button"
-              onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-              aria-label={t('version.close')}
-            >
-              <Icon name="close" size={16} />
-            </button>
-          </div>
-        </header>
-
-        <div className="min-h-0 flex-1 overflow-y-auto bg-page px-4 py-4">
           {loading && (
             <div className="space-y-2" aria-hidden="true">
               {[0, 1, 2, 3].map((item) => (
@@ -306,6 +304,16 @@ export function VersionDrawer({
                 <div className="flex items-start gap-2 rounded-lg border border-success/25 bg-success-soft px-3 py-2.5 text-[12px] leading-4 text-success-deep">
                   <Icon name="check" size={12} className="mt-0.5 shrink-0" />
                   <span>{rollbackNotice}</span>
+                </div>
+              )}
+
+              {rollbackError && (
+                <div
+                  className="flex items-start gap-2 rounded-lg border border-danger/25 bg-danger-soft px-3 py-2.5 text-[12px] leading-4 text-danger-deep"
+                  role="alert"
+                >
+                  <Icon name="warning" size={12} className="mt-0.5 shrink-0" />
+                  <span className="break-words">{rollbackError}</span>
                 </div>
               )}
 
@@ -387,6 +395,7 @@ export function VersionDrawer({
                               type="button"
                               onClick={() => {
                                 setRollbackNotice(null);
+                                setRollbackError(null);
                                 setPendingRollback(tag);
                               }}
                               className="ml-auto inline-flex h-7 items-center gap-1 rounded-md border border-danger/25 bg-danger-soft px-2 text-[11px] font-medium text-danger-deep transition-colors duration-150 hover:border-danger/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
@@ -595,8 +604,7 @@ export function VersionDrawer({
               </section>
             </div>
           )}
-        </div>
-      </aside>
+      </ModalShell>
 
       <ConfirmDialog
         open={Boolean(pendingRollback)}
@@ -620,6 +628,6 @@ export function VersionDrawer({
           if (!rollingBack) setPendingRollback(null);
         }}
       />
-    </div>
+    </>
   );
 }

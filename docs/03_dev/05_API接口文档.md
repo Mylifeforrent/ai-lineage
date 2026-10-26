@@ -772,7 +772,7 @@
 
 ## 十三、AI（`routes/ai.py`，M4）
 
-权限分两档：`/ai/status`、`/ai/chat` 为 viewer+；`/ai/suggest`（含 confirm/reject）为 editor+——AI 建议不可直接生效（不变量#4）。
+权限分层（08 号 R8 修订）：`/ai/status`、`/ai/chat`、`/ai/chat/stream`、`GET /ai/description-drafts` 为 viewer+；`/ai/suggest`（含 confirm/reject）、草稿 accept/reject 为 editor+——AI 建议不可直接生效（不变量#4）。对话路径上模型可触达的**写类工具**（`suggest_lineage` / `draft_descriptions`）在工具层二次校验角色：viewer 触发时以工具错误回传模型，写库动作不执行。
 
 ### 13.1 GET /ai/status
 
@@ -791,7 +791,7 @@ LLM 配置状态。`configured` 语义：仓库根 `.env` 中 `LLM_BASE_URL` 与
 
 ### 13.2 POST /ai/chat
 
-自然语言对话：模型经 OpenAI 兼容 function calling 调用**只读**工具（`search_fields` / `get_field_details` / `trace_lineage` / `get_field_history` / `mark_highlight`，`ai/tools.py`），最多 5 轮工具调用后强制收口作答。system 提示由后端固定（含 focus 上下文），前端不可传 `system` 角色。`mark_highlight` 是画布联动信号：模型声明要在前端高亮的字段（最多 8 个，校验存在性、去重），后端汇总进响应 `highlights`；详见 [06_AI画布联动高亮修复](./06_AI画布联动高亮修复.md)。
+自然语言对话：模型经 OpenAI 兼容 function calling 调用工具（`ai/tools.py`，共 8 个——只读 6 个：`search_fields` / `get_field_details` / `trace_lineage` / `get_field_history` / `mark_highlight` / `analyze_impact`；写类 2 个：`suggest_lineage` 落候选边、`draft_descriptions` 落描述草稿，见 13.6 与附录 A8），最多 5 轮工具调用后强制收口作答。**工具层角色护栏**（08 号 R8）：写类工具按调用方角色校验，viewer 触发以工具错误回传模型、不执行写库。**工具结果预算**（08 号 R10）：单结果 JSON 超过 4000 字符在拼回对话前截断（画布联动的 `graph`/`highlights` 抽取发生在截断之前，不受影响）。system 提示由后端固定（含 focus 上下文），前端不可传 `system` 角色。`mark_highlight` 是画布联动信号：模型声明要在前端高亮的字段（最多 8 个，校验存在性、去重），后端汇总进响应 `highlights`；详见 [06_AI画布联动高亮修复](./06_AI画布联动高亮修复.md)。
 
 - 所需角色：viewer
 - 请求体（`AiChatIn`）：
@@ -842,7 +842,26 @@ LLM 配置状态。`configured` 语义：仓库根 `.env` 中 `LLM_BASE_URL` 与
 | graph | object | 可选。**最后一次**成功 `trace_lineage` 返回的 `GraphPayload`（附录 A6），供画布联动渲染；本次对话未查图时省略该字段 |
 | highlights | object[] | 可选。`mark_highlight` 汇总的高亮字段（最多 8 个，去重），每项 `{dataset: string, field: string}`；前端据此在画布上应用红色追踪链。模型未调用该工具时省略该字段（向后兼容） |
 
-- 错误场景：`503` 未配置 LLM（`未配置 LLM：请在仓库根 .env 中设置 LLM_BASE_URL / LLM_MODEL（LLM_API_KEY 视供应商要求填写）`）；`502` LLM 上游不可达 / 返回非 200 / 响应结构不合法；`422` messages 为空、role 非法、content 超长等。
+- 错误场景：`503` 未配置 LLM（`未配置 LLM：请在仓库根 .env 中设置 LLM_BASE_URL / LLM_MODEL（LLM_API_KEY 视供应商要求填写）`）；`502` LLM 上游不可达 / 返回非 200 / 响应结构不合法；`422` messages 为空、role 非法、content 超长等；`429` 触发限流（每用户 10 次/60s，08 号 R11）。
+
+### 13.6 POST /ai/chat/stream
+
+SSE 流式对话（M5）：请求体与权限同 13.2，响应 `text/event-stream`，帧格式 `event: <type>\ndata: <json>\n\n`。事件类型：
+
+| event | data 含义 |
+|---|---|
+| token | `{delta: string}`——最终回答的增量文本（工具轮不外发文本） |
+| tool | `{tool, args, ok}`——工具调用打点（`args` 为模型给出的参数） |
+| suggest | `{count, candidates[]}`——`suggest_lineage` 候选落库后发出；viewer 触发时该工具被 R8 拦截，不产生此事件 |
+| drafts | `{items[]}`——`draft_descriptions` 草稿生成后发出 |
+| done | 完整 payload：`{answer, graph?, highlights?, suggestions?, drafts?, tool_trace}` |
+| error | `{status, detail}`——编排兜底错误（`503`/`502`/`500`，语义同 13.2） |
+
+心跳与断开即停（08 号 R9）：事件空档超过 15s 时输出 SSE 注释帧 `: ping`（前端解析器按帧查找 `data: ` 行，注释帧安全忽略，对 UI 无感知）；客户端断开后，取消信号传入编排循环，**尚未开始的轮次不再执行**（含写类工具落库）；已落库的候选/草稿不自动回滚。
+
+- 所需角色：viewer
+- 速率限制：每用户 10 次/60s（08 号 R11）
+- 错误场景：`429` 限流（带 `Retry-After`）；流内 `error` 事件（`503`/`502`/`500`）；`422` 请求体校验。
 
 ### 13.3 POST /ai/suggest
 
@@ -873,6 +892,8 @@ LLM 配置状态。`configured` 语义：仓库根 `.env` 中 `LLM_BASE_URL` 与
 }
 ```
 
+- 速率限制：每用户 6 次/60s（08 号 R11）。
+
 > 注：`reason` 文案固定两类——同名匹配（0.7）为「同名字段（忽略大小写与下划线）：X 与 Y」，包含关系（0.6）为「字段名高度相似（忽略大小写与下划线后为包含关系）：X 与 Y」；归一化规则为小写 + 去下划线（`ai/suggest.py::normalize_field_name`）。
 
 - 错误场景：`400` `dataset` trim 后为空；`404` 数据集不存在（`数据集「{dataset}」不存在`）或指定字段不存在；`422` 约束不满足。
@@ -902,6 +923,38 @@ LLM 配置状态。`configured` 语义：仓库根 `.env` 中 `LLM_BASE_URL` 与
 - 请求体：同 13.4（`AiEdgeKeyIn`）
 - 成功响应：`204` 无响应体
 - 错误场景：同 13.4（`400` / `404`）。
+
+### 13.7 GET /ai/description-drafts
+
+列出 AI 描述草稿（M5，03/07 号文档的草稿流契约补录）。可按 dataset / status 过滤。
+
+- 所需角色：viewer
+- 查询参数：`dataset`（string，可选）、`status`（string，可选，仅允许 `pending` / `accepted` / `rejected`）
+- 成功响应：`200`
+
+```json
+{ "items": [ { "id": 1, "dataset_id": "ods_raw", "field_name": "order_id",
+               "draft": "订单号，来自源文件第 3 列…", "model": "qwen-plus",
+               "status": "pending", "created_at": "…", "decided_at": null } ] }
+```
+
+- 错误场景：`400` `status 仅允许 pending/accepted/rejected`。
+
+### 13.8 POST /ai/description-drafts/{draft_id}/accept
+
+采纳描述草稿：写 `annotation`（target_kind='field'，body 含「AI 描述采纳｜model=…」溯源前缀）+ 草稿置 `accepted`。原始 `field.description` 不被修改（原始导入与人工见解分离）。
+
+- 所需角色：editor
+- 成功响应：`200` → `{"draft": <草稿对象，字段同 13.6>}`
+- 错误场景：`404` `描述草稿 #{id} 不存在`；`409` `草稿 #{id} 已处理（{status}）`
+
+### 13.9 POST /ai/description-drafts/{draft_id}/reject
+
+拒绝描述草稿：置 `rejected`，该字段不再重复生成（重新生成需字段内容变更）。
+
+- 所需角色：editor
+- 成功响应：`204` 无响应体
+- 错误场景：同 13.7（`404` / `409`）。
 
 ---
 
@@ -995,8 +1048,10 @@ LLM 配置状态。`configured` 语义：仓库根 `.env` 中 `LLM_BASE_URL` 与
 ### A8 AI 对话消息与工具调用轨迹
 
 - 请求消息：`{role: "user"|"assistant", content: string}`（`system` 由后端固定，禁止前端传入）。
-- 工具调用轨迹：`{tool: string, args: object, ok: boolean}`；工具名限定 `search_fields` / `get_field_details` / `trace_lineage` / `get_field_history`（全部只读）。
-- 对话编排细节（最多 5 轮工具、第 6 次请求不带工具强制收口、`graph` 取最后一次成功图查询）见 `prototype/backend/src/lineagelite/ai/chat.py`。
+- 工具调用轨迹：`{tool: string, args: object, ok: boolean}`；工具集共 8 个（`ai/tools.py`，M4/M5 现状）：
+  - 只读 6 个：`search_fields`、`get_field_details`、`trace_lineage`、`get_field_history`、`mark_highlight`（画布联动信号）、`analyze_impact`；
+  - 写类 2 个：`suggest_lineage`（候选边以 `source='ai'` 落库）、`draft_descriptions`（描述草稿落 `description_draft`）——工具层按调用方角色校验，viewer 触发以工具错误回传模型、不执行写库（08 号 R8）。
+- 对话编排细节（最多 5 轮工具、第 6 次请求不带工具强制收口、`graph` 取最后一次成功图查询、工具结果 >4000 字符拼回前截断、上下文 token 预算整块修剪、客户端断开即停）见 `ai/chat.py` 与 [08_评审修复批次](./08_评审修复批次2026-10-26.md)。
 
 ---
 
@@ -1065,3 +1120,7 @@ LLM 配置状态。`configured` 语义：仓库根 `.env` 中 `LLM_BASE_URL` 与
 | 30 | POST | /ai/suggest | editor | 生成并落库 AI 候选边（source=ai） |
 | 31 | POST | /ai/suggest/confirm | editor | 确认候选边转 manual |
 | 32 | POST | /ai/suggest/reject | editor | 拒绝并删除候选边（204） |
+| 33 | POST | /ai/chat/stream | viewer | AI 流式对话（SSE：token/tool/suggest/drafts/done/error + ping 心跳；写类工具经角色护栏） |
+| 34 | GET | /ai/description-drafts | viewer | 描述草稿列表（dataset/status 过滤） |
+| 35 | POST | /ai/description-drafts/{id}/accept | editor | 采纳草稿 → annotation + accepted |
+| 36 | POST | /ai/description-drafts/{id}/reject | editor | 拒绝草稿 → rejected（204） |

@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ChangeEntry, ChangeOp, LocatorEnvelope, TargetKind } from '../types';
 import { ApiError, getChanges, isAbortError } from '../lib/api';
 import { formatDateTime, humanizeLocator } from '../lib/format';
 import { useI18n, type TranslateFn } from '../i18n';
 import { Icon } from './Icon';
+import { ModalShell } from './ModalShell';
 
 interface HistoryDrawerProps {
   token: string;
@@ -150,7 +151,6 @@ export function HistoryDrawer({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -174,77 +174,33 @@ export function HistoryDrawer({
     return () => controller.abort();
   }, [token, entityKind, entityKey, reloadKey]);
 
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    closeButtonRef.current?.focus();
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onClose();
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [onClose]);
+  // 打开时焦点移入、关闭后焦点还原、Esc 栈顶协议、Tab 圈定、body 滚动锁
+  // 均由 ModalShell → useOverlayBehavior 统一承担（评审 R13）
 
   return (
-    <div
-      className="fixed inset-0 z-40 flex justify-end bg-slate-900/25 animate-fade-in"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
+    <ModalShell
+      variant="drawer"
+      open
+      title={title}
+      titleId="history-drawer-title"
+      titleIcon="history"
+      eyebrow={t('history.titlePrefix', { kind: t(KIND_LABEL_KEYS[entityKind]) })}
+      titleClassName="mt-0.5 truncate font-mono text-[13px] font-semibold text-ink"
+      onRequestClose={onClose}
+      className="sm:w-[360px]"
+      closeLabel={t('history.close')}
+      headerExtra={
+        <button
+          type="button"
+          onClick={() => setReloadKey((value) => value + 1)}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+          aria-label={t('history.refresh')}
+          title={t('history.refreshShort')}
+        >
+          <Icon name="refresh" size={14} />
+        </button>
+      }
     >
-      <aside
-        className="relative z-[41] flex h-full w-full flex-col overflow-hidden border-l border-line bg-card shadow-float animate-drawer-in sm:w-[360px]"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="history-drawer-title"
-      >
-        <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-line-soft px-4">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-brand-50 text-brand-700">
-              <Icon name="history" size={16} />
-            </span>
-            <div className="min-w-0">
-              <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
-                {t('history.titlePrefix', { kind: t(KIND_LABEL_KEYS[entityKind]) })}
-              </div>
-              <h2
-                id="history-drawer-title"
-                className="mt-0.5 truncate font-mono text-[13px] font-semibold text-ink"
-              >
-                {title}
-              </h2>
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setReloadKey((value) => value + 1)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-              aria-label={t('history.refresh')}
-              title={t('history.refreshShort')}
-            >
-              <Icon name="refresh" size={14} />
-            </button>
-            <button
-              ref={closeButtonRef}
-              type="button"
-              onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors duration-150 hover:bg-subtle hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
-              aria-label={t('history.close')}
-            >
-              <Icon name="close" size={16} />
-            </button>
-          </div>
-        </header>
-
-        <div className="min-h-0 flex-1 overflow-y-auto bg-page px-4 py-4">
           <div className="mb-3 rounded-lg border border-line bg-card px-3 py-2.5">
             <p className="break-all font-mono text-[12px] leading-4 text-ink-soft">
               {entityKey}
@@ -323,8 +279,14 @@ export function HistoryDrawer({
               ))}
             </ol>
           )}
-        </div>
-      </aside>
-    </div>
+
+          {/* 条目达查询上限时的截断提示（评审 R18） */}
+          {!loading && !error && entries !== null && entries.length >= 50 && (
+            <p className="mt-3 flex items-center gap-1 text-[11px] leading-4 text-ink-faint">
+              <Icon name="info" size={10} className="shrink-0" />
+              {t('history.truncated', { count: 50 })}
+            </p>
+          )}
+        </ModalShell>
   );
 }

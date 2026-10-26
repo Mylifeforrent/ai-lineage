@@ -1,6 +1,5 @@
 import type {
   AiChatMessage,
-  AiChatResponse,
   AiDraftItem,
   AiEdgeKey,
   AiFocus,
@@ -29,7 +28,7 @@ import type {
   VersionTagDiff,
 } from '../types';
 
-import { tStatic } from '../i18n';
+import { getStaticLocale, tStatic } from '../i18n';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 
@@ -59,7 +58,10 @@ function readErrorDetail(payload: unknown, status: number): string {
           return '';
         })
         .filter(Boolean);
-      if (messages.length) return messages.join('；');
+      if (messages.length) {
+        // pydantic 校验详情的分隔符按当前语言取（评审 R18：zh『；』/ en『, 』）
+        return messages.join(getStaticLocale() === 'zh' ? '；' : ', ');
+      }
     }
   }
   // 前端兜底文案走 i18n（后端 detail 在上方原样透传，不翻译）
@@ -457,18 +459,6 @@ export async function getAiStatus(
   signal?: AbortSignal,
 ): Promise<AiStatus> {
   return request<AiStatus>('/ai/status', { signal }, token);
-}
-
-export async function sendAiChat(
-  token: string,
-  payload: { messages: AiChatMessage[]; focus?: AiFocus | null },
-  signal?: AbortSignal,
-): Promise<AiChatResponse> {
-  return request<AiChatResponse>(
-    '/ai/chat',
-    { method: 'POST', body: JSON.stringify(payload), signal },
-    token,
-  );
 }
 
 export interface AiStreamHandlers {

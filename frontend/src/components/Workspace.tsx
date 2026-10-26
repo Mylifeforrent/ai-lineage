@@ -105,24 +105,15 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
   // 导入向导（hi-fi 06）：入口仅 editor+ 渲染
   const [importOpen, setImportOpen] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
-  const toastTimer = useRef<number | null>(null);
   const toastSeq = useRef(1);
 
+  // 自动消失计时由 Toast 组件自管（错误级 8s + hover 暂停，评审 R18）
   const showToast = useCallback((message: string, tone: ToastTone = 'info') => {
-    if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
     setToast({ id: toastSeq.current, message, tone });
     toastSeq.current += 1;
-    toastTimer.current = window.setTimeout(() => {
-      setToast(null);
-      toastTimer.current = null;
-    }, 4200);
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
-    };
-  }, []);
+  const dismissToast = useCallback(() => setToast(null), []);
 
   /** 统一应用一份 GraphPayload：常规子图与 AI 出图共用同一套画布状态清理。 */
   const applyGraph = useCallback((payload: LineageGraph) => {
@@ -468,6 +459,31 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
     refreshGraph();
   }, [refreshGraph]);
 
+  // R13：浮层开关/关闭回调统一 useCallback 稳定引用，
+  // 抽屉/模态的 effect 不得因父渲染重挂而抢焦点。
+  const handleOpenAi = useCallback(() => setAiOpen(true), []);
+  const handleOpenImport = useCallback(() => setImportOpen(true), []);
+  const handleOpenVersions = useCallback(() => setVersionsOpen(true), []);
+  const handleOpenUsers = useCallback(() => {
+    if (admin) setUsersOpen(true);
+  }, [admin]);
+  const handleCloseAi = useCallback(() => setAiOpen(false), []);
+  const handleCloseVersions = useCallback(() => setVersionsOpen(false), []);
+  const handleCloseUsers = useCallback(() => setUsersOpen(false), []);
+  const handleCloseImport = useCallback(() => setImportOpen(false), []);
+  const handleImportCompleted = useCallback(() => {
+    setImportOpen(false);
+    refreshAll();
+  }, [refreshAll]);
+  const handleImportOpenVersions = useCallback(() => {
+    setImportOpen(false);
+    setVersionsOpen(true);
+  }, []);
+  const handleCloseEdgeDraft = useCallback(() => setEdgeDraft(null), []);
+  const handleCancelDeleteEdge = useCallback(() => {
+    if (!deletingEdge) setPendingDeleteEdge(null);
+  }, [deletingEdge]);
+
   const retryDatasets = useCallback(() => {
     setDatasetsReloadKey((value) => value + 1);
   }, []);
@@ -504,13 +520,11 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
         onHopsChange={handleHopsChange}
         graphLoading={graphLoading}
         aiOpen={aiOpen}
-        onOpenAi={() => setAiOpen(true)}
-        onOpenImport={() => setImportOpen(true)}
+        onOpenAi={handleOpenAi}
+        onOpenImport={handleOpenImport}
         canImport={canEdit}
-        onOpenVersions={() => setVersionsOpen(true)}
-        onOpenUsers={() => {
-          if (admin) setUsersOpen(true);
-        }}
+        onOpenVersions={handleOpenVersions}
+        onOpenUsers={handleOpenUsers}
         onLogout={onLogout}
       />
 
@@ -544,6 +558,8 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
               loading={graphLoading}
               error={graphError}
               canEdit={canEdit}
+              datasetsLoading={datasetsLoading}
+              totalEdgeCount={displayGraph?.edges.length ?? 0}
               collapsedIds={collapsedIds}
               fieldsExpandedIds={fieldsExpandedIds}
               onToggleCollapse={handleToggleCollapse}
@@ -599,7 +615,7 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
           key={`${edgeDraft.from_dataset}.${edgeDraft.from_field ?? '*'}-${edgeDraft.to_dataset}.${edgeDraft.to_field ?? '*'}`}
           draft={edgeDraft}
           token={session.access_token}
-          onClose={() => setEdgeDraft(null)}
+          onClose={handleCloseEdgeDraft}
           onCreated={handleEdgeCreated}
         />
       )}
@@ -619,16 +635,14 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
           </div>
         }
         onConfirm={handleConfirmDeleteEdge}
-        onCancel={() => {
-          if (!deletingEdge) setPendingDeleteEdge(null);
-        }}
+        onCancel={handleCancelDeleteEdge}
       />
 
       {versionsOpen && (
         <VersionDrawer
           token={session.access_token}
           role={session.role}
-          onClose={() => setVersionsOpen(false)}
+          onClose={handleCloseVersions}
           onDataChanged={refreshAll}
           onNotify={showToast}
         />
@@ -637,15 +651,9 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
       {importOpen && canEdit && (
         <ImportWizardModal
           token={session.access_token}
-          onClose={() => setImportOpen(false)}
-          onCompleted={() => {
-            setImportOpen(false);
-            refreshAll();
-          }}
-          onOpenVersions={() => {
-            setImportOpen(false);
-            setVersionsOpen(true);
-          }}
+          onClose={handleCloseImport}
+          onCompleted={handleImportCompleted}
+          onOpenVersions={handleImportOpenVersions}
           onNotify={showToast}
         />
       )}
@@ -655,9 +663,10 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
         token={session.access_token}
         focus={aiFocus}
         canEdit={canEdit}
-        onClose={() => setAiOpen(false)}
+        onClose={handleCloseAi}
         onGraph={handleAiGraph}
         onSuggested={handleAiSuggested}
+        onRefresh={refreshGraph}
         onFieldFocus={handleAiFieldFocus}
       />
 
@@ -665,11 +674,11 @@ export function Workspace({ session, onLogout }: WorkspaceProps) {
         <UserManagementModal
           token={session.access_token}
           currentUsername={session.username}
-          onClose={() => setUsersOpen(false)}
+          onClose={handleCloseUsers}
         />
       )}
 
-      <Toast toast={toast} />
+      <Toast toast={toast} onDismiss={dismissToast} />
     </div>
   );
 }
